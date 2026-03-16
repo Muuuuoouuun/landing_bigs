@@ -48,10 +48,11 @@ const IntegrationEcosystem = () => {
         
         .glow-pulse {
           animation: glowPulse 4s infinite alternate ease-in-out;
+          will-change: transform, opacity;
         }
         @keyframes glowPulse {
-          0% { filter: blur(30px) opacity(0.6); transform: scale(0.9); }
-          100% { filter: blur(40px) opacity(1); transform: scale(1.2); }
+          0% { opacity: 0.5; transform: scale(0.9); }
+          100% { opacity: 1; transform: scale(1.2); }
         }
 
         .spin-slow {
