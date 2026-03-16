@@ -2,7 +2,7 @@ import React from 'react';
 import heroBg from '../assets/hero_bg_abstract.png';
 import dashboardUi from '../assets/hero_dashboard_ui.png';
 
-const Hero = () => {
+const Hero = ({ onOpenConsultation, onOpenDemo }) => {
   return (
     <section className="section hero-section theme-dark reveal" id="hero" style={{
       backgroundImage: `url(${heroBg})`,
@@ -78,6 +78,7 @@ const Hero = () => {
             <button
               className="btn btn-primary"
               style={{ fontWeight: '700', letterSpacing: '0.02em', fontSize: '1.05rem', padding: '1rem 2rem' }}
+              onClick={onOpenConsultation}
             >
               도입 상담 신청
             </button>
@@ -97,6 +98,7 @@ const Hero = () => {
               }}
               onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = ''; }}
+              onClick={onOpenDemo}
             >
               관리자 데모 보기
             </button>

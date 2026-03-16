@@ -51,11 +51,13 @@ const steps = [
 
 const SolutionFlow = () => {
   return (
-    <section className="section" id="solution" style={{
+    <section className="section section-fade-from-dark section-fade-to-dark" id="solution" style={{
       background: 'linear-gradient(180deg, #faf9f6 0%, #f0f5f2 100%)',
       paddingBottom: '12rem',
       position: 'relative',
       overflow: 'hidden',
+      '--fade-from': '#06261a',
+      '--fade-to': '#06261a',
     }}>
       {/* Background watermark numbers */}
       <div style={{ position: 'absolute', top: '6rem', left: '2%', fontSize: '18rem', fontWeight: '900', color: 'rgba(11,61,43,0.025)', lineHeight: 1, userSelect: 'none', zIndex: 0 }}>01</div>

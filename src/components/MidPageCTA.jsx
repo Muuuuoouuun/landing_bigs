@@ -1,8 +1,8 @@
 import React from 'react';
 
-const MidPageCTA = () => {
+const MidPageCTA = ({ onOpenConsultation }) => {
   return (
-    <section className="section text-center" style={{ padding: '7rem 1.5rem', backgroundColor: 'var(--color-primary-dark)', position: 'relative', overflow: 'hidden' }}>
+    <section className="section text-center section-fade-from-dark" style={{ padding: '7rem 1.5rem', backgroundColor: 'var(--color-primary-dark)', position: 'relative', overflow: 'hidden', '--fade-from': '#060a0f' }}>
       {/* 배경 그로우 */}
       <div style={{
         position: 'absolute', top: '50%', left: '50%',
@@ -10,6 +10,12 @@ const MidPageCTA = () => {
         width: '60%', height: '120%',
         background: 'radial-gradient(ellipse, rgba(22,94,69,0.25) 0%, transparent 70%)',
         zIndex: 0, pointerEvents: 'none',
+      }}></div>
+      {/* 대각선 스트라이프 패턴 */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: 'repeating-linear-gradient(135deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 40px)',
+        pointerEvents: 'none', zIndex: 0,
       }}></div>
 
       <div className="container" style={{ position: 'relative', zIndex: 1 }}>
@@ -37,6 +43,7 @@ const MidPageCTA = () => {
         <button
           className="btn btn-primary"
           style={{ fontSize: '1.15rem', padding: '1.1rem 2.5rem' }}
+          onClick={onOpenConsultation}
         >
           1:1 도입 컨설팅 예약
         </button>

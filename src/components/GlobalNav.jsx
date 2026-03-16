@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const GlobalNav = ({ onOpenModal }) => {
+const GlobalNav = ({ onOpenConsultation, onOpenDemo }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -21,14 +21,9 @@ const GlobalNav = ({ onOpenModal }) => {
             <span>ClassIn <span style={{ fontWeight: '600', opacity: 0.6, fontSize: '0.9em' }}>Enterprise</span></span>
           </div>
 
-          <div className="nav-links">
-
-            <button onClick={onOpenModal} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '600', fontSize: '0.9375rem', color: 'var(--color-primary)', padding: 0 }}>자료 받아보기</button>
-          </div>
-
           <div className="nav-cta-group">
-            <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>데모 시연</button>
-            <button className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem' }}>도입 문의</button>
+            <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }} onClick={onOpenDemo}>데모 시연</button>
+            <button className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem' }} onClick={onOpenConsultation}>도입 문의</button>
           </div>
 
           <button
@@ -47,10 +42,9 @@ const GlobalNav = ({ onOpenModal }) => {
       {menuOpen && (
         <div className="nav-mobile-menu">
 
-          <button onClick={() => { onOpenModal(); setMenuOpen(false); }} className="nav-mobile-material-btn">자료 받아보기</button>
           <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.25rem' }}>
-            <button className="btn btn-secondary" style={{ flex: 1 }}>데모 시연</button>
-            <button className="btn btn-primary" style={{ flex: 1 }}>도입 문의</button>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setMenuOpen(false); onOpenDemo?.(); }}>데모 시연</button>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { setMenuOpen(false); onOpenConsultation?.(); }}>도입 문의</button>
           </div>
         </div>
       )}

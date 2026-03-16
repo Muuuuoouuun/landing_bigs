@@ -220,37 +220,31 @@
   .flow-icon-circle { margin: 0; flex-shrink: 0; width: 60px; height: 60px; font-size: 1.5rem; }
 }
 
-/* SECTION 5: ADMIN VISIBILITY */
-.admin-sticky-container {
-  display: flex;
-  align-items: flex-start;
-  gap: 4rem;
+/* SECTION 5: ADMIN VISIBILITY — ROADMAP */
+@keyframes roadmapPulse {
+  0%, 100% { top: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
 }
-.admin-mockup-sticky {
-  flex: 1.2;
-  position: sticky;
-  top: 100px;
-}
-.admin-scroll-content {
-  flex: 1;
-}
-.visibility-point {
-  padding: 3rem 0;
-  border-bottom: 1px solid var(--color-border);
-  min-height: 50vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.visibility-point h3 {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  color: var(--color-primary);
-}
-@media(max-width: 900px) {
-  .admin-sticky-container { flex-direction: column; }
-  .admin-mockup-sticky { position: relative; top: 0; width: 100%; margin-bottom: 2rem; }
-  .visibility-point { min-height: auto; padding: 2rem 0; }
+@media(max-width: 768px) {
+  .admin-roadmap-item {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1.25rem !important;
+    text-align: center;
+  }
+  .admin-roadmap-line {
+    display: none !important;
+  }
+  .admin-roadmap-item > div:first-child {
+    width: 90px !important;
+    height: 90px !important;
+  }
+  .admin-stats-bar {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
 }
 
 /* SECTION 6: ROLES GRID */
@@ -334,7 +328,10 @@
   flex-shrink: 0;
   z-index: 1;
   border: 4px solid var(--color-bg-card);
+  animation: dotPulse 2.5s ease-in-out infinite;
 }
+.timeline-step:nth-child(2) .step-dot { animation-delay: 0.3s; }
+.timeline-step:nth-child(3) .step-dot { animation-delay: 0.6s; }
 @media(max-width: 768px) {
   .scenario-container { background: transparent; box-shadow: none; border: none; }
   .scenario-tabs { display: none; }
@@ -484,7 +481,7 @@
 }
 @keyframes asciiPulse {
   0% { opacity: 0.1; }
-  100% { opacity: 1; filter: drop-shadow(0 0 5px rgba(0,223,69,0.8)); }
+  100% { opacity: 1; text-shadow: 0 0 5px rgba(0,223,69,0.8); }
 }
 
 /* Knowledge SVG Animations */
@@ -497,8 +494,8 @@
   100% { transform: scale(1.1); opacity: 1; }
 }
 @keyframes coreGlow {
-  0%, 100% { filter: drop-shadow(0 0 20px rgba(0, 223, 69, 0.4)); }
-  50% { filter: drop-shadow(0 0 50px rgba(204, 153, 0, 0.6)); }
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 223, 69, 0.4); }
+  50% { box-shadow: 0 0 50px rgba(204, 153, 0, 0.6); }
 }
 
 .data-flow-path {
@@ -537,7 +534,7 @@
 
 @keyframes floatNode {
   0% { transform: translateY(-10px) scale(0.8); opacity: 0.5; }
-  100% { transform: translateY(10px) scale(1.2); opacity: 1; filter: drop-shadow(0 0 10px rgba(255,255,255,0.8)); }
+  100% { transform: translateY(10px) scale(1.2); opacity: 1; }
 }
 
 .orbit-spin-slow {
@@ -567,6 +564,34 @@
 @keyframes spin3DReverse {
   0% { transform: rotateX(70deg) rotateY(20deg) rotateZ(360deg); }
   100% { transform: rotateX(70deg) rotateY(20deg) rotateZ(0deg); }
+}
+
+/* Micro-animations */
+@keyframes scenarioSlideIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(11,61,43,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(11,61,43,0); }
+}
+
+@keyframes iconPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes checkBounce {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes barShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
 /* Background utilities */
@@ -734,22 +759,6 @@
 }
 
 /* =============================================
-   ADMIN VISIBILITY — MOBILE
-   ============================================= */
-@media (max-width: 768px) {
-  .admin-stats-bar {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-  }
-  .visibility-point {
-    min-height: auto !important;
-  }
-  .visibility-point h3 {
-    font-size: 1.4rem !important;
-  }
-}
-
-/* =============================================
    ROLE PERMISSIONS — MOBILE
    ============================================= */
 @media (max-width: 768px) {
@@ -834,6 +843,11 @@
   .scenario-mobile-select { display: none; }
 }
 
+/* Onboarding icon pop */
+.reveal.active .onboarding-icon-circle {
+  animation: iconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
 /* =============================================
    ONBOARDING PROCESS — MOBILE
    ============================================= */
@@ -851,6 +865,30 @@
   .onboarding-step-circle {
     flex-shrink: 0;
     margin-bottom: 0 !important;
+  }
+}
+
+/* =============================================
+   CHECKLIST — MOBILE
+   ============================================= */
+@media (max-width: 768px) {
+  .checklist-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =============================================
+   MATERIAL DOWNLOAD — MOBILE
+   ============================================= */
+@media (max-width: 768px) {
+  .material-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+@media (min-width: 769px) and (max-width: 960px) {
+  .material-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }
 

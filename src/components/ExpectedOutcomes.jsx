@@ -102,9 +102,11 @@ const outcomes = [
 
 const ExpectedOutcomes = () => {
   return (
-    <section className="section outcomes-section" id="outcomes" style={{ position: 'relative', overflow: 'hidden' }}>
+    <section className="section outcomes-section" id="outcomes" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#061f18' }}>
       <div style={{ position: 'absolute', top: '20%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(22,94,69,0.25) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '10%', right: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(204,153,0,0.15) 0%, transparent 70%)', filter: 'blur(80px)', zIndex: 0, pointerEvents: 'none' }} />
+      {/* Noise grain texture */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '200px 200px', pointerEvents: 'none', zIndex: 0 }} />
 
       <div className="container section-header center reveal" style={{ position: 'relative', zIndex: 1 }}>
         <div className="section-label" style={{ backgroundColor: 'rgba(204,153,0,0.15)', color: 'var(--color-accent)', borderColor: 'rgba(204,153,0,0.3)' }}>Expected Outcomes</div>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FinalCTA = ({ onOpenModal }) => {
+const FinalCTA = ({ onOpenModal, onOpenConsultation, onOpenDemo }) => {
   return (
     <section className="section final-cta-section reveal" style={{ position: 'relative', overflow: 'hidden' }}>
       <div style={{
@@ -9,6 +9,14 @@ const FinalCTA = ({ onOpenModal }) => {
         width: '80%', height: '80%',
         background: 'radial-gradient(circle, rgba(22,94,69,0.35) 0%, transparent 70%)',
         zIndex: 0, animation: 'corePulse 6s infinite alternate'
+      }}></div>
+      {/* 동심원 링 패턴 */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: `
+          radial-gradient(circle at center, transparent 200px, rgba(22,94,69,0.03) 201px, transparent 203px, transparent 350px, rgba(22,94,69,0.025) 351px, transparent 353px, transparent 500px, rgba(22,94,69,0.02) 501px, transparent 503px)
+        `,
+        pointerEvents: 'none', zIndex: 0,
       }}></div>
 
       <div className="container final-cta-content" style={{ position: 'relative', zIndex: 1 }}>
@@ -24,6 +32,7 @@ const FinalCTA = ({ onOpenModal }) => {
           <button
             className="btn btn-primary"
             style={{ fontSize: '1.1rem', padding: '1.1rem 2.25rem' }}
+            onClick={onOpenConsultation}
           >
             도입 상담 신청
           </button>
@@ -42,6 +51,7 @@ const FinalCTA = ({ onOpenModal }) => {
             }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.07)'; e.currentTarget.style.transform = ''; }}
+            onClick={onOpenDemo}
           >
             관리자 데모 요청
           </button>

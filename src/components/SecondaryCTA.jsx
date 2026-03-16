@@ -2,7 +2,8 @@ import React from 'react';
 
 const SecondaryCTA = ({ onOpenModal }) => {
   return (
-    <section className="section" style={{ padding: '6rem 1.5rem' }}>
+    <section className="section" style={{ padding: '6rem 1.5rem', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', bottom: '-20%', left: '50%', transform: 'translateX(-50%)', width: '60%', height: '60%', background: 'radial-gradient(ellipse at 50% 100%, rgba(11,61,43,0.04) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
       <div className="container secondary-cta-wrap">
 
         {/* 아이콘 */}

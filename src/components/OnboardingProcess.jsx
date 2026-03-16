@@ -87,7 +87,7 @@ const OnboardingProcess = () => {
             <div key={i} className="reveal" style={{ animationDelay: `${i * 0.12}s` }}>
               {/* Icon circle */}
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                <div style={{
+                <div className="onboarding-icon-circle" style={{
                   width: '56px', height: '56px', borderRadius: '50%',
                   background: `linear-gradient(135deg, ${s.badgeColor} 0%, ${s.badgeColor}cc 100%)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',

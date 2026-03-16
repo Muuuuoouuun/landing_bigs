@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCountUp } from '../hooks/useCountUp';
 // Logo images — place files in src/assets/ and uncomment when ready:
 // import logo1 from '../assets/trust_logo_1.png';
 // import logo2 from '../assets/trust_logo_2.png';
@@ -8,11 +9,35 @@ import React from 'react';
 // import logo6 from '../assets/trust_logo_6.png';
 // import logo7 from '../assets/trust_logo_7.png';
 
-const bigStats = [
-  { value: '1,000+', label: '도입 기관 수', sub: '전국 다지점 학원 네트워크' },
-  { value: '99.9%', label: '서버 가동률', sub: '연간 무중단 스트리밍 SLA' },
-  { value: '24 / 7', label: '기술 지원', sub: '전담 CSM 실시간 대응' },
+const bigStatsConfig = [
+  { target: 1000, suffix: '+', label: '도입 기관 수', sub: '전국 다지점 학원 네트워크', format: (v) => v.toLocaleString() },
+  { target: 999, suffix: '%', label: '서버 가동률', sub: '연간 무중단 스트리밍 SLA', format: (v) => (v / 10).toFixed(1) },
+  { target: 24, suffix: ' / 7', label: '기술 지원', sub: '전담 CSM 실시간 대응', format: (v) => v },
 ];
+
+const StatCard = ({ config }) => {
+  const { value, ref } = useCountUp(config.target, 2000);
+  const display = `${config.format(value)}${config.suffix}`;
+  return (
+    <div ref={ref} style={{
+      textAlign: 'center', padding: '2.5rem 1.5rem',
+      background: 'white', borderRadius: 'var(--radius-xl)',
+      border: '1px solid var(--color-border)',
+      boxShadow: '0 4px 20px rgba(11,61,43,0.06)',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #0b3d2b, #165e45)' }} />
+      <div style={{
+        fontSize: '3rem', fontWeight: '900', lineHeight: 1,
+        background: 'linear-gradient(135deg, #0b3d2b 0%, #165e45 100%)',
+        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text', marginBottom: '0.5rem',
+      }}>{display}</div>
+      <div style={{ fontSize: '1rem', fontWeight: '700', color: '#2b3036', marginBottom: '0.25rem' }}>{config.label}</div>
+      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-mutated)' }}>{config.sub}</div>
+    </div>
+  );
+};
 
 const proofItems = [
   {
@@ -57,7 +82,7 @@ const brands = [
 
 const TrustProof = () => {
   return (
-    <section className="section bg-light" style={{ paddingBottom: '2rem', position: 'relative', overflow: 'hidden' }}>
+    <section className="section bg-light section-fade-from-dark section-fade-to-dark" style={{ paddingBottom: '2rem', position: 'relative', overflow: 'hidden', '--fade-from': '#061f18', '--fade-to': '#06261a' }}>
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(11,61,43,0.04) 1px, transparent 1px)', backgroundSize: '32px 32px', zIndex: 0, pointerEvents: 'none' }} />
 
       <div className="container section-header center reveal" style={{ position: 'relative', zIndex: 1 }}>
@@ -68,27 +93,11 @@ const TrustProof = () => {
         </p>
       </div>
 
-      {/* Big Stats */}
+      {/* Big Stats with count-up */}
       <div className="container reveal" style={{ position: 'relative', zIndex: 1, marginBottom: '3.5rem' }}>
         <div className="trust-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
-          {bigStats.map((s, i) => (
-            <div key={i} style={{
-              textAlign: 'center', padding: '2.5rem 1.5rem',
-              background: 'white', borderRadius: 'var(--radius-xl)',
-              border: '1px solid var(--color-border)',
-              boxShadow: '0 4px 20px rgba(11,61,43,0.06)',
-              position: 'relative', overflow: 'hidden',
-            }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'linear-gradient(90deg, #0b3d2b, #165e45)' }} />
-              <div style={{
-                fontSize: '3rem', fontWeight: '900', lineHeight: 1,
-                background: 'linear-gradient(135deg, #0b3d2b 0%, #165e45 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text', marginBottom: '0.5rem',
-              }}>{s.value}</div>
-              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#2b3036', marginBottom: '0.25rem' }}>{s.label}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-mutated)' }}>{s.sub}</div>
-            </div>
+          {bigStatsConfig.map((config, i) => (
+            <StatCard key={i} config={config} />
           ))}
         </div>
       </div>

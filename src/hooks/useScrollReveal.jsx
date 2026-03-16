@@ -19,7 +19,7 @@ export const useScrollReveal = () => {
     };
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
-    const elements = document.querySelectorAll('.reveal');
+    const elements = document.querySelectorAll('.reveal, .reveal-scale, .reveal-left, .reveal-right');
     
     elements.forEach(el => observer.observe(el));
 
