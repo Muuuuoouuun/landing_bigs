@@ -1,6 +1,7 @@
 import React from 'react';
-import heroBg from '../assets/hero_bg_abstract.png';
-import dashboardUi from '../assets/hero_dashboard_ui.png';
+
+// 따뜻하고 신뢰감 있는 실제 교육/전문 공간 사진 (Unsplash 핫링크)
+const heroBg = 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=2000&q=85';
 
 const Hero = ({ onOpenConsultation, onOpenDemo }) => {
   return (
@@ -12,7 +13,7 @@ const Hero = ({ onOpenConsultation, onOpenDemo }) => {
     }}>
       <div className="hero-overlay" style={{
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-        background: 'linear-gradient(135deg, rgba(6, 26, 18, 0.85) 0%, rgba(10, 14, 20, 0.78) 100%)',
+        background: 'linear-gradient(135deg, rgba(11, 61, 43, 0.86) 0%, rgba(16, 74, 53, 0.74) 100%)',
         zIndex: 1
       }}></div>
 
@@ -39,23 +40,22 @@ const Hero = ({ onOpenConsultation, onOpenDemo }) => {
           {/* ClassIn 로고 */}
           <div className="classin-logo" style={{ alignSelf: 'flex-start' }}>
             <svg width="140" height="38" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <text x="0" y="75" fontFamily="Arial, sans-serif" fontSize="85" fontWeight="900" fill="#00df45" letterSpacing="-2">ClassIn</text>
+              <text x="0" y="75" fontFamily="Arial, sans-serif" fontSize="85" fontWeight="900" fill="#21a06a" letterSpacing="-2">ClassIn</text>
             </svg>
           </div>
 
           {/* 헤드라인 */}
           <h1 style={{ fontWeight: '900', fontSize: '3.5rem', lineHeight: '1.15', letterSpacing: '-0.04em', color: '#ffffff', margin: 0 }}>
-            학원의 규모가 커질수록,<br />
-            수업은 도구가 아닌<br />
-            <em style={{ fontStyle: 'normal', color: '#00df45' }}>'시스템'</em>으로<br />
-            관리되어야 합니다.
+            지점이 5개를 넘으면,<br />
+            원장님 한 명의 눈으로는<br />
+            더 이상 <em style={{ fontStyle: 'normal', color: '#21a06a' }}>보이지 않습니다</em>.
           </h1>
 
           {/* 서브카피 */}
           <p className="section-subcopy" style={{ color: 'rgba(255,255,255,0.75)', marginBottom: '0.5rem', fontSize: '1.1rem', lineHeight: '1.75' }}>
-            다지점 운영, 수백 명의 강사, 복잡한 권한 체계.<br />
-            클래스인은 흩어진 단과반과 지점을 본사의 단일 기준으로<br />
-            통합하는 엔터프라이즈 교육 운영 시스템입니다.
+            흩어진 지점, 수백 명의 강사, 제각각인 운영 기준.<br />
+            클래스인은 모든 지점의 수업과 데이터를 본사의 단일 화면으로<br />
+            다시 끌어올려, 잃어버린 통제력과 가시성을 되찾아 드립니다.
           </p>
 
           {/* 스펙 리스트 */}
@@ -65,7 +65,7 @@ const Hero = ({ onOpenConsultation, onOpenDemo }) => {
                 display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
                 fontSize: '0.875rem', fontWeight: '600', color: 'rgba(255,255,255,0.8)',
               }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00df45" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#21a06a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
                 {item}
@@ -100,14 +100,18 @@ const Hero = ({ onOpenConsultation, onOpenDemo }) => {
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = ''; }}
               onClick={onOpenDemo}
             >
-              관리자 데모 보기
+              본사 통합 대시보드 1:1 데모
             </button>
           </div>
         </div>
 
         <div className="hero-visual reveal delay-300">
-          <div className="hero-dashboard-wrapper glass-panel-dark" style={{ padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src={dashboardUi} alt="Dashboard UI Mockup" style={{ width: '100%', height: 'auto', objectFit: 'contain', borderRadius: 'inherit' }} />
+          <div className="hero-dashboard-wrapper glass-panel-dark" style={{ padding: '0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <img
+              src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=1600&q=85"
+              alt="본사 운영 데이터를 검토하는 교육 담당자"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit', display: 'block' }}
+            />
           </div>
         </div>
       </div>

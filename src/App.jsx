@@ -15,6 +15,8 @@ import FinalCTA from './components/FinalCTA';
 import MidPageCTA from './components/MidPageCTA';
 import DataIntelligence from './components/DataIntelligence';
 import IntegrationEcosystem from './components/IntegrationEcosystem';
+import TransitionRisk from './components/TransitionRisk';
+import LossCalculator from './components/LossCalculator';
 import SecondaryCTA from './components/SecondaryCTA';
 import OnboardingProcess from './components/OnboardingProcess';
 import Checklist from './components/Checklist';
@@ -40,12 +42,14 @@ function App() {
         <Hero onOpenConsultation={openConsultation} onOpenDemo={openDemo} />
         <ProblemOverview />
         <WhyNow />
+        <LossCalculator />
         <MidPageCTA onOpenConsultation={openConsultation} />
         <SolutionFlow />
         <AdminVisibility />
         <DataIntelligence />
         <RolePermissions />
         <IntegrationEcosystem />
+        <TransitionRisk />
         <SecondaryCTA onOpenModal={openModal} />
         <Scenarios />
         <OnboardingProcess />
