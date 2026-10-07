@@ -7,7 +7,7 @@ import { BaseBackground, Dust } from '../components/Background';
 import { Flash, LensStreak, Shake, Shockwave, SliceGlitch, rgbSplit } from '../components/Fx';
 import { KineticText, RollingNumber } from '../components/Kinetic';
 
-export const BRANCHES_DURATION = 112;
+export const BRANCHES_DURATION = 110;
 const IMPACT = 58;
 const SLAM = 78;
 
@@ -322,7 +322,7 @@ export const BranchesScene = () => {
               opacity: frame >= SLAM + 8 ? 1 : 0,
             }}
           >
-            <KineticText text="ONE STANDARD · EVERY BRANCH" mode="blur" delay={SLAM + 8} stagger={0.5} duration={12} />
+            <KineticText text="ONE STANDARD · EVERY BRANCH" mode="blur" delay={SLAM + 8} stagger={0.35} duration={10} />
           </div>
         </AbsoluteFill>
       </Shake>

@@ -6,7 +6,7 @@ import { BaseBackground, Dust, SpeedLines } from '../components/Background';
 import { Flash, LensStreak, Shake, Shockwave, SliceGlitch } from '../components/Fx';
 import { KineticText } from '../components/Kinetic';
 
-export const AI_INTRO_DURATION = 46;
+export const AI_INTRO_DURATION = 44;
 const HIT = 12;
 
 const AI_GLYPH = {

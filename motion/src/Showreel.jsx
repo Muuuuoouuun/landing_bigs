@@ -12,6 +12,7 @@ import { AI_INTRO_DURATION, AIIntroScene } from './scenes/AIIntroScene';
 import { AI_EVAL_DURATION, AIEvalScene } from './scenes/AIEvalScene';
 import { EFFICIENCY_DURATION, EfficiencyScene } from './scenes/EfficiencyScene';
 import { OUTRO_DURATION, OutroScene } from './scenes/OutroScene';
+import { Soundtrack } from './audio/Soundtrack';
 
 // Scene list + the transition that leads OUT of each scene.
 const TIMELINE = [
@@ -64,7 +65,7 @@ const Hud = () => {
   );
 };
 
-export const Showreel = () => {
+export const Showreel = ({ audio = 'mix' }) => {
   const frame = useCurrentFrame();
   const bars =
     frame < OUTRO_START
@@ -94,6 +95,7 @@ export const Showreel = () => {
       <Grain />
       <Letterbox size={bars} />
       <Hud />
+      <Soundtrack mode={audio} />
     </AbsoluteFill>
   );
 };

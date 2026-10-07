@@ -10,16 +10,18 @@ export const OUTRO_DURATION = 60;
 const LOGO_W = 820;
 const LOGO_H = Math.round((LOGO_W * 469) / 1800);
 const LOGO_TOP = 300;
+// Logo lands on the final music hit (outro frame 22 = global 412).
+const HIT = 22;
 
 export const OutroScene = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const reveal = ip(frame, [4, 18], [0, 1], EASE.inOut);
+  const reveal = ip(frame, [8, HIT], [0, 1], EASE.inOut);
   const logoScale = ip(frame, [4, OUTRO_DURATION], [1.12, 1], EASE.out);
-  const sweep = ip(frame, [14, 34], [-30, 130], EASE.smooth);
-  const glow = ip(frame, [16, 22, 40], [0, 1, 0.55]);
-  const cta = spring({ frame: frame - 32, fps, config: { damping: 13, stiffness: 170 } });
-  const converge = ip(frame, [0, 14], [1, 0], EASE.in);
+  const sweep = ip(frame, [HIT - 2, HIT + 18], [-30, 130], EASE.smooth);
+  const glow = ip(frame, [HIT - 1, HIT + 4, HIT + 22], [0, 1, 0.55]);
+  const cta = spring({ frame: frame - (HIT + 16), fps, config: { damping: 13, stiffness: 170 } });
+  const converge = ip(frame, [0, HIT], [1, 0], EASE.in);
 
   return (
     <AbsoluteFill style={{ background: C.bgDeep, overflow: 'hidden' }}>
@@ -73,7 +75,7 @@ export const OutroScene = () => {
 
       <AbsoluteFill style={{ alignItems: 'center', top: LOGO_TOP + LOGO_H + 70 }}>
         <div style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 64, color: C.white, letterSpacing: '-0.035em' }}>
-          <KineticText text="모든 지점을, 하나의 기준으로." mode="rise" delay={16} stagger={1.1} duration={14} charColor={(i) => (i >= 8 && i <= 13 ? C.green : undefined)} />
+          <KineticText text="모든 지점을, 하나의 기준으로." mode="rise" delay={HIT + 2} stagger={1} duration={12} charColor={(i) => (i >= 8 && i <= 13 ? C.green : undefined)} />
         </div>
         <div
           style={{
@@ -81,10 +83,10 @@ export const OutroScene = () => {
             fontSize: 21,
             color: C.mute,
             marginTop: 26,
-            letterSpacing: `${ip(frame, [24, OUTRO_DURATION], [0.18, 0.34])}em`,
+            letterSpacing: `${ip(frame, [HIT + 10, OUTRO_DURATION], [0.18, 0.3])}em`,
           }}
         >
-          <KineticText text="CLASSIN ENTERPRISE · AI EDUCATION OPERATING SYSTEM" mode="blur" delay={24} stagger={0.35} duration={10} />
+          <KineticText text="CLASSIN ENTERPRISE · AI EDUCATION OPERATING SYSTEM" mode="blur" delay={HIT + 10} stagger={0.3} duration={10} />
         </div>
         <div
           style={{
@@ -110,8 +112,8 @@ export const OutroScene = () => {
         </div>
       </AbsoluteFill>
 
-      <LensStreak at={16} y={LOGO_TOP + LOGO_H / 2} dur={22} width={1900} />
-      <Flash at={17} duration={8} peak={0.15} color={C.greenSoft} />
+      <LensStreak at={HIT} y={LOGO_TOP + LOGO_H / 2} dur={22} width={1900} />
+      <Flash at={HIT} duration={8} peak={0.15} color={C.greenSoft} />
     </AbsoluteFill>
   );
 };

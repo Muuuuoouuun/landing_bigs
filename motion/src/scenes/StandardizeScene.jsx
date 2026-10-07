@@ -8,9 +8,10 @@ import { Flash, LensStreak } from '../components/Fx';
 import { KineticText, RollingNumber, WordSlot } from '../components/Kinetic';
 import { ClassroomWindow } from '../components/ClassroomWindow';
 
-export const STANDARDIZE_DURATION = 128;
-const BEATS = [0, 42, 84];
-const BEAT_LEN = 42;
+export const STANDARDIZE_DURATION = 140;
+// Beat changes land on the music grid (one beat = 14 frames).
+const BEATS = [0, 56, 98];
+const BEAT_LENS = [56, 42, 42];
 const VCX = 1340; // visual column center
 const VCY = 540;
 
@@ -39,11 +40,9 @@ const ClassVisual = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = ip(frame, [0, 13], [0, 1], EASE.out);
-  const shrink = ip(frame, [16, 28], [0, 1], EASE.inOut);
-  const exit = ip(frame, [36, 42], [0, 1], EASE.in);
-  const draw = ip(frame, [3, 26], [0, 1], EASE.smooth);
-  const typed = ip(frame, [8, 22], [0, 1], EASE.linear);
-  const vertex = spring({ frame: frame - 22, fps, config: { damping: 10, stiffness: 200 } });
+  const shrink = ip(frame, [32, 42], [0, 1], EASE.inOut);
+  const push = ip(frame, [0, 32], [0.97, 1.03], EASE.smooth);
+  const exit = ip(frame, [50, 56], [0, 1], EASE.in);
   const TILE = 0.3;
   const GAP_X = 900 * TILE + 26;
   const GAP_Y = 540 * TILE + 46;
@@ -60,13 +59,13 @@ const ClassVisual = () => {
         const col = (k % 3) - 1;
         const row = Math.floor(k / 3) - 1;
         const hero = k === 4;
-        const pop = hero ? 1 : spring({ frame: frame - 21 - Math.abs(col) * 2 - Math.abs(row) * 3 - (k % 2), fps, config: { damping: 13, stiffness: 170 } });
-        if (!hero && frame < 21) return null;
-        const scale = hero ? 1 + (TILE - 1) * shrink : TILE * pop;
+        const pop = hero ? 1 : spring({ frame: frame - 35 - Math.abs(col) * 2 - Math.abs(row) * 3 - (k % 2), fps, config: { damping: 13, stiffness: 170 } });
+        if (!hero && frame < 35) return null;
+        const scale = hero ? (push + (TILE - push) * shrink) : TILE * pop;
         const x = VCX + col * GAP_X;
         const y = VCY + row * GAP_Y - 10;
         const heroIn = hero ? { x: (1 - enter) * 340, rotY: (1 - enter) * -32, op: enter } : { x: 0, rotY: 0, op: 1 };
-        const labelOp = ip(frame, [26, 32], [0, 1]);
+        const labelOp = ip(frame, [40, 46], [0, 1]);
         return (
           <div
             key={k}
@@ -80,7 +79,7 @@ const ClassVisual = () => {
               transform: `perspective(1600px) translateX(${heroIn.x}px) rotateY(${heroIn.rotY}deg) scale(${scale})`,
             }}
           >
-            <ClassroomWindow draw={draw} typed={typed} vertex={vertex} branch={AREAS[k]} live={hero} />
+            <ClassroomWindow t={frame} branch={AREAS[k]} live={hero} />
             {/* branch label under each tile (sized to survive the 0.3 scale) */}
             <div
               style={{
@@ -528,9 +527,9 @@ const Chip = ({ label, delay }) => {
   );
 };
 
-const BeatCopy = ({ copy }) => {
+const BeatCopy = ({ copy, len }) => {
   const frame = useCurrentFrame();
-  const out = ip(frame, [BEAT_LEN - 6, BEAT_LEN], [1, 0], EASE.in);
+  const out = ip(frame, [len - 6, len], [1, 0], EASE.in);
   return (
     <div style={{ opacity: out, filter: out < 0.95 ? `blur(${(1 - out) * 10}px)` : undefined }}>
       <div style={{ fontFamily: FONT.sans, fontWeight: 500, fontSize: 34, color: C.mute, letterSpacing: '-0.02em', marginBottom: 30 }}>
@@ -558,10 +557,10 @@ export const StandardizeScene = () => {
       <Dust count={28} seed="std-dust" opacity={0.35} />
 
       {/* right visual column */}
-      <Sequence from={BEATS[0]} durationInFrames={BEAT_LEN}>
+      <Sequence from={BEATS[0]} durationInFrames={BEAT_LENS[0]}>
         <ClassVisual />
       </Sequence>
-      <Sequence from={BEATS[1]} durationInFrames={BEAT_LEN}>
+      <Sequence from={BEATS[1]} durationInFrames={BEAT_LENS[1]}>
         <ContentVisual />
       </Sequence>
       <Sequence from={BEATS[2]}>
@@ -616,9 +615,9 @@ export const StandardizeScene = () => {
         </div>
         <div style={{ marginTop: 34, position: 'relative', height: 160 }}>
           {COPY.map((c, k) => (
-            <Sequence key={k} from={BEATS[k]} durationInFrames={BEAT_LEN} layout="none">
+            <Sequence key={k} from={BEATS[k]} durationInFrames={BEAT_LENS[k]} layout="none">
               <div style={{ position: 'absolute', inset: 0 }}>
-                <BeatCopy copy={c} />
+                <BeatCopy copy={c} len={BEAT_LENS[k]} />
               </div>
             </Sequence>
           ))}

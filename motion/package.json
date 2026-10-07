@@ -6,7 +6,8 @@
     "studio": "remotion studio src/index.js",
     "render": "remotion render src/index.js ClassInShowreel out/classin-showreel.mp4",
     "render:preview": "remotion render src/index.js ClassInShowreel out/classin-showreel-preview.mp4 --crf=27",
-    "still": "remotion still src/index.js ClassInShowreel out/still.png"
+    "still": "remotion still src/index.js ClassInShowreel out/still.png",
+    "audio": "python3 audio/generate.py"
   },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.3.0",

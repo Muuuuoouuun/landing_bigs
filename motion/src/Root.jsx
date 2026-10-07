@@ -16,7 +16,15 @@ const comp = (id, component, durationInFrames) => (
 
 export const RemotionRoot = () => (
   <>
-    {comp('ClassInShowreel', Showreel, SHOWREEL_DURATION)}
+    <Composition
+      id="ClassInShowreel"
+      component={Showreel}
+      durationInFrames={SHOWREEL_DURATION}
+      fps={FPS}
+      width={WIDTH}
+      height={HEIGHT}
+      defaultProps={{ audio: 'mix' }}
+    />
     <Folder name="Scenes">
       {comp('S1-Branches', BranchesScene, BRANCHES_DURATION)}
       {comp('S2-Standardize', StandardizeScene, STANDARDIZE_DURATION)}

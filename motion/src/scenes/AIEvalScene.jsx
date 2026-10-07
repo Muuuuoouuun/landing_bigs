@@ -8,7 +8,7 @@ import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Brackets, Flash } from '../components/Fx';
 import { KineticText, RollingNumber, Typewriter } from '../components/Kinetic';
 
-export const AI_EVAL_DURATION = 86;
+export const AI_EVAL_DURATION = 80;
 
 const PANEL = { x: 820, y: 150, w: 980, h: 780 };
 const RADAR = { cx: 1060, cy: 486, r: 170 };

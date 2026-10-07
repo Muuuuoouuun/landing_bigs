@@ -7,8 +7,9 @@ import { BaseBackground, Dust, GridFloor } from '../components/Background';
 import { Flash, LensStreak, Shake, rgbSplit } from '../components/Fx';
 import { KineticText, RollingNumber } from '../components/Kinetic';
 
-export const EFFICIENCY_DURATION = 64;
-const SLAM = 10;
+export const EFFICIENCY_DURATION = 62;
+// Lands on the music downbeat after the whip-pan in (global frame 356).
+const SLAM = 18;
 
 // KPI values mirror the claims already on the landing page (ExpectedOutcomes / Scenarios / AdminVisibility).
 const KPIS = [
@@ -33,9 +34,9 @@ const KpiTile = ({ kpi, delay }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const flip = spring({ frame: frame - delay, fps, config: { damping: 14, stiffness: 150 } });
-  const count = ip(frame, [delay + 4, delay + 26], [0, 1], EASE.out);
+  const count = ip(frame, [delay + 4, delay + 18], [0, 1], EASE.out);
   const v = kpi.value;
-  const glow = ip(frame, [delay + 22, delay + 26, delay + 40], [0, 1, 0.3]);
+  const glow = ip(frame, [delay + 16, delay + 20, delay + 32], [0, 1, 0.3]);
 
   return (
     <div
@@ -126,11 +127,11 @@ export const EfficiencyScene = () => {
         <AbsoluteFill style={{ transform: `scale(${push})` }}>
           <div style={{ position: 'absolute', left: 140, top: 150 }}>
             <div style={{ fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.3em', color: C.green, marginBottom: 18 }}>
-              <KineticText text="EFFICIENCY, AUTOMATED" mode="scramble" delay={0} stagger={0.5} duration={10} />
+              <KineticText text="EFFICIENCY, AUTOMATED" mode="scramble" delay={4} stagger={0.5} duration={10} />
             </div>
             <div style={{ fontFamily: FONT.sans, fontSize: 124, lineHeight: 1.08, letterSpacing: '-0.05em', color: C.white }}>
               <div style={{ fontWeight: 800 }}>
-                <KineticText text="관리는 AI가," mode="rise" delay={1} stagger={1.5} duration={12} charColor={(i) => (i === 4 || i === 5 ? C.green : undefined)} />
+                <KineticText text="관리는 AI가," mode="rise" delay={7} stagger={1.5} duration={12} charColor={(i) => (i === 4 || i === 5 ? C.green : undefined)} />
               </div>
               <div style={{ fontWeight: 900, textShadow: rgbSplit(split) }}>
                 <KineticText text="본사는 결정만." mode="slam" delay={SLAM} stagger={1.2} />
@@ -153,14 +154,14 @@ export const EfficiencyScene = () => {
               textAlign: 'right',
             }}
           >
-            <KineticText text="AI가 전 지점 수업을 실시간 분석하고," mode="blur" delay={14} stagger={0.5} duration={10} />
+            <KineticText text="AI가 전 지점 수업을 실시간 분석하고," mode="blur" delay={21} stagger={0.4} duration={10} />
             <br />
-            <KineticText text="본사는 리포트로 판단합니다." mode="blur" delay={19} stagger={0.5} duration={10} />
+            <KineticText text="본사는 리포트로 판단합니다." mode="blur" delay={25} stagger={0.4} duration={10} />
           </div>
 
           <div style={{ position: 'absolute', left: 140, top: 640, display: 'flex', gap: 20 }}>
             {KPIS.map((k, i) => (
-              <KpiTile key={k.tag} kpi={k} delay={16 + i * 4} />
+              <KpiTile key={k.tag} kpi={k} delay={22 + i * 4} />
             ))}
           </div>
         </AbsoluteFill>
