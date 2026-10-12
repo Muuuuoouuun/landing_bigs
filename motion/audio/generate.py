@@ -255,6 +255,9 @@ def build_music():
 
     # ---- grooves, one style per chapter
     for sec in M['sections']:
+        if sec['style'] == 'variation':
+            build_variation(sec, synth, drums)
+            continue
         st = STYLES[sec['style']]
         start, end = fr(sec['from']), fr(sec['to'])
         n_beats = int(np.ceil((end - start) / BEAT))
@@ -396,6 +399,61 @@ def build_music():
     fl = int(0.5 * SR)
     mix[:, -fl:] *= np.linspace(1, 0, fl) ** 1.5
     return norm(saturate(mix * 0.9, 1.15), 0.7)
+
+
+MARIMBA_RUN = [65, 69, 72, 74, 77, 81, 84, 89]  # F major pentatonic climb, one note per cell stamp
+
+
+def marimba(freq, dur=0.6, bright=1.0):
+    """Wooden mallet tone: inharmonic bar partials (1 : 3.93 : 9.24) + mallet click."""
+    n = int(dur * SR)
+    t = tt(n)
+    x = (np.sin(2 * np.pi * freq * t) * np.exp(-t * 7)
+         + 0.34 * bright * np.sin(2 * np.pi * freq * 3.93 * t) * np.exp(-t * 24)
+         + 0.12 * bright * np.sin(2 * np.pi * freq * 9.24 * t) * np.exp(-t * 45))
+    click = bp(rng.standard_normal(n), 1800, 6000) * np.exp(-t * 320) * 0.25
+    return fade((x + click) * 0.6, 0.0008, 0.03)
+
+
+def build_variation(sec, synth, drums):
+    """The interlude: same harmony world, opposite treatment — dry marimba, light percussion, no pump."""
+    start, end = fr(sec['from']), fr(sec['to'])
+    n_beats = int(np.ceil((end - start) / BEAT))
+    per_beat = expand_chords(sec['chords'], n_beats)
+    b = 0
+    while b < n_beats:
+        name = per_beat[b]
+        run = 1
+        while b + run < n_beats and per_beat[b + run] == name:
+            run += 1
+        _, tones = CHORDS[name]
+        add(synth, pad_chord(tones + [tones[0] + 12], run * BEAT / SR + 0.3, attack=0.02, cutoff=3400, bright=12), start + b * BEAT, 0.55)
+        b += run
+    # marimba climb — one note per cell stamp on screen
+    for i, f in enumerate(sec['notes']):
+        m = MARIMBA_RUN[i % len(MARIMBA_RUN)]
+        add(synth, marimba(mtof(m)), fr(f), 0.55, pan=(-0.35 if i % 2 else 0.35))
+        add(synth, marimba(mtof(m - 12), 0.4, 0.6), fr(f), 0.2)
+    # chord stabs on the stamped statement words (lightly strummed)
+    for f in sec['stabs']:
+        beat = min(n_beats - 1, (fr(f) - start) // BEAT)
+        _, tones = CHORDS[per_beat[beat]]
+        for k, m in enumerate(tones):
+            add(synth, marimba(mtof(m + 12), 0.5), fr(f) + k * 60, 0.3, pan=(k - 1) * 0.4)
+    # pickup turnaround on the last beat, leading into the bridge
+    for i, (f, m) in enumerate(sec.get('pickup', [])):
+        add(synth, marimba(mtof(m), 0.45), fr(f), 0.42, pan=(0.3 if i % 2 else -0.3))
+    # light, dry percussion: soft boom on 1 & 3, snaps on 2 & 4, shaker 16ths
+    for b in range(n_beats):
+        bpos = start + b * BEAT
+        if b % 2 == 0:
+            add(drums, lp(kick(0.75), 900), bpos, 0.6)
+        else:
+            add(drums, hp(clap(0.14), 1800), bpos, 0.45)
+        for sxt in range(4):
+            sp = bpos + sxt * (BEAT // 4)
+            if sp < end:
+                add(drums, hat(), sp, [0.16, 0.08, 0.12, 0.08][sxt], pan=-0.25)
 
 
 def random_gate(seed, step, density=0.32):
@@ -738,6 +796,38 @@ def sfx_up(m):
     return norm(reverb(fade(x, 0.002, 0.05), 1.0, 0.25))
 
 
+def sfx_snap():
+    """Shutter / paper snap — the hard cut into the paper interlude."""
+    n = int(0.25 * SR)
+    t = tt(n)
+    out = np.zeros(n)
+    for s0, g in ((0.0, 1.0), (0.028, 0.7)):
+        a0, m = int(s0 * SR), int(0.02 * SR)
+        out[a0:a0 + m] += bp(rng.standard_normal(m), 2000, 9000) * np.exp(-tt(m) * 260) * g
+    out += np.sin(2 * np.pi * 95 * t) * np.exp(-t * 30) * 0.5
+    return norm(reverb(out, 0.4, 0.12))
+
+
+def sfx_paper():
+    """Paper sheets folding into the header band."""
+    n = int(0.3 * SR)
+    t = tt(n) / 0.3
+    shape = np.sin(np.pi * np.clip(t, 0, 1)) ** 1.5
+    x = sweep_filter(rng.standard_normal(n), np.geomspace(1200, 4500, n), 'band') * shape
+    crackle = (rng.random(n) > 0.995) * rng.uniform(0.3, 1, n)
+    return norm(x + lp(crackle, 6000) * 0.4)
+
+
+def sfx_stamp():
+    """Rubber stamp: low thump + slap + a small wood knock."""
+    n = int(0.6 * SR)
+    t = tt(n)
+    thump = np.sin(2 * np.pi * np.cumsum(45 + 40 * np.exp(-t * 30)) / SR) * np.exp(-t * 16)
+    slap = lp(rng.standard_normal(n), 3200) * np.exp(-t * 70) * 0.8
+    knock = np.sin(2 * np.pi * 420 * t) * np.exp(-t * 40) * 0.25
+    return norm(reverb(saturate(thump + slap + knock, 1.4), 0.6, 0.18))
+
+
 def build_sfx():
     beat_s = BEAT / SR
     return {
@@ -781,6 +871,9 @@ def build_sfx():
         'up-3': sfx_up(84),
         'up-4': sfx_up(89),
         'riser-bridge': sfx_riser(28 / FPS),
+        'snap': sfx_snap(),
+        'paper': sfx_paper(),
+        'stamp': sfx_stamp(),
     }
 
 

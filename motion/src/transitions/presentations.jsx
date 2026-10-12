@@ -66,3 +66,23 @@ const Dip = ({ children, presentationDirection, presentationProgress: p }) => {
   return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
 };
 export const dip = () => ({ component: Dip, props: {} });
+
+/* Iris: the incoming scene opens through a circle growing from the centre, with a glowing rim. */
+const Iris = ({ children, presentationDirection, presentationProgress: p, passedProps }) => {
+  if (presentationDirection === 'exiting') {
+    return <AbsoluteFill>{children}</AbsoluteFill>;
+  }
+  const { x = 960, y = 500 } = passedProps;
+  const r = 1260 * p * p; // quadratic: visibly opens across the whole transition
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill style={{ clipPath: `circle(${r}px at ${x}px ${y}px)` }}>{children}</AbsoluteFill>
+      {p < 1 && (
+        <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <circle cx={x} cy={y} r={r} fill="none" stroke={C.greenSoft} strokeWidth={5} style={{ filter: `drop-shadow(0 0 12px ${C.green}) drop-shadow(0 0 28px ${C.green})` }} />
+        </svg>
+      )}
+    </AbsoluteFill>
+  );
+};
+export const iris = (props = {}) => ({ component: Iris, props });

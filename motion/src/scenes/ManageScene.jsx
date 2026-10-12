@@ -4,26 +4,25 @@ import { evolvePath } from '@remotion/paths';
 import { C, EASE, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridPlane } from '../components/Background';
-import { Flash, LensStreak, Shockwave } from '../components/Fx';
+import { Flash, LensStreak } from '../components/Fx';
 import { KineticText, RollingNumber } from '../components/Kinetic';
 import { ChapterPill } from '../components/ChapterPill';
 
 /*
  * ② 관리 — a 2×2 control board. Each pillar lights for two beats
  * (데이터 보안 → 녹화 강의 → 클라우드 권한 설정 → 상세 수업 데이터 축적),
- * then all four light together and converge into the data core that the AI scene grows from.
- * Content runs 140 frames (global 240–380); the extra 8 frames are the outgoing cross-fade.
+ * then all four pulse together on the last 8th note and the film hard-cuts into the
+ * light-paper interlude (VariationScene) on the downbeat.
+ * Global 240–352, no outgoing transition (hard cut).
  */
-export const MANAGE_DURATION = 148;
+export const MANAGE_DURATION = 112;
 const STEP = 28; // two beats per pillar
-const ALL = 112;
-const END = 140;
+const ALL = 104; // all-lit pulse, one 8th note before the cut
 
 const PANEL_W = 440;
 const PANEL_H = 320;
 const GAP = 26;
 const GRID = { x: 1340, y: 560 };
-const CORE_END = { x: 960, y: 520 };
 
 const PILLARS = [
   { title: '데이터 보안', en: 'DATA SECURITY', idle: 'STANDBY', active: 'ENCRYPTING', done: 'SECURED' },
@@ -511,16 +510,7 @@ export const ManageScene = () => {
   const all = frame >= ALL;
   const pillar = Math.min(3, Math.floor(frame / STEP));
   const indexValue = 1 + [1, 2, 3].reduce((acc, k) => acc + ip(frame, [k * STEP - 2, k * STEP + 6], [0, 1], EASE.inOut), 0);
-
-  // all-lit → slide the board to screen center → collapse into the data core
-  const center = ip(frame, [ALL, ALL + 12], [0, 1], EASE.inOut);
-  const gx = GRID.x + (CORE_END.x - GRID.x) * center;
-  const gy = GRID.y + (CORE_END.y - GRID.y) * center;
-  const collapse = ip(frame, [ALL + 16, END], [0, 1], EASE.in);
-  const boardScale = (1 - 0.14 * center) * (1 - 0.92 * collapse);
-  const boardDim = all ? ip(frame, [ALL + 4, ALL + 10], [1, 0.42]) : 1;
-  const leftOut = ip(frame, [ALL - 4, ALL + 4], [1, 0], EASE.in);
-  const core = ip(frame, [ALL, ALL + 10], [0, 1], EASE.out) * (1 + collapse * 1.6);
+  const pulse = all ? ip(frame, [ALL, ALL + 3, MANAGE_DURATION], [1, 1.025, 1.012], EASE.out) : 1;
 
   const panels = [0, 1, 2, 3].map((i) => {
     const col = i % 2 ? 1 : -1;
@@ -534,20 +524,21 @@ export const ManageScene = () => {
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
-      <BaseBackground glowX={66 - 16 * center} glowY={52} glow={0.14 + 0.12 * center} />
+      <BaseBackground glowX={66} glowY={52} glow={all ? 0.24 : 0.14} />
       <GridPlane opacity={0.45} size={64} drift={0.6} />
       <Dust count={26} seed="mgmt-dust" opacity={0.35} />
 
       {/* the board */}
-      <div style={{ position: 'absolute', left: gx, top: gy, transform: `scale(${boardScale})` }}>
-        {/* links to the core when everything is lit */}
+      <div style={{ position: 'absolute', left: GRID.x, top: GRID.y, transform: `scale(${pulse})` }}>
+        {/* links between the panels when everything is lit */}
         {all && (
           <svg width="1200" height="900" viewBox="-600 -450 1200 900" style={{ position: 'absolute', left: -600, top: -450, overflow: 'visible' }}>
             {panels.map((p) => {
               const d = `M ${p.x} ${p.y} L 0 0`;
-              const ev = evolvePath(ip(frame, [ALL, ALL + 8], [0, 1], EASE.out), d);
+              const ev = evolvePath(ip(frame, [ALL, ALL + 5], [0, 1], EASE.out), d);
               return <path key={p.i} d={d} stroke={C.greenSoft} strokeWidth={3} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} opacity={0.8} />;
             })}
+            <circle cx={0} cy={0} r={10 * ip(frame, [ALL + 3, ALL + 6], [0, 1], EASE.back)} fill="#fff" style={{ filter: `drop-shadow(0 0 14px ${C.green})` }} />
           </svg>
         )}
         {panels.map((p) => (
@@ -555,10 +546,8 @@ export const ManageScene = () => {
             key={p.i}
             style={{
               position: 'absolute',
-              left: p.x * (1 - collapse * 0.6) - PANEL_W / 2,
-              top: p.y * (1 - collapse * 0.6) - PANEL_H / 2,
-              opacity: boardDim * (1 - collapse),
-              filter: all && frame > ALL + 4 ? `blur(${ip(frame, [ALL + 4, ALL + 12], [0, 2.5])}px)` : undefined,
+              left: p.x - PANEL_W / 2,
+              top: p.y - PANEL_H / 2,
             }}
           >
             <Panel index={p.i} t={frame - p.i * STEP} all={all} />
@@ -566,26 +555,8 @@ export const ManageScene = () => {
         ))}
       </div>
 
-      {/* data core (grows when the board converges) */}
-      {all && (
-        <div
-          style={{
-            position: 'absolute',
-            left: gx - 170,
-            top: gy - 170,
-            width: 340,
-            height: 340,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(220,255,230,0.95) 0%, rgba(0,223,69,0.75) 18%, rgba(0,223,69,0.18) 45%, rgba(0,223,69,0) 70%)',
-            transform: `scale(${0.25 + core * 0.55})`,
-            opacity: Math.min(1, core),
-            mixBlendMode: 'screen',
-          }}
-        />
-      )}
-
       {/* left column: chapter copy + pillar list */}
-      <div style={{ position: 'absolute', left: 140, top: 236, width: 660, opacity: leftOut, transform: `translateX(${(1 - leftOut) * -40}px)` }}>
+      <div style={{ position: 'absolute', left: 140, top: 236, width: 660 }}>
         <ChapterPill index="02" label="관리" delay={1} />
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.green, height: 30 }}>
           <span style={{ fontWeight: 700, fontSize: 22 }}>
@@ -606,39 +577,11 @@ export const ManageScene = () => {
         </div>
       </div>
 
-      {/* all-lit statement */}
-      {all && (
-        <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', paddingBottom: 40 }}>
-          <AbsoluteFill style={{ background: 'radial-gradient(ellipse 42% 30% at 50% 48%, rgba(3,8,6,0.85), rgba(3,8,6,0) 100%)', opacity: ip(frame, [ALL, ALL + 6], [0, 1]) * ip(frame, [END - 6, END], [1, 0.4]) }} />
-          <div
-            style={{
-              position: 'relative',
-              textAlign: 'center',
-              fontFamily: FONT.sans,
-              fontWeight: 900,
-              fontSize: 112,
-              lineHeight: 1.12,
-              letterSpacing: '-0.05em',
-              color: C.white,
-              opacity: ip(frame, [END - 6, END], [1, 0]),
-              filter: frame > END - 6 ? `blur(${ip(frame, [END - 6, END], [0, 10])}px)` : undefined,
-            }}
-          >
-            <KineticText text="모든 수업이," mode="slam" delay={ALL + 1} stagger={1.1} />
-            <br />
-            <span style={{ color: C.green, textShadow: '0 0 50px rgba(0,223,69,0.45)' }}>
-              <KineticText text="본사의 자산으로." mode="slam" delay={ALL + 6} stagger={1.1} />
-            </span>
-          </div>
-        </AbsoluteFill>
-      )}
-
       {[STEP, STEP * 2, STEP * 3].map((b) => (
         <Flash key={b} at={b} duration={4} peak={0.1} color={C.greenSoft} />
       ))}
-      <Flash at={ALL} duration={7} peak={0.32} color={C.greenSoft} />
-      <Shockwave at={ALL + 14} x={CORE_END.x} y={CORE_END.y} maxR={900} dur={20} rings={2} />
-      <LensStreak at={ALL} y={CORE_END.y} dur={16} />
+      <Flash at={ALL} duration={6} peak={0.28} color={C.greenSoft} />
+      <LensStreak at={ALL} y={GRID.y} dur={10} />
     </AbsoluteFill>
   );
 };
