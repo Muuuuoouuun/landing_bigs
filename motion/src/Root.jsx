@@ -5,9 +5,10 @@ import { FPS, HEIGHT, WIDTH } from './theme';
 import { SHOWREEL_DURATION, Showreel } from './Showreel';
 import { BRANCHES_DURATION, BranchesScene } from './scenes/BranchesScene';
 import { STANDARDIZE_DURATION, StandardizeScene } from './scenes/StandardizeScene';
+import { MANAGE_DURATION, ManageScene } from './scenes/ManageScene';
 import { AI_INTRO_DURATION, AIIntroScene } from './scenes/AIIntroScene';
 import { AI_EVAL_DURATION, AIEvalScene } from './scenes/AIEvalScene';
-import { EFFICIENCY_DURATION, EfficiencyScene } from './scenes/EfficiencyScene';
+import { VALUE_DURATION, ValueScene } from './scenes/ValueScene';
 import { OUTRO_DURATION, OutroScene } from './scenes/OutroScene';
 
 const comp = (id, component, durationInFrames) => (
@@ -28,10 +29,11 @@ export const RemotionRoot = () => (
     <Folder name="Scenes">
       {comp('S1-Branches', BranchesScene, BRANCHES_DURATION)}
       {comp('S2-Standardize', StandardizeScene, STANDARDIZE_DURATION)}
-      {comp('S3-AIIntro', AIIntroScene, AI_INTRO_DURATION)}
-      {comp('S4-AIEval', AIEvalScene, AI_EVAL_DURATION)}
-      {comp('S5-Efficiency', EfficiencyScene, EFFICIENCY_DURATION)}
-      {comp('S6-Outro', OutroScene, OUTRO_DURATION)}
+      {comp('S3-Manage', ManageScene, MANAGE_DURATION)}
+      {comp('S4-AIIntro', AIIntroScene, AI_INTRO_DURATION)}
+      {comp('S5-AIEval', AIEvalScene, AI_EVAL_DURATION)}
+      {comp('S6-Value', ValueScene, VALUE_DURATION)}
+      {comp('S7-Outro', OutroScene, OUTRO_DURATION)}
     </Folder>
   </>
 );

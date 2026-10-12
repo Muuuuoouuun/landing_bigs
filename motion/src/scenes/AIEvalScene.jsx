@@ -7,6 +7,7 @@ import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Brackets, Flash } from '../components/Fx';
 import { KineticText, RollingNumber, Typewriter } from '../components/Kinetic';
+import { ChapterPill } from '../components/ChapterPill';
 
 export const AI_EVAL_DURATION = 80;
 
@@ -216,6 +217,7 @@ export const AIEvalScene = () => {
 
       {/* ---- left column ---- */}
       <div style={{ position: 'absolute', left: 120, top: 168, width: 660 }}>
+        <ChapterPill index="03" label="AI" delay={8} />
         <div style={{ fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.3em', color: C.green, marginBottom: 16 }}>
           <KineticText text="AI LECTURE EVALUATION" mode="scramble" delay={0} stagger={0.5} duration={12} />
         </div>

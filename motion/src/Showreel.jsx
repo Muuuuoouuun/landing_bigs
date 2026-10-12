@@ -2,26 +2,31 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { TransitionSeries, linearTiming } from '@remotion/transitions';
 import { pushCut } from '@remotion/transitions/push-cut';
+import { fade } from '@remotion/transitions/fade';
 import { C, EASE, FPS, ip } from './theme';
 import { FONT } from './fonts';
 import { Grain, Letterbox, Vignette } from './components/Fx';
 import { dip, lightWipe, whipUp, zoomBlur } from './transitions/presentations';
 import { BRANCHES_DURATION, BranchesScene } from './scenes/BranchesScene';
 import { STANDARDIZE_DURATION, StandardizeScene } from './scenes/StandardizeScene';
+import { MANAGE_DURATION, ManageScene } from './scenes/ManageScene';
 import { AI_INTRO_DURATION, AIIntroScene } from './scenes/AIIntroScene';
 import { AI_EVAL_DURATION, AIEvalScene } from './scenes/AIEvalScene';
-import { EFFICIENCY_DURATION, EfficiencyScene } from './scenes/EfficiencyScene';
+import { VALUE_DURATION, ValueScene } from './scenes/ValueScene';
 import { OUTRO_DURATION, OutroScene } from './scenes/OutroScene';
 import { Soundtrack } from './audio/Soundtrack';
 
 // Scene list + the transition that leads OUT of each scene.
+// Every scene starts on the music grid (beat = 14 frames from the impact at 58):
+// 0 · 100 · 240 · 380 · 436 · 506 · 604 → 672 frames = 22.4 s.
 const TIMELINE = [
   { id: 'branches', label: '01 · BRANCHES', Comp: BranchesScene, dur: BRANCHES_DURATION, out: { p: zoomBlur(), d: 10 } },
-  { id: 'standardize', label: '02 · STANDARDIZE', Comp: StandardizeScene, dur: STANDARDIZE_DURATION, out: { p: pushCut({ flashOpacity: 0.28, flashColor: C.greenSoft, outgoingScale: 1.1, incomingStartScale: 1.12, incomingEndScale: 1 }), d: 8 } },
-  { id: 'ai', label: '03 · AI', Comp: AIIntroScene, dur: AI_INTRO_DURATION, out: { p: lightWipe(), d: 8 } },
-  { id: 'eval', label: '04 · AI 강의평가', Comp: AIEvalScene, dur: AI_EVAL_DURATION, out: { p: whipUp(), d: 10 } },
-  { id: 'efficiency', label: '05 · EFFICIENCY', Comp: EfficiencyScene, dur: EFFICIENCY_DURATION, out: { p: dip(), d: 10 } },
-  { id: 'outro', label: '06 · CLASSIN', Comp: OutroScene, dur: OUTRO_DURATION, out: null },
+  { id: 'standardize', label: '02 · 표준화', Comp: StandardizeScene, dur: STANDARDIZE_DURATION, out: { p: pushCut({ flashOpacity: 0.28, flashColor: C.greenSoft, outgoingScale: 1.1, incomingStartScale: 1.12, incomingEndScale: 1 }), d: 8 } },
+  { id: 'manage', label: '03 · 관리', Comp: ManageScene, dur: MANAGE_DURATION, out: { p: fade(), d: 8 } },
+  { id: 'ai', label: '04 · AI', Comp: AIIntroScene, dur: AI_INTRO_DURATION, out: { p: lightWipe(), d: 8 } },
+  { id: 'eval', label: '05 · AI 강의평가', Comp: AIEvalScene, dur: AI_EVAL_DURATION, out: { p: whipUp(), d: 10 } },
+  { id: 'value', label: '06 · 가치', Comp: ValueScene, dur: VALUE_DURATION, out: { p: dip(), d: 10 } },
+  { id: 'outro', label: '07 · CLASSIN', Comp: OutroScene, dur: OUTRO_DURATION, out: null },
 ];
 
 // Global start frame of every scene (each transition overlaps the previous scene's tail).

@@ -6,17 +6,18 @@ import { BaseBackground, Dust, GridFloor, SpeedLines } from '../components/Backg
 import { Flash, LensStreak } from '../components/Fx';
 import { KineticText } from '../components/Kinetic';
 
-export const OUTRO_DURATION = 60;
+// Global 604–672. The first 10 frames overlap the dip-to-black transition.
+export const OUTRO_DURATION = 68;
 const LOGO_W = 820;
 const LOGO_H = Math.round((LOGO_W * 469) / 1800);
 const LOGO_TOP = 300;
-// Logo lands on the final music hit (outro frame 22 = global 412).
-const HIT = 22;
+// Logo lands on the final music hit (outro frame 14 = global 618).
+const HIT = 14;
 
 export const OutroScene = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const reveal = ip(frame, [8, HIT], [0, 1], EASE.inOut);
+  const reveal = ip(frame, [HIT - 9, HIT], [0, 1], EASE.inOut);
   const logoScale = ip(frame, [4, OUTRO_DURATION], [1.12, 1], EASE.out);
   const sweep = ip(frame, [HIT - 2, HIT + 18], [-30, 130], EASE.smooth);
   const glow = ip(frame, [HIT - 1, HIT + 4, HIT + 22], [0, 1, 0.55]);

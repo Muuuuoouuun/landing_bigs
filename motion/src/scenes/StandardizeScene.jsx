@@ -7,33 +7,246 @@ import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Flash, LensStreak } from '../components/Fx';
 import { KineticText, RollingNumber, WordSlot } from '../components/Kinetic';
 import { ClassroomWindow } from '../components/ClassroomWindow';
+import { ChapterPill } from '../components/ChapterPill';
 
-export const STANDARDIZE_DURATION = 140;
+// ① 표준화 — 같은 인프라 · 같은 수업 · 같은 콘텐츠.
+// Content runs 140 frames (global 100–240); the extra 8 frames are the outgoing push-cut.
+export const STANDARDIZE_DURATION = 148;
 // Beat changes land on the music grid (one beat = 14 frames).
-const BEATS = [0, 56, 98];
-const BEAT_LENS = [56, 42, 42];
+const BEATS = [0, 42, 98];
+const BEAT_LENS = [42, 56, 42];
 const VCX = 1340; // visual column center
 const VCY = 540;
 
 const COPY = [
   {
-    en: 'STANDARDIZED CLASS',
-    sub: '어느 지점, 어느 강사든 같은 수업 품질',
-    chips: ['수업 템플릿', '실시간 판서', '녹화 · 다시보기'],
+    en: 'SAME INFRASTRUCTURE',
+    sub: '전 지점이 하나의 클라우드 플랫폼 위에서',
+    chips: ['통합 계정', '모든 기기 지원', '무중단 스트리밍'],
   },
   {
-    en: 'STANDARDIZED CONTENT',
+    en: 'SAME CLASS',
+    sub: '어느 지점, 어느 강사든 같은 수업 품질',
+    chips: ['수업 템플릿', '실시간 판서', '학생 참여 도구'],
+  },
+  {
+    en: 'SAME CONTENT',
     sub: '본사 커리큘럼을 전 지점에 원클릭 배포',
     chips: ['교재', '진도표', '평가지 · 과제'],
-  },
-  {
-    en: 'STANDARDIZED MANAGEMENT',
-    sub: '권한 · 출결 · 과제 · 평가를 하나의 체계로',
-    chips: ['직급별 권한', '지점 통계', '중앙 관제'],
   },
 ];
 
 const AREAS = ['강남', '분당', '대치', '목동', '송도', '일산', '해운대', '수성', '둔산', '광교', '평촌', '중계'];
+
+/* ---------------- Beat 0 — one cloud infrastructure for every branch ---------------- */
+const INFRA_BRANCHES = ['강남', '분당', '대치', '송도'];
+const CORE = { x: VCX, y: 300 };
+const CARD = { w: 200, h: 196, y: 610 };
+const cardX = (k) => VCX + (k - 1.5) * 222;
+const infraLink = (k) => {
+  const x = cardX(k);
+  const top = CARD.y - CARD.h / 2;
+  return `M ${CORE.x} ${CORE.y + 46} C ${CORE.x} ${CORE.y + 150}, ${x} ${top - 110}, ${x} ${top}`;
+};
+
+const DeviceIcon = ({ kind, on, flicker }) => {
+  const screenOn = on ? (flicker ? 0.55 : 1) : 0;
+  const stroke = on ? C.green : 'rgba(255,255,255,0.28)';
+  const screen = (x, y, w, h, r) => (
+    <>
+      <rect x={x} y={y} width={w} height={h} rx={r} fill="#06110b" stroke={stroke} strokeWidth={1.6} />
+      <g opacity={screenOn}>
+        <rect x={x + 1.5} y={y + 1.5} width={w - 3} height={h - 3} rx={r - 1} fill="url(#dev-screen)" />
+        <rect x={x + 4} y={y + 4} width={w * 0.35} height={2.5} rx={1} fill={C.green} />
+        <path
+          d={`M ${x + 5} ${y + h - 6} Q ${x + w * 0.45} ${y + h * 0.25} ${x + w - 5} ${y + h - 9}`}
+          fill="none"
+          stroke={C.greenSoft}
+          strokeWidth={1.6}
+          strokeLinecap="round"
+        />
+      </g>
+    </>
+  );
+  return (
+    <svg width="56" height="46" viewBox="0 0 56 46" style={{ overflow: 'visible', filter: on ? 'drop-shadow(0 0 6px rgba(0,223,69,0.55))' : undefined }}>
+      {kind === 'pc' && (
+        <>
+          {screen(4, 2, 48, 31, 3)}
+          <path d="M 24 34 L 22 41 M 32 34 L 34 41 M 17 42 H 39" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+        </>
+      )}
+      {kind === 'tablet' && screen(14, 1, 28, 42, 5)}
+      {kind === 'board' && (
+        <>
+          {screen(1, 4, 54, 30, 2)}
+          <path d="M 12 36 L 8 45 M 44 36 L 48 45 M 18 37 H 38" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  );
+};
+
+const InfraVisual = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const exit = ip(frame, [36, 42], [0, 1], EASE.in);
+  const core = spring({ frame, fps, config: { damping: 12, stiffness: 150 } });
+
+  return (
+    <AbsoluteFill
+      style={{
+        transform: `translateX(${-exit * 260}px)`,
+        opacity: 1 - exit,
+        filter: exit > 0.05 ? `blur(${exit * 14}px)` : undefined,
+      }}
+    >
+      <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0 }}>
+        <defs>
+          <linearGradient id="dev-screen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#14583a" />
+            <stop offset="1" stopColor="#0a2d1e" />
+          </linearGradient>
+        </defs>
+        {INFRA_BRANCHES.map((_, k) => {
+          const d = infraLink(k);
+          const ev = evolvePath(ip(frame, [3 + k, 13 + k], [0, 1], EASE.inOut), d);
+          return (
+            <path key={k} d={d} fill="none" stroke={C.green} strokeOpacity={0.5} strokeWidth={2} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} />
+          );
+        })}
+        {/* data pulses flowing core → branches */}
+        {frame >= 12 &&
+          INFRA_BRANCHES.map((_, k) =>
+            [0, 0.5].map((off) => {
+              const d = infraLink(k);
+              const t = (((frame - 12) / 16 + off + k * 0.13) % 1 + 1) % 1;
+              const pt = getPointAtLength(d, getLength(d) * t);
+              return <circle key={`${k}-${off}`} cx={pt.x} cy={pt.y} r={4.5} fill={C.greenSoft} style={{ filter: `drop-shadow(0 0 6px ${C.green})` }} />;
+            }),
+          )}
+        {/* rotating orbit around the core */}
+        <ellipse
+          cx={CORE.x}
+          cy={CORE.y}
+          rx={210}
+          ry={70}
+          fill="none"
+          stroke={C.green}
+          strokeOpacity={0.35 * core}
+          strokeWidth={1.5}
+          strokeDasharray="3 12"
+          transform={`rotate(${frame * 0.6} ${CORE.x} ${CORE.y})`}
+        />
+      </svg>
+
+      {/* cloud core */}
+      <div
+        style={{
+          position: 'absolute',
+          left: CORE.x - 160,
+          top: CORE.y - 46,
+          width: 320,
+          height: 92,
+          borderRadius: 46,
+          transform: `scale(${core})`,
+          background: 'radial-gradient(ellipse at 50% 30%, rgba(0,223,69,0.42), rgba(0,70,30,0.35) 70%)',
+          border: `2px solid ${C.green}`,
+          boxShadow: `0 0 ${50 + 20 * Math.sin(frame * 0.35)}px rgba(0,223,69,0.45)`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+          fontFamily: FONT.sans,
+        }}
+      >
+        <svg width="46" height="32" viewBox="0 0 46 32">
+          <path d="M 12 29 H 36 A 9 9 0 0 0 37 11 A 12 12 0 0 0 14 9 A 10 10 0 0 0 12 29 Z" fill="none" stroke={C.white} strokeWidth={2.6} strokeLinejoin="round" />
+        </svg>
+        <div>
+          <div style={{ color: C.white, fontWeight: 900, fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1 }}>ClassIn Cloud</div>
+          <div style={{ color: C.green, fontFamily: FONT.mono, fontWeight: 700, fontSize: 12, letterSpacing: '0.26em', marginTop: 5 }}>ENTERPRISE CORE</div>
+        </div>
+      </div>
+
+      {/* branch cards with devices powering on */}
+      {INFRA_BRANCHES.map((name, k) => {
+        const pop = spring({ frame: frame - 8 - k * 1.5, fps, config: { damping: 13, stiffness: 180 } });
+        const devices = ['pc', 'tablet', 'board'];
+        const onAt = (j) => 14 + k * 2 + j * 2.5;
+        const allOn = frame >= onAt(2) + 3;
+        return (
+          <div
+            key={name}
+            style={{
+              position: 'absolute',
+              left: cardX(k) - CARD.w / 2,
+              top: CARD.y - CARD.h / 2,
+              width: CARD.w,
+              height: CARD.h,
+              borderRadius: 18,
+              transform: `scale(${pop})`,
+              background: 'linear-gradient(165deg, rgba(18,40,28,0.95), rgba(6,16,11,0.95))',
+              border: `1.5px solid ${allOn ? 'rgba(0,223,69,0.7)' : 'rgba(255,255,255,0.12)'}`,
+              boxShadow: allOn ? '0 0 34px rgba(0,223,69,0.3)' : '0 20px 50px rgba(0,0,0,0.5)',
+              padding: '16px 16px 12px',
+              boxSizing: 'border-box',
+              display: 'flex',
+              flexDirection: 'column',
+              fontFamily: FONT.sans,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: C.white, fontWeight: 800, fontSize: 21 }}>{name} 지점</span>
+              <span style={{ width: 10, height: 10, borderRadius: 5, background: allOn ? C.green : 'rgba(255,255,255,0.25)', boxShadow: allOn ? `0 0 10px ${C.green}` : undefined }} />
+            </div>
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center', rowGap: 6, marginTop: 8 }}>
+              {devices.map((d, j) => {
+                const t0 = onAt(j);
+                return (
+                  <div key={d} style={{ gridColumn: j === 2 ? '1 / span 2' : undefined }}>
+                    <DeviceIcon kind={d} on={frame >= t0} flicker={frame >= t0 && frame < t0 + 3 && Math.floor(frame) % 2 === 0} />
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontFamily: FONT.mono, fontSize: 12, letterSpacing: '0.2em', color: allOn ? C.green : C.dim }}>{allOn ? '● ONLINE' : '○ BOOTING'}</div>
+          </div>
+        );
+      })}
+
+      {/* "same" badges */}
+      <div style={{ position: 'absolute', left: VCX - 330, top: 752, width: 660, display: 'flex', justifyContent: 'center', gap: 14 }}>
+        {['같은 계정', '같은 화면', '같은 도구'].map((label, k) => {
+          const s = spring({ frame: frame - 22 - k * 3, fps, config: { damping: 12, stiffness: 200 } });
+          return (
+            <span
+              key={label}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '9px 18px',
+                borderRadius: 999,
+                border: `1.5px solid ${C.green}`,
+                background: 'rgba(0,223,69,0.12)',
+                color: C.white,
+                fontFamily: FONT.sans,
+                fontWeight: 800,
+                fontSize: 21,
+                transform: `scale(${s})`,
+                opacity: Math.min(1, s * 1.5),
+              }}
+            >
+              <span style={{ color: C.green }}>=</span>
+              {label}
+            </span>
+          );
+        })}
+      </div>
+    </AbsoluteFill>
+  );
+};
 
 /* ---------------- Beat A — one class, cloned to every branch ---------------- */
 const ClassVisual = () => {
@@ -357,147 +570,6 @@ const ContentVisual = () => {
   );
 };
 
-/* ---------------- Beat C — one management hierarchy ---------------- */
-const TREE = (() => {
-  const hq = { x: VCX, y: 230, w: 260, h: 74, t: '본사 최고관리자', s: 'HQ ADMIN' };
-  const branches = [-1, 0, 1].map((d, k) => ({ x: VCX + d * 310, y: 420, w: 200, h: 64, t: `지점 원장 ${'ABC'[k]}`, s: 'BRANCH' }));
-  const teachers = [];
-  branches.forEach((b) => [-1, 1].forEach((d) => teachers.push({ x: b.x + d * 76, y: 590, w: 132, h: 56, t: '강사', s: 'TEACHER' })));
-  const elbow = (a, b) => `M ${a.x} ${a.y + a.h / 2} L ${a.x} ${(a.y + b.y) / 2} L ${b.x} ${(a.y + b.y) / 2} L ${b.x} ${b.y - b.h / 2}`;
-  const links1 = branches.map((b) => elbow(hq, b));
-  const links2 = teachers.map((t, k) => elbow(branches[Math.floor(k / 2)], t));
-  return { hq, branches, teachers, links1, links2 };
-})();
-
-const PERMS = ['전사 통계', '커리큘럼 배포', '강사 배정', '출결·과제·평가'];
-
-const OrgNode = ({ n, pop, accent }) => (
-  <div
-    style={{
-      position: 'absolute',
-      left: n.x - n.w / 2,
-      top: n.y - n.h / 2,
-      width: n.w,
-      height: n.h,
-      borderRadius: 14,
-      transform: `scale(${pop})`,
-      background: accent ? 'rgba(0,223,69,0.16)' : 'rgba(255,255,255,0.045)',
-      border: `1.5px solid ${accent ? C.green : 'rgba(0,223,69,0.45)'}`,
-      boxShadow: accent ? '0 0 40px rgba(0,223,69,0.35)' : undefined,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: FONT.sans,
-    }}
-  >
-    <div style={{ color: C.white, fontWeight: 800, fontSize: n.h > 60 ? 24 : 19, letterSpacing: '-0.02em' }}>{n.t}</div>
-    <div style={{ color: C.green, fontFamily: FONT.mono, fontSize: 11, letterSpacing: '0.24em', marginTop: 2 }}>{n.s}</div>
-  </div>
-);
-
-const ManageVisual = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const pop = (d) => spring({ frame: frame - d, fps, config: { damping: 12, stiffness: 190 } });
-  const l1 = ip(frame, [4, 14], [0, 1], EASE.inOut);
-  const l2 = ip(frame, [12, 22], [0, 1], EASE.inOut);
-  const enter = ip(frame, [0, 10], [0, 1], EASE.out);
-
-  return (
-    <AbsoluteFill style={{ opacity: enter, transform: `translateY(${(1 - enter) * 60}px)` }}>
-      <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0 }}>
-        {[...TREE.links1.map((d) => [d, l1]), ...TREE.links2.map((d) => [d, l2])].map(([d, p], k) => {
-          const ev = evolvePath(p, d);
-          return (
-            <path
-              key={k}
-              d={d}
-              fill="none"
-              stroke={C.green}
-              strokeOpacity={0.6}
-              strokeWidth={2}
-              strokeDasharray={ev.strokeDasharray}
-              strokeDashoffset={ev.strokeDashoffset}
-            />
-          );
-        })}
-        {/* sync pulses travelling down the hierarchy */}
-        {TREE.links2.map((d2, k) => {
-          const t = ip(frame, [24 + (k % 3) * 2, 38 + (k % 3) * 2], [0, 1], EASE.smooth);
-          if (t <= 0 || t >= 1) return null;
-          const d1 = TREE.links1[Math.floor(k / 2)];
-          const full = `${d1} ${d2.replace('M', 'L')}`;
-          const pt = getPointAtLength(full, getLength(full) * t);
-          return <circle key={k} cx={pt.x} cy={pt.y} r={6} fill={C.greenSoft} style={{ filter: `drop-shadow(0 0 8px ${C.green})` }} />;
-        })}
-      </svg>
-
-      <OrgNode n={TREE.hq} pop={pop(0)} accent />
-      {TREE.branches.map((b, k) => (
-        <OrgNode key={k} n={b} pop={pop(11 + k)} />
-      ))}
-      {TREE.teachers.map((t, k) => (
-        <OrgNode key={k} n={t} pop={pop(19 + k * 0.8)} />
-      ))}
-
-      {/* permission toggles */}
-      <div style={{ position: 'absolute', left: VCX - 460, top: 712, width: 920, display: 'flex', gap: 16 }}>
-        {PERMS.map((p, k) => {
-          const on = ip(frame, [24 + k * 3, 29 + k * 3], [0, 1], EASE.inOut);
-          const appear = pop(18 + k * 2);
-          return (
-            <div
-              key={p}
-              style={{
-                flex: 1,
-                height: 64,
-                borderRadius: 14,
-                transform: `scale(${appear})`,
-                background: 'rgba(255,255,255,0.04)',
-                border: `1px solid rgba(255,255,255,${0.1 + on * 0.15})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 16px',
-                fontFamily: FONT.sans,
-                fontWeight: 700,
-                fontSize: 18,
-                color: C.white,
-              }}
-            >
-              {p}
-              <div
-                style={{
-                  width: 48,
-                  height: 26,
-                  borderRadius: 13,
-                  background: on > 0.5 ? C.green : 'rgba(255,255,255,0.18)',
-                  boxShadow: on > 0.5 ? `0 0 14px ${C.green}` : undefined,
-                  position: 'relative',
-                  flexShrink: 0,
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 3,
-                    left: 3 + on * 22,
-                    width: 20,
-                    height: 20,
-                    borderRadius: 10,
-                    background: '#fff',
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 /* ---------------- Left column copy ---------------- */
 const Chip = ({ label, delay }) => {
   const frame = useCurrentFrame();
@@ -558,13 +630,13 @@ export const StandardizeScene = () => {
 
       {/* right visual column */}
       <Sequence from={BEATS[0]} durationInFrames={BEAT_LENS[0]}>
-        <ClassVisual />
+        <InfraVisual />
       </Sequence>
       <Sequence from={BEATS[1]} durationInFrames={BEAT_LENS[1]}>
-        <ContentVisual />
+        <ClassVisual />
       </Sequence>
       <Sequence from={BEATS[2]}>
-        <ManageVisual />
+        <ContentVisual />
       </Sequence>
 
       {/* left fade so copy always reads */}
@@ -584,6 +656,7 @@ export const StandardizeScene = () => {
 
       {/* headline column */}
       <div style={{ position: 'absolute', left: 140, top: 236, width: 660 }}>
+        <ChapterPill index="01" label="표준화" delay={1} />
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.green, height: 30 }}>
           <span style={{ fontWeight: 700, fontSize: 22 }}>
             0<RollingNumber value={indexValue} digits={1} />
@@ -608,9 +681,9 @@ export const StandardizeScene = () => {
             marginTop: 18,
           }}
         >
-          <KineticText text="표준화" mode="rise" delay={1} stagger={2.2} duration={14} />
+          <KineticText text="같은" mode="rise" delay={1} stagger={2.2} duration={14} />
           <div style={{ color: C.green, textShadow: '0 0 60px rgba(0,223,69,0.35)' }}>
-            <WordSlot id="std" words={['수업', '콘텐츠', '관리']} changes={[4, BEATS[1] - 3, BEATS[2] - 3]} size={172} />
+            <WordSlot id="std" words={['인프라', '수업', '콘텐츠']} changes={[4, BEATS[1] - 3, BEATS[2] - 3]} size={172} />
           </div>
         </div>
         <div style={{ marginTop: 34, position: 'relative', height: 160 }}>

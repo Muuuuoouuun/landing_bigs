@@ -188,7 +188,7 @@ def pluck(freq, dur, wave='saw', bright=1.0):
     return fade(x * 0.6, 0.002, 0.02)
 
 
-def pad_chord(midis, dur, attack=0.35, release=0.6, bright=10):
+def pad_chord(midis, dur, attack=0.35, release=0.6, bright=10, cutoff=2600):
     n = int(dur * SR)
     t = tt(n)
     L, R = np.zeros(n), np.zeros(n)
@@ -202,24 +202,44 @@ def pad_chord(midis, dur, attack=0.35, release=0.6, bright=10):
                 R += v
     env = np.minimum(1, t / attack) * np.minimum(1, (dur - t) / release).clip(0, 1)
     trem = 1 + 0.06 * np.sin(2 * np.pi * 0.35 * t)
-    return np.vstack([lp(L, 2600), lp(R, 2600)]) * env * trem * (0.22 / len(midis))
+    return np.vstack([lp(L, cutoff), lp(R, cutoff)]) * env * trem * (0.22 / len(midis))
 
 
 # ---------------------------------------------------------------- music
+CHORDS = {  # name → (bass midi, voicing)
+    'Dm': (38, [62, 65, 69]),
+    'Bb': (34, [58, 62, 65]),
+    'C': (36, [60, 64, 67]),
+    'A': (33, [57, 61, 64]),
+    'Gm': (31, [55, 58, 62]),
+    'F': (41, [60, 65, 69]),
+}
+
+STYLES = {
+    # drums, arp and bass flavour per chapter
+    'drive': dict(kick='four', arp='saw', arp_pattern=[0, 2, 1, 2], arp_vol=0.26, bass='eighths', pad_attack=0.25, pad_cutoff=2600),
+    'secure': dict(kick='half', arp='blips', arp_pattern=None, arp_vol=0.07, bass='sixteenths', pad_attack=0.15, pad_cutoff=1500),
+    'ai': dict(kick='four', arp='square', arp_pattern=[0, 2, 1, 2, 0, 1], arp_vol=0.30, bass='octaves', pad_attack=0.05, pad_cutoff=2600),
+    'lift': dict(kick='four', arp='bright', arp_pattern=[0, 1, 2, 3], arp_vol=0.27, bass='eighths', pad_attack=0.05, pad_cutoff=4200),
+}
+
+
+def expand_chords(chords, n_beats):
+    per_beat = []
+    for name, beats in chords:
+        per_beat += [name] * beats
+    return [per_beat[min(i, len(per_beat) - 1)] for i in range(n_beats)]
+
+
 def build_music():
     mus = np.zeros((2, TOTAL))
     drums = np.zeros((2, TOTAL))
     synth = np.zeros((2, TOTAL))
     kicks = []  # kick sample positions (for sidechain)
-
-    imp = fr(M['impact'])
-    a0, a1 = fr(M['sectionA'][0]), fr(M['sectionA'][1])
-    b0, b1 = fr(M['sectionB'][0]), fr(M['sectionB'][1])
-    fill0, fill1 = fr(M['fill'][0]), fr(M['fill'][1])
-    final = fr(M['finalHit'])
     eighth, sixteenth = BEAT // 2, BEAT // 4
 
     # ---- intro: drone + heartbeat + accelerating clock ticks into the impact
+    imp = fr(M['intro']['to'])
     n = imp
     t = tt(n)
     drone = (np.sin(2 * np.pi * mtof(26) * t) + 0.5 * np.sin(2 * np.pi * mtof(33) * t) + 0.25 * np.sin(2 * np.pi * mtof(38) * t * 1.002))
@@ -233,85 +253,115 @@ def build_music():
     for p in tick_pos:
         add(drums, hp(hat(), 3000) * 0.9, p, 0.7, pan=0.25 if (p // eighth) % 2 else -0.25)
 
-    # ---- section A groove (Dm | Bb | C | A) and section B (Dm | Bb | Gm A)
-    A_bars = [(38, [62, 65, 69]), (34, [58, 62, 65]), (36, [60, 64, 67]), (33, [57, 61, 64])]
-    B_bars = [(38, [62, 65, 69]), (34, [58, 62, 65]), (31, [55, 58, 62])]
-
-    def groove(start, end, bars, ai=False):
-        bar_len = 4 * BEAT
-        pos = start
-        bi = 0
-        while pos < end:
-            root, chord = bars[min(bi, len(bars) - 1)]
-            bar_end = min(end, pos + bar_len)
-            # pad
-            add(synth, pad_chord(chord + [chord[0] - 12], (bar_end - pos) / SR + 0.4, attack=0.05 if ai else 0.25), pos, 0.9)
-            for beat in range(4):
-                bpos = pos + beat * BEAT
-                if bpos >= end:
-                    break
-                # in the last bar of section B, switch the harmony to A (dominant) halfway
-                cur_root, cur_chord = (33, [57, 61, 64]) if (ai and bi == 2 and beat >= 2) else (root, chord)
+    # ---- grooves, one style per chapter
+    for sec in M['sections']:
+        st = STYLES[sec['style']]
+        start, end = fr(sec['from']), fr(sec['to'])
+        n_beats = int(np.ceil((end - start) / BEAT))
+        per_beat = expand_chords(sec['chords'], n_beats)
+        # pads: one per chord change
+        b = 0
+        while b < n_beats:
+            name = per_beat[b]
+            run = 1
+            while b + run < n_beats and per_beat[b + run] == name:
+                run += 1
+            _, tones = CHORDS[name]
+            dur = min(run * BEAT, end - (start + b * BEAT)) / SR + 0.4
+            voicing = tones + [tones[0] - 12] + ([tones[0] + 12] if sec['style'] == 'lift' else [])
+            add(synth, pad_chord(voicing, dur, attack=st['pad_attack'], cutoff=st['pad_cutoff'], bright=14 if sec['style'] == 'lift' else 10), start + b * BEAT, 0.9 if sec['style'] != 'secure' else 0.75)
+            b += run
+        for b in range(n_beats):
+            bpos = start + b * BEAT
+            root, tones = CHORDS[per_beat[b]]
+            # drums
+            if st['kick'] == 'four' or b % 2 == 0:
                 add(drums, kick(1.0), bpos, 0.95)
                 kicks.append(bpos)
-                if beat in (1, 3):
-                    add(drums, clap(), bpos, 0.55)
-                for s in range(4):
-                    sp = bpos + s * sixteenth
+            if st['kick'] == 'half' and b % 2 == 1:
+                ghost = bpos + 3 * sixteenth
+                if ghost < end:
+                    add(drums, kick(0.7), ghost, 0.45)
+            if b % 2 == 1:
+                add(drums, reverb(clap(), 1.6, 0.35) if st['kick'] == 'half' else clap(), bpos, 0.55)
+            for sxt in range(4):
+                sp = bpos + sxt * sixteenth
+                if sp >= end:
+                    break
+                vel = [0.55, 0.22, 0.38, 0.22][sxt] * (0.6 if st['kick'] == 'half' else 1.0)
+                if sxt == 2 and st['kick'] == 'four':
+                    add(drums, hat(True, 0.18), sp, 0.32 if sec['style'] != 'lift' else 0.42, pan=0.3)
+                if sxt == 2 and st['kick'] == 'half':
+                    rim = bp(rng.standard_normal(int(0.03 * SR)), 1500, 5000) * np.exp(-tt(int(0.03 * SR)) * 160)
+                    add(drums, rim, sp, 0.35, pan=-0.35)
+                add(drums, hat(), sp, vel, pan=0.3)
+                # arps
+                step = b * 4 + sxt
+                if st['arp'] == 'blips':
+                    if random_gate(sec['from'], step):
+                        f = mtof(tones[step % 3] + 24 + 12 * (step % 2))
+                        add(synth, sfx_blip_raw(f, f * 1.08, 0.05), sp, st['arp_vol'], pan=rng.uniform(-0.7, 0.7))
+                else:
+                    pattern = st['arp_pattern']
+                    pick = pattern[step % len(pattern)]
+                    tone = (tones[pick] if pick < 3 else tones[0] + 12) + 12
+                    if st['arp'] == 'square' and step % 5 == 3:
+                        tone += 12
+                    wave = 'square' if st['arp'] == 'square' else 'saw'
+                    bright = {'saw': 1.3, 'square': 0.9, 'bright': 2.0}[st['arp']]
+                    add(synth, pluck(mtof(tone), 0.22, wave, bright), sp, st['arp_vol'], pan=(-0.45 if sxt % 2 else 0.45))
+                    if st['arp'] == 'bright':
+                        add(synth, pluck(mtof(tone + 12), 0.16, 'saw', 1.6), sp, 0.09, pan=(0.6 if sxt % 2 else -0.6))
+                    if st['arp'] == 'square' and sxt == 3 and b % 2:
+                        add(synth, pluck(mtof(tone + 7), 0.08, 'square'), sp + sixteenth // 2, 0.18, pan=0.6)
+            # bass
+            if st['bass'] == 'sixteenths':
+                for sxt in range(4):
+                    sp = bpos + sxt * sixteenth
                     if sp >= end:
                         break
-                    vel = [0.55, 0.22, 0.38, 0.22][s]
-                    if s == 2:
-                        add(drums, hat(True, 0.18), sp, 0.32, pan=0.3)
-                    add(drums, hat(), sp, vel, pan=0.3)
-                    # arp
-                    pattern = [0, 2, 1, 2] if not ai else [0, 2, 1, 2, 0, 1]
-                    tone = cur_chord[pattern[(beat * 4 + s) % len(pattern)]] + 12
-                    if ai and (beat * 4 + s) % 5 == 3:
-                        tone += 12
-                    note = pluck(mtof(tone), 0.22, 'square' if ai else 'saw', 0.9 if ai else 1.3)
-                    add(synth, note, sp, 0.30 if ai else 0.26, pan=(-0.45 if s % 2 else 0.45))
-                    if ai and s == 3 and beat % 2:
-                        add(synth, pluck(mtof(tone + 7), 0.08, 'square'), sp + sixteenth // 2, 0.18, pan=0.6)
-                # bass 8ths (off-beat pumping)
+                    bn = lp(bass_note(mtof(root), sixteenth / SR * 0.85, 1.4), 520)
+                    add(synth, bn, sp, 0.62 if sxt == 0 else 0.42)
+            else:
                 for e in range(2):
                     ep = bpos + e * eighth
                     if ep >= end:
                         break
-                    bn = bass_note(mtof(cur_root + (12 if (ai and e == 1) else 0)), eighth / SR * 0.95, 2.2 if ai else 1.6)
+                    octave = 12 if (st['bass'] == 'octaves' and e == 1) else 0
+                    bn = bass_note(mtof(root + octave), eighth / SR * 0.95, 2.2 if st['bass'] == 'octaves' else 1.6)
                     add(synth, bn, ep, 0.55 if e else 0.4)
-            pos = bar_end
-            bi += 1
 
-    groove(a0, a1, A_bars)
-    groove(b0, b1, B_bars, ai=True)
+    # ---- snare-roll fills into section changes
+    for f0, f1 in M['fills']:
+        p0, p1 = fr(f0), fr(f1)
+        p, k = p0, 0
+        while p < p1:
+            add(drums, clap(0.12), p, 0.25 + 0.5 * (p - p0) / (p1 - p0), pan=(-0.2 if k % 2 else 0.2))
+            p += sixteenth if (p - p0) < (p1 - p0) / 2 else sixteenth // 2
+            k += 1
 
-    # snare roll fill into the efficiency slam
-    p = fill0
-    step = sixteenth
-    k = 0
-    while p < fill1:
-        add(drums, clap(0.12), p, 0.25 + 0.5 * (p - fill0) / (fill1 - fill0), pan=(-0.2 if k % 2 else 0.2))
-        p += step if (p - fill0) < (fill1 - fill0) / 2 else step // 2
-        k += 1
-    # crash on the slam
+    # ---- crashes on section downbeats / big moments
     crash_n = int(1.8 * SR)
-    crash = hp(rng.standard_normal(crash_n), 5000) * np.exp(-tt(crash_n) * 2.6) * 0.35
-    add(drums, reverb(crash, 1.8, 0.4), fr(M['effSlam']))
+    crash = reverb(hp(rng.standard_normal(crash_n), 5000) * np.exp(-tt(crash_n) * 2.6) * 0.35, 1.8, 0.4)
+    for f in M['crashes']:
+        add(drums, crash, fr(f))
 
-    # ---- break before the AI hit: filtered swell
-    br0, br1 = a1, b0
-    nb = br1 - br0 + int(0.2 * SR)
-    swell = sweep_filter(rng.standard_normal(nb), np.geomspace(400, 9000, nb), 'band') * np.linspace(0, 0.3, nb) ** 1.5
-    add(mus, swell, br0)
-    add(mus, pad_chord([57, 61, 64, 69], (br1 - br0) / SR + 0.5, attack=0.12), br0, 0.8)
+    # ---- breaks (the bridge into the AI hit): filtered swell + held chord
+    for brk in M['breaks']:
+        br0, br1 = fr(brk['from']), fr(brk['to'])
+        nb = br1 - br0 + int(0.2 * SR)
+        swell = sweep_filter(rng.standard_normal(nb), np.geomspace(400, 9000, nb), 'band') * np.linspace(0, 0.3, nb) ** 1.5
+        add(mus, swell, br0)
+        _, tones = CHORDS[brk['chord']]
+        add(mus, pad_chord(tones + [tones[0] + 12], (br1 - br0) / SR + 0.5, attack=0.12), br0, 0.8)
 
-    # ---- outro: tension on A, then the final D major chord on the logo
-    o0 = b1
-    add(synth, pad_chord([57, 61, 64, 69], (final - o0) / SR + 0.2, attack=0.1), o0, 0.9)
+    # ---- outro: tension chord + rising arp, then the final D major chord on the logo
+    o0, final = fr(M['outro']['from']), fr(M['outro']['hit'])
+    _, tension = CHORDS[M['outro']['chord']]
+    add(synth, pad_chord(tension + [tension[0] + 12], (final - o0) / SR + 0.2, attack=0.1), o0, 0.9)
     for j in range((final - o0) // sixteenth):
-        tone = [69, 73, 76, 81][j % 4] + (12 if j > 8 else 0)
-        add(synth, pluck(mtof(tone), 0.15, 'saw', 1.1), o0 + j * sixteenth, 0.12 + 0.012 * j, pan=(-0.5 if j % 2 else 0.5))
+        tone = [tension[0], tension[1], tension[2], tension[0] + 12][j % 4] + 12 + (12 if j > 5 else 0)
+        add(synth, pluck(mtof(tone), 0.15, 'saw', 1.1), o0 + j * sixteenth, 0.12 + 0.02 * j, pan=(-0.5 if j % 2 else 0.5))
     tail = TOTAL - final
     add(synth, pad_chord([50, 57, 62, 66, 69, 76], tail / SR, attack=0.02, release=1.4, bright=14), final, 1.6)
     add(synth, bass_note(mtof(26), 1.6, 1.3), final, 0.8)
@@ -327,17 +377,18 @@ def build_music():
 
     # duck everything under the big impacts (SFX carry those moments)
     duck = np.ones(TOTAL)
-    for f, depth in [(M['impact'], 0.5), (M['aiHit'], 0.55)]:
+    for f, depth in M['ducks']:
         p = fr(f)
         n = min(int(0.6 * SR), TOTAL - p)
         duck[p:p + n] = np.minimum(duck[p:p + n], 1 - depth * np.exp(-tt(n) * 5))
 
-    # hard gate on the groove (incl. reverb tails) for the "그리고 이제," pause before the AI hit
+    # hard gate on the groove (incl. reverb tails) during breaks
     gate = np.ones(TOTAL)
-    g0, g1 = br0, br1
     ramp = int(0.03 * SR)
-    gate[g0:g0 + ramp] = np.linspace(1, 0.08, ramp)
-    gate[g0 + ramp:g1] = 0.08
+    for brk in M['breaks']:
+        g0, g1 = fr(brk['from']), fr(brk['to'])
+        gate[g0:g0 + ramp] = np.minimum(gate[g0:g0 + ramp], np.linspace(1, 0.08, ramp))
+        gate[g0 + ramp:g1] = 0.08
     mix = (reverb(synth, 1.4, 0.28) + reverb(drums, 0.9, 0.12, damp=6000)) * gate + reverb(mus, 2.4, 0.35)
     mix *= duck
     mix = np.vstack([hp(mix[0], 28), hp(mix[1], 28)])
@@ -345,6 +396,11 @@ def build_music():
     fl = int(0.5 * SR)
     mix[:, -fl:] *= np.linspace(1, 0, fl) ** 1.5
     return norm(saturate(mix * 0.9, 1.15), 0.7)
+
+
+def random_gate(seed, step, density=0.32):
+    """Deterministic sparse trigger for the 'data blip' texture."""
+    return np.random.default_rng(hash((seed, step)) % (2 ** 32)).random() < density
 
 
 # ---------------------------------------------------------------- sfx
@@ -442,6 +498,14 @@ def sfx_glitch(dur=0.46):
         pos += seg + int(rng.uniform(0, 0.01) * SR)
     out *= np.linspace(0.5, 1, n)
     return norm(np.vstack([out, np.roll(out, 90)]) * 0.8)
+
+
+def sfx_blip_raw(f0, f1, dur=0.07):
+    """Dry, un-normalized blip (used inside the music bed)."""
+    n = int(dur * SR)
+    t = tt(n)
+    f = np.geomspace(f0, f1, n)
+    return fade((np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.3 * np.sin(4 * np.pi * np.cumsum(f) / SR)) * np.exp(-t * 45), 0.001, 0.01)
 
 
 def sfx_blip(f0, f1, dur=0.07):
@@ -587,6 +651,93 @@ def sfx_cut():
     return norm(out)
 
 
+def sfx_boot():
+    """Power-on: rising tone + digital chirps + soft chord bloom."""
+    n = int(0.9 * SR)
+    t = tt(n)
+    f = np.geomspace(160, 1100, n)
+    sweep = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.minimum(1, t / 0.25) * np.exp(-np.maximum(0, t - 0.25) * 6) * 0.45
+    chord = sum(np.sin(2 * np.pi * mtof(m) * t) for m in (74, 81, 86)) * np.maximum(0, np.minimum(1, (t - 0.2) / 0.1)) * np.exp(-np.maximum(0, t - 0.2) * 4) * 0.2
+    out = np.zeros(n)
+    for k, d in enumerate([0.18, 0.24, 0.30]):
+        blip = sfx_blip_raw(2600 + k * 400, 3200 + k * 400, 0.04)
+        s0 = int(d * SR)
+        out[s0:s0 + len(blip)] += blip * 0.4
+    return norm(reverb(sweep + chord + out, 1.2, 0.3))
+
+
+def sfx_lock():
+    """Vault latch: metallic click + low thunk + short ring."""
+    n = int(0.5 * SR)
+    t = tt(n)
+    click = bp(rng.standard_normal(n), 2000, 7000) * np.exp(-t * 260)
+    thunk = np.sin(2 * np.pi * np.cumsum(110 + 80 * np.exp(-t * 40)) / SR) * np.exp(-t * 22)
+    ring = (np.sin(2 * np.pi * 1240 * t) * 0.5 + np.sin(2 * np.pi * 2130 * t) * 0.3) * np.exp(-t * 18) * 0.35
+    second = np.zeros(n)
+    s0 = int(0.045 * SR)
+    second[s0:] = bp(rng.standard_normal(n - s0), 1500, 6000) * np.exp(-tt(n - s0) * 300) * 0.7
+    return norm(reverb(saturate(click + thunk * 0.9 + ring + second, 1.3), 0.6, 0.2))
+
+
+def sfx_deny():
+    """Blocked access: two short detuned square buzzes."""
+    n = int(0.36 * SR)
+    t = tt(n)
+    buzz = (np.sign(np.sin(2 * np.pi * 140 * t)) + np.sign(np.sin(2 * np.pi * 147 * t))) * 0.5
+    env = np.zeros(n)
+    for s0 in (0.0, 0.17):
+        a0, a1 = int(s0 * SR), int((s0 + 0.13) * SR)
+        env[a0:a1] = np.exp(-tt(a1 - a0) * 9)
+    return norm(lp(buzz * env, 2200) * 0.8)
+
+
+def sfx_rec():
+    """REC start: two clean beeps."""
+    n = int(0.3 * SR)
+    t = tt(n)
+    out = np.zeros(n)
+    for s0 in (0.0, 0.11):
+        a0, a1 = int(s0 * SR), int((s0 + 0.07) * SR)
+        tb = tt(a1 - a0)
+        out[a0:a1] += np.sin(2 * np.pi * 1320 * tb) * np.minimum(1, tb / 0.004) * np.minimum(1, (0.07 - tb) / 0.01)
+    return norm(reverb(out * 0.8, 0.5, 0.15))
+
+
+def sfx_stack():
+    """Data blocks dropping into place, pitch climbing."""
+    n = int(0.9 * SR)
+    out = np.zeros(n)
+    for k in range(7):
+        s0 = int(k * 0.085 * SR)
+        m = int(0.12 * SR)
+        tb = tt(m)
+        f0 = 170 * 2 ** (k / 7)
+        thock = np.sin(2 * np.pi * np.cumsum(f0 + f0 * 1.5 * np.exp(-tb * 60)) / SR) * np.exp(-tb * 30)
+        tick = hp(rng.standard_normal(m), 3000) * np.exp(-tb * 400) * 0.3
+        out[s0:s0 + m] += (thock + tick)[: n - s0] * (0.7 + 0.04 * k)
+    return norm(reverb(out, 0.7, 0.18))
+
+
+def sfx_strike():
+    """Strikethrough zip: quick downward swish."""
+    n = int(0.22 * SR)
+    t = tt(n)
+    cut = np.geomspace(7000, 900, n)
+    x = sweep_filter(rng.standard_normal(n), cut, 'band') * np.minimum(1, t / 0.01) * np.exp(-t * 14)
+    tone = np.sin(2 * np.pi * np.cumsum(np.geomspace(1400, 500, n)) / SR) * np.exp(-t * 20) * 0.25
+    return norm(reverb(x + tone, 0.5, 0.15))
+
+
+def sfx_up(m):
+    """One step of the rising check-chime ladder."""
+    n = int(0.6 * SR)
+    t = tt(n)
+    f = mtof(m)
+    x = (np.sin(2 * np.pi * f * t + np.sin(2 * np.pi * f * 2 * t) * np.exp(-t * 10) * 1.2) * np.exp(-t * 5)
+         + np.sin(2 * np.pi * f * 2 * t) * np.exp(-t * 9) * 0.25)
+    return norm(reverb(fade(x, 0.002, 0.05), 1.0, 0.25))
+
+
 def build_sfx():
     beat_s = BEAT / SR
     return {
@@ -599,7 +750,6 @@ def build_sfx():
         'whoosh-fast': sfx_whoosh(0.4, 0.75, 400, 7000),
         'swipe': sfx_whoosh(0.25, 0.5, 1200, 9000),
         'reverse': sfx_reverse(1.2),
-        'riser': sfx_riser(12 / FPS),
         'riser-long': sfx_riser(20 / FPS),
         'glitch': sfx_glitch(14 / FPS),
         'blip-1': sfx_blip(1800, 2400),
@@ -620,6 +770,17 @@ def build_sfx():
         'analyze': sfx_analyze(),
         'pop': sfx_pop(),
         'cut': sfx_cut(),
+        'boot': sfx_boot(),
+        'lock': sfx_lock(),
+        'deny': sfx_deny(),
+        'rec': sfx_rec(),
+        'stack': sfx_stack(),
+        'strike': sfx_strike(),
+        'up-1': sfx_up(77),
+        'up-2': sfx_up(81),
+        'up-3': sfx_up(84),
+        'up-4': sfx_up(89),
+        'riser-bridge': sfx_riser(28 / FPS),
     }
 
 
