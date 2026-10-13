@@ -1,14 +1,15 @@
 import React from 'react';
 import { AbsoluteFill, random, useCurrentFrame } from 'remotion';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, SpeedLines } from '../components/Background';
 import { Flash, LensStreak, Shake, Shockwave, SliceGlitch } from '../components/Fx';
 import { KineticText } from '../components/Kinetic';
 
-// Content runs 56 frames (global 380–436); the extra 8 frames are the outgoing light-wipe.
+// Content runs 56 frames (global 408–464); the extra 8 frames are the outgoing light-wipe.
 export const AI_INTRO_DURATION = 64;
-// "쌓인 데이터 위에서," builds over the data core, then AI slams on the beat (global 408).
+// "쌓인 데이터 위에서," builds over the data core, then AI slams on the beat (global 436).
+// Chapter accent: violet, with a blue → violet "AI" gradient.
 const HIT = 28;
 const CORE = { x: 960, y: 500 };
 const GLYPHS = ['출결', '판서', '발화', '과제', '평가', '01', '10', 'REC', 'DATA', '0x3F'];
@@ -32,7 +33,7 @@ const CoreRings = () => {
     <AbsoluteFill style={{ opacity: o, transform: `scale(${s})` }}>
       <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0 }}>
         <g transform={`rotate(${frame * 1.6} 960 500)`}>
-          <circle cx={960} cy={500} r={360} fill="none" stroke={C.green} strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="2 14" />
+          <circle cx={960} cy={500} r={360} fill="none" stroke={C.violet} strokeOpacity={0.4} strokeWidth={1.5} strokeDasharray="2 14" />
         </g>
         <g transform={`rotate(${-frame * 0.9} 960 500)`}>
           {ticks.map((_, k) => {
@@ -47,12 +48,12 @@ const CoreRings = () => {
                 y1={500 + Math.sin(a) * r1}
                 x2={960 + Math.cos(a) * r2}
                 y2={500 + Math.sin(a) * r2}
-                stroke={long ? C.green : 'rgba(255,255,255,0.35)'}
+                stroke={long ? C.violet : 'rgba(23,35,60,0.2)'}
                 strokeWidth={long ? 2.5 : 1}
               />
             );
           })}
-          <path d="M 960 70 A 430 430 0 0 1 1390 500" fill="none" stroke={C.greenSoft} strokeWidth={3} strokeLinecap="round" />
+          <path d="M 960 70 A 430 430 0 0 1 1390 500" fill="none" stroke={C.blue} strokeWidth={3} strokeLinecap="round" />
         </g>
       </svg>
     </AbsoluteFill>
@@ -69,10 +70,10 @@ const DataCore = () => {
     <AbsoluteFill style={{ opacity: out }}>
       <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0 }}>
         <g transform={`rotate(${frame * 2.2} ${CORE.x} ${CORE.y})`}>
-          <circle cx={CORE.x} cy={CORE.y} r={150 + build * 30} fill="none" stroke={C.green} strokeOpacity={0.4} strokeWidth={1.5} strokeDasharray="3 12" />
+          <circle cx={CORE.x} cy={CORE.y} r={150 + build * 30} fill="none" stroke={C.violet} strokeOpacity={0.45} strokeWidth={1.5} strokeDasharray="3 12" />
         </g>
         <g transform={`rotate(${-frame * 1.4} ${CORE.x} ${CORE.y})`}>
-          <circle cx={CORE.x} cy={CORE.y} r={230 - build * 40} fill="none" stroke={C.greenSoft} strokeOpacity={0.25} strokeWidth={1} strokeDasharray="40 30" />
+          <circle cx={CORE.x} cy={CORE.y} r={230 - build * 40} fill="none" stroke={C.blue} strokeOpacity={0.3} strokeWidth={1} strokeDasharray="40 30" />
         </g>
       </svg>
       {Array.from({ length: 54 }).map((_, i) => {
@@ -82,7 +83,8 @@ const DataCore = () => {
         const x = CORE.x + Math.cos(a) * r * 1.25;
         const y = CORE.y + Math.sin(a) * r * 0.7;
         const o = ip(r, [40, 120, 620, 800], [0, 1, 0.8, 0]);
-        const gold = random(`dc-c-${i}`) > 0.82;
+        const pick = random(`dc-c-${i}`);
+        const color = pick > 0.85 ? C.gold : pick > 0.45 ? C.violet : C.blue;
         return (
           <div
             key={i}
@@ -94,10 +96,9 @@ const DataCore = () => {
               fontFamily: FONT.mono,
               fontWeight: 700,
               fontSize: 15,
-              color: gold ? C.gold : C.greenSoft,
-              opacity: o * (0.35 + build * 0.65),
+              color,
+              opacity: o * (0.4 + build * 0.55),
               whiteSpace: 'nowrap',
-              textShadow: `0 0 10px ${gold ? C.gold : C.green}`,
             }}
           >
             {GLYPHS[i % GLYPHS.length]}
@@ -112,9 +113,9 @@ const DataCore = () => {
           width: 360,
           height: 360,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(230,255,236,0.95) 0%, rgba(0,223,69,0.7) 16%, rgba(0,223,69,0.16) 44%, rgba(0,223,69,0) 70%)',
+          // a pearl of light: white heart, lavender body, sky halo
+          background: 'radial-gradient(circle at 50% 46%, #FFFFFF 0%, rgba(185,174,249,0.95) 20%, rgba(143,181,250,0.5) 42%, rgba(143,181,250,0) 70%)',
           transform: `scale(${0.45 + build * 0.55 + Math.sin(frame * 0.9) * 0.03})`,
-          mixBlendMode: 'screen',
         }}
       />
     </AbsoluteFill>
@@ -131,11 +132,12 @@ export const AIIntroScene = () => {
   const sheen = ip(frame, [HIT, AI_INTRO_DURATION], [-40, 140], EASE.smooth);
 
   return (
-    <AbsoluteFill style={{ background: C.bgDeep, overflow: 'hidden' }}>
+    <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
+      <BaseBackground glowY={46} glow={0.1} color="214,206,255" color2="196,214,255" />
       <AbsoluteFill style={{ opacity: ip(frame, [HIT - 2, HIT + 4], [0, 1]) }}>
-        <BaseBackground glowY={46} glow={0.28} />
+        <BaseBackground glowY={46} glow={0.26} color="214,206,255" color2="196,214,255" />
       </AbsoluteFill>
-      <SpeedLines progress={ip(frame, [HIT, AI_INTRO_DURATION], [0, 1], EASE.out)} opacity={ip(frame, [HIT, HIT + 3, HIT + 18], [0, 0.9, 0.35])} />
+      <SpeedLines progress={ip(frame, [HIT, AI_INTRO_DURATION], [0, 1], EASE.out)} opacity={ip(frame, [HIT, HIT + 3, HIT + 18], [0, 0.75, 0.3])} />
       <Dust count={30} seed="ai-dust" opacity={0.5} speed={3} />
 
       <Shake events={[{ at: HIT, amp: 34, dur: 16 }]}>
@@ -144,7 +146,7 @@ export const AIIntroScene = () => {
 
         {/* bridge line: the AI is built on the data management just accumulated */}
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 190 }}>
-          <div style={{ fontFamily: FONT.sans, fontWeight: 700, fontSize: 66, color: C.white, letterSpacing: '-0.03em' }}>
+          <div style={{ fontFamily: FONT.sans, fontWeight: 700, fontSize: 66, color: C.ink, letterSpacing: '-0.03em' }}>
             <KineticText
               text="쌓인 데이터 위에서,"
               mode="blur"
@@ -154,7 +156,7 @@ export const AIIntroScene = () => {
               exitAt={HIT - 3}
               exitDuration={4}
               exitStagger={0.2}
-              charColor={(i) => (i >= 3 && i <= 5 ? C.green : undefined)}
+              charColor={(i) => (i >= 3 && i <= 5 ? C.violet : undefined)}
             />
           </div>
         </AbsoluteFill>
@@ -164,14 +166,14 @@ export const AIIntroScene = () => {
           <SliceGlitch amount={glitch} slices={12} seed="ai">
             <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center', paddingBottom: 80 }}>
               <div style={{ position: 'relative', transform: `scale(${scale})` }}>
-                {/* chromatic fringe layers sit behind the gradient glyphs */}
+                {/* pastel echo layers sit behind the gradient glyphs */}
                 {[
-                  ['rgba(255,40,90,0.9)', -split],
-                  ['rgba(0,230,255,0.9)', split],
+                  ['rgba(92,201,142,0.55)', -split],
+                  ['rgba(120,160,250,0.55)', split],
                 ].map(([color, dx]) => (
                   <div
                     key={color}
-                    style={{ ...AI_GLYPH, position: 'absolute', inset: 0, color, transform: `translateX(${dx}px)`, mixBlendMode: 'screen', opacity: ip(split, [2, 10], [0.25, 1]) }}
+                    style={{ ...AI_GLYPH, position: 'absolute', inset: 0, color, transform: `translateX(${dx}px)`, opacity: ip(split, [2, 10], [0.2, 1]) }}
                   >
                     AI
                   </div>
@@ -180,11 +182,12 @@ export const AIIntroScene = () => {
                   style={{
                     ...AI_GLYPH,
                     position: 'relative',
-                    backgroundImage: `linear-gradient(105deg, ${C.white} 0%, ${C.white} ${sheen - 18}%, #c9ffd9 ${sheen - 6}%, ${C.green} ${sheen}%, #c9ffd9 ${sheen + 6}%, ${C.white} ${sheen + 18}%, ${C.white} 100%)`,
+                    // white specular band sweeping over a blue → violet body
+                    backgroundImage: `linear-gradient(105deg, transparent ${sheen - 12}%, rgba(255,255,255,0.85) ${sheen}%, transparent ${sheen + 12}%), linear-gradient(105deg, ${C.blue} 0%, ${C.violet} 58%, #A06CEB 100%)`,
                     WebkitBackgroundClip: 'text',
                     backgroundClip: 'text',
                     color: 'transparent',
-                    filter: 'drop-shadow(0 0 60px rgba(0,223,69,0.45))',
+                    filter: `drop-shadow(0 30px 60px ${alpha(C.violet, 0.28)})`,
                   }}
                 >
                   AI
@@ -196,15 +199,15 @@ export const AIIntroScene = () => {
 
         {/* payoff line */}
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 150 }}>
-          <div style={{ fontFamily: FONT.sans, fontWeight: 700, fontSize: 52, color: C.white, letterSpacing: '-0.03em' }}>
-            <KineticText text="수업을 읽고, 평가하고, 관리합니다." mode="pop" delay={HIT + 7} stagger={0.7} charColor={(i) => (isVerb(i) ? C.green : undefined)} />
+          <div style={{ fontFamily: FONT.sans, fontWeight: 700, fontSize: 52, color: C.ink, letterSpacing: '-0.03em' }}>
+            <KineticText text="수업을 읽고, 평가하고, 관리합니다." mode="pop" delay={HIT + 7} stagger={0.7} charColor={(i) => (isVerb(i) ? C.violet : undefined)} />
           </div>
         </AbsoluteFill>
       </Shake>
 
-      <Shockwave at={HIT} y={500} maxR={1200} dur={22} rings={3} />
-      <LensStreak at={HIT} y={500} dur={20} />
-      <Flash at={HIT} duration={8} peak={1} />
+      <Shockwave at={HIT} y={500} maxR={1200} dur={22} rings={3} color={C.violetSoft} />
+      <LensStreak at={HIT} y={500} dur={20} color="150,140,245" core="110,160,250" />
+      <Flash at={HIT} duration={8} peak={0.6} />
     </AbsoluteFill>
   );
 };

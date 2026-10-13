@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { evolvePath, getLength, getPointAtLength } from '@remotion/paths';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridFloor } from '../components/Background';
 import { Flash, LensStreak, Shockwave, rgbSplit } from '../components/Fx';
@@ -10,11 +10,12 @@ import { ChapterPill } from '../components/ChapterPill';
 
 /*
  * ④ 가치 — waste and cost fall while quality and efficiency rise.
- * Content runs 98 frames (global 506–604); the extra 10 frames are the outgoing dip to black.
+ * Content runs 98 frames (global 534–632); the extra 10 frames are the outgoing dip to white.
+ * Colour story: cost / waste in coral, quality / efficiency in green.
  * Claims stay qualitative; the two numeric tags (1일, 0건) come from the landing page copy.
  */
 export const VALUE_DURATION = 108;
-const SLAM = 14; // "품질은 높이고." lands on the beat (global 520)
+const SLAM = 14; // "품질은 높이고." lands on the beat (global 548)
 // Lines draw linearly so every tag lands on an 8th note of the music
 // (strikes at 21/28/35/42, the crossing on the beat at 42, checks at 49/56/63/70).
 const DRAW = [12, 74];
@@ -72,7 +73,7 @@ const Tag = ({ tag, kind }) => {
   const strike = cost ? ip(t, [4, 9], [0, 1], EASE.inOut) : 0;
   const dim = cost ? ip(t, [9, 15], [1, 0.55]) : 1;
   const check = cost ? 0 : spring({ frame: t - 3, fps, config: { damping: 9, stiffness: 240 } });
-  const color = cost ? C.gold : C.green;
+  const color = cost ? C.coral : C.green;
   const offset = 30;
 
   return (
@@ -86,9 +87,9 @@ const Tag = ({ tag, kind }) => {
           width: 14,
           height: 14,
           borderRadius: 7,
-          background: '#04130b',
+          background: C.surface,
           border: `3px solid ${color}`,
-          boxShadow: `0 0 14px ${color}`,
+          boxShadow: `0 4px 10px ${alpha(color, 0.35)}`,
           transform: `scale(${pop})`,
         }}
       />
@@ -117,14 +118,14 @@ const Tag = ({ tag, kind }) => {
           padding: '10px 18px 10px 12px',
           borderRadius: 14,
           whiteSpace: 'nowrap',
-          background: cost ? 'rgba(40,30,4,0.92)' : 'rgba(4,34,18,0.92)',
-          border: `1.5px solid ${color}`,
-          boxShadow: `0 16px 40px rgba(0,0,0,0.5), 0 0 24px ${cost ? 'rgba(230,184,0,0.18)' : 'rgba(0,223,69,0.25)'}`,
+          background: C.surface,
+          border: `1.5px solid ${alpha(color, 0.55)}`,
+          boxShadow: SHADOW.card,
           fontFamily: FONT.sans,
           fontWeight: 800,
           fontSize: 24,
           letterSpacing: '-0.02em',
-          color: C.white,
+          color: C.ink,
         }}
       >
         <span
@@ -135,8 +136,8 @@ const Tag = ({ tag, kind }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: cost ? (strike > 0.5 ? '#ff6b6b' : 'rgba(230,184,0,0.25)') : C.green,
-            color: '#04130b',
+            background: cost ? (strike > 0.5 ? C.coral : C.peach) : C.green,
+            color: cost && strike <= 0.5 ? C.coral : C.white,
             fontSize: 16,
             fontWeight: 900,
             transform: cost ? undefined : `scale(${check})`,
@@ -154,8 +155,7 @@ const Tag = ({ tag, kind }) => {
                 top: '52%',
                 height: 3,
                 width: `calc(${strike * 100}% + 8px)`,
-                background: '#ff6b6b',
-                boxShadow: '0 0 8px #ff6b6b',
+                background: C.coral,
                 borderRadius: 2,
               }}
             />
@@ -184,12 +184,12 @@ const Chart = () => {
       <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
         <defs>
           <linearGradient id="val-q" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={C.green} stopOpacity="0.28" />
+            <stop offset="0" stopColor={C.green} stopOpacity="0.22" />
             <stop offset="1" stopColor={C.green} stopOpacity="0" />
           </linearGradient>
           <linearGradient id="val-c" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor={C.gold} stopOpacity="0.14" />
-            <stop offset="1" stopColor={C.gold} stopOpacity="0" />
+            <stop offset="0" stopColor={C.coral} stopOpacity="0.12" />
+            <stop offset="1" stopColor={C.coral} stopOpacity="0" />
           </linearGradient>
           <clipPath id="val-reveal">
             <rect x={X0} y={0} width={revealX - X0} height={1080} />
@@ -199,10 +199,10 @@ const Chart = () => {
         {/* axes + guides */}
         <g opacity={axes}>
           {[620, 720, 820].map((y) => (
-            <line key={y} x1={X0} y1={y} x2={X0 + (X1 - X0) * axes} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+            <line key={y} x1={X0} y1={y} x2={X0 + (X1 - X0) * axes} y2={y} stroke="rgba(23,35,60,0.07)" strokeWidth={1} />
           ))}
-          <line x1={X0} y1={BASE_Y} x2={X0 + (X1 - X0) * axes} y2={BASE_Y} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} />
-          <line x1={X0} y1={BASE_Y} x2={X0} y2={BASE_Y - 460 * axes} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} />
+          <line x1={X0} y1={BASE_Y} x2={X0 + (X1 - X0) * axes} y2={BASE_Y} stroke="rgba(23,35,60,0.3)" strokeWidth={1.5} />
+          <line x1={X0} y1={BASE_Y} x2={X0} y2={BASE_Y - 460 * axes} stroke="rgba(23,35,60,0.3)" strokeWidth={1.5} />
           <text x={X1} y={BASE_Y + 34} fill={C.dim} fontSize={16} fontFamily={FONT.mono} textAnchor="end" letterSpacing="0.2em">
             운영 기간 →
           </text>
@@ -223,11 +223,11 @@ const Chart = () => {
 
         {/* lines */}
         {[
-          [COST, cost, C.gold],
+          [COST, cost, C.coral],
           [QUALITY, quality, C.green],
         ].map(([d, ev, color]) => (
           <g key={color}>
-            <path d={d} fill="none" stroke={color} strokeOpacity={0.35} strokeWidth={14} strokeLinecap="round" strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} style={{ filter: 'blur(6px)' }} />
+            <path d={d} fill="none" stroke={color} strokeOpacity={0.18} strokeWidth={14} strokeLinecap="round" strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} style={{ filter: 'blur(6px)' }} />
             <path d={d} fill="none" stroke={color} strokeWidth={5} strokeLinecap="round" strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} />
           </g>
         ))}
@@ -235,11 +235,11 @@ const Chart = () => {
         {/* drawing tips */}
         {drawing &&
           [
-            [costTip, C.gold],
-            [qualityTip, C.greenSoft],
+            [costTip, C.coral],
+            [qualityTip, C.green],
           ].map(([pt, color]) => (
             <g key={color}>
-              <circle cx={pt.x} cy={pt.y} r={16} fill={color} opacity={0.3} style={{ filter: 'blur(4px)' }} />
+              <circle cx={pt.x} cy={pt.y} r={16} fill={color} opacity={0.22} style={{ filter: 'blur(4px)' }} />
               <circle cx={pt.x} cy={pt.y} r={7} fill="#fff" stroke={color} strokeWidth={3} />
             </g>
           ))}
@@ -247,23 +247,23 @@ const Chart = () => {
         {/* crossing point */}
         {crossed && (
           <g>
-            <circle cx={CROSS.x} cy={CROSS.y} r={12 + marker * 8} fill="none" stroke="#fff" strokeWidth={2} opacity={1 - marker * 0.6} />
-            <circle cx={CROSS.x} cy={CROSS.y} r={8} fill="#fff" style={{ filter: `drop-shadow(0 0 12px ${C.green})` }} />
+            <circle cx={CROSS.x} cy={CROSS.y} r={12 + marker * 8} fill="none" stroke={C.green} strokeWidth={2} opacity={1 - marker * 0.6} />
+            <circle cx={CROSS.x} cy={CROSS.y} r={8} fill="#fff" stroke={C.green} strokeWidth={3} style={{ filter: `drop-shadow(0 4px 10px ${alpha(C.green, 0.45)})` }} />
           </g>
         )}
 
         {/* series labels at the start, arrows at the end */}
         <g opacity={axes}>
-          <text x={X0 + 18} y={512} fill={C.gold} fontSize={24} fontWeight={800} fontFamily={FONT.sans}>
+          <text x={X0 + 18} y={512} fill={C.coral} fontSize={24} fontWeight={800} fontFamily={FONT.sans}>
             비용 · 낭비
           </text>
-          <text x={X0 + 18} y={878} fill={C.green} fontSize={24} fontWeight={800} fontFamily={FONT.sans}>
+          <text x={X0 + 18} y={878} fill={C.greenInk} fontSize={24} fontWeight={800} fontFamily={FONT.sans}>
             품질 · 효율
           </text>
         </g>
         {p >= 0.98 && (
           <g opacity={ip(frame, [DRAW[1] - 1, DRAW[1] + 4], [0, 1])}>
-            <text x={X1 + 22} y={922} fill={C.gold} fontSize={46} fontWeight={900} fontFamily={FONT.sans}>
+            <text x={X1 + 22} y={922} fill={C.coral} fontSize={46} fontWeight={900} fontFamily={FONT.sans}>
               ↓
             </text>
             <text x={X1 + 22} y={538} fill={C.green} fontSize={46} fontWeight={900} fontFamily={FONT.sans}>
@@ -284,12 +284,12 @@ const Chart = () => {
             padding: '8px 18px',
             borderRadius: 999,
             background: C.green,
-            color: '#04130b',
+            color: C.white,
             fontFamily: FONT.sans,
             fontWeight: 900,
             fontSize: 22,
             whiteSpace: 'nowrap',
-            boxShadow: `0 0 30px rgba(0,223,69,0.55)`,
+            boxShadow: `0 10px 26px ${alpha(C.green, 0.35)}`,
           }}
         >
           ClassIn 도입
@@ -313,7 +313,7 @@ export const ValueScene = () => {
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
-      <BaseBackground glowX={58} glowY={62} glow={0.14} />
+      <BaseBackground glowX={58} glowY={62} glow={0.14} color="178,232,203" color2="255,221,206" />
       <GridFloor opacity={0.3} speed={5} top={60} />
       <Dust count={24} seed="value-dust" opacity={0.35} speed={1.2} />
 
@@ -321,10 +321,10 @@ export const ValueScene = () => {
         <Chart />
 
         <div style={{ position: 'absolute', left: 140, top: 160, width: 900 }}>
-          <ChapterPill index="04" label="가치" delay={2} />
-          <div style={{ fontFamily: FONT.sans, fontSize: 112, lineHeight: 1.1, letterSpacing: '-0.05em', color: C.white }}>
+          <ChapterPill index="04" label="가치" delay={2} color={C.gold} />
+          <div style={{ fontFamily: FONT.sans, fontSize: 112, lineHeight: 1.1, letterSpacing: '-0.05em', color: C.ink }}>
             <div style={{ fontWeight: 800 }}>
-              <KineticText text="비용은 줄이고," mode="rise" delay={4} stagger={1.3} duration={12} charColor={(i) => (i >= 4 && i <= 6 ? C.gold : undefined)} />
+              <KineticText text="비용은 줄이고," mode="rise" delay={4} stagger={1.3} duration={12} charColor={(i) => (i >= 4 && i <= 6 ? C.coral : undefined)} />
             </div>
             <div style={{ fontWeight: 900, textShadow: rgbSplit(split) }}>
               <KineticText text="품질은 높이고." mode="slam" delay={SLAM} stagger={1.2} charColor={(i) => (i >= 4 && i <= 6 ? C.green : undefined)} />
@@ -333,19 +333,19 @@ export const ValueScene = () => {
         </div>
 
         <div style={{ position: 'absolute', right: 140, top: 196, textAlign: 'right' }}>
-          <div style={{ fontFamily: FONT.mono, fontSize: 19, letterSpacing: '0.3em', color: C.green, marginBottom: 14 }}>
+          <div style={{ fontFamily: FONT.mono, fontSize: 19, letterSpacing: '0.3em', color: C.greenInk, marginBottom: 14 }}>
             <KineticText text="LESS WASTE · MORE QUALITY" mode="scramble" delay={18} stagger={0.4} duration={10} />
           </div>
           <div style={{ fontFamily: FONT.sans, fontWeight: 600, fontSize: 38, lineHeight: 1.35, color: C.mute, letterSpacing: '-0.03em' }}>
-            <KineticText text="관리는 AI가," mode="blur" delay={56} stagger={0.8} duration={10} charColor={(i) => (i >= 4 && i <= 5 ? C.green : undefined)} />
+            <KineticText text="관리는 AI가," mode="blur" delay={56} stagger={0.8} duration={10} charColor={(i) => (i >= 4 && i <= 5 ? C.violet : undefined)} />
             <br />
-            <KineticText text="본사는 결정만." mode="blur" delay={62} stagger={0.8} duration={10} charColor={(i) => (i >= 4 ? C.white : undefined)} />
+            <KineticText text="본사는 결정만." mode="blur" delay={62} stagger={0.8} duration={10} charColor={(i) => (i >= 4 ? C.ink : undefined)} />
           </div>
         </div>
       </AbsoluteFill>
 
-      <Flash at={SLAM} duration={4} peak={0.12} color={C.greenSoft} />
-      <Flash at={Math.round(CROSS_AT)} duration={6} peak={0.22} color={C.greenSoft} />
+      <Flash at={SLAM} duration={4} peak={0.3} color={C.white} />
+      <Flash at={Math.round(CROSS_AT)} duration={6} peak={0.35} color={C.white} />
       <Shockwave at={Math.round(CROSS_AT)} x={CROSS.x} y={CROSS.y} maxR={520} dur={18} rings={2} />
       <LensStreak at={Math.round(CROSS_AT)} y={CROSS.y} dur={14} />
     </AbsoluteFill>

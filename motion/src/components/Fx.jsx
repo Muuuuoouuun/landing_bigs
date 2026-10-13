@@ -1,10 +1,10 @@
 import React from 'react';
 import { AbsoluteFill, interpolate, random, staticFile, useCurrentFrame } from 'remotion';
 import { noise2D } from '@remotion/noise';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, ip } from '../theme';
 
-/** Animated 35mm-style film grain: 4 noise tiles cycled with random offsets. */
-export const Grain = ({ opacity = 0.32 }) => {
+/** Fine animated film grain: 4 noise tiles cycled with random offsets, kept faint on the light page. */
+export const Grain = ({ opacity = 0.16 }) => {
   const frame = useCurrentFrame();
   const tile = staticFile(`grain/grain-${frame % 4}.png`);
   const x = Math.floor(random(`gx-${frame}`) * 384);
@@ -18,27 +18,37 @@ export const Grain = ({ opacity = 0.32 }) => {
   return (
     <>
       <AbsoluteFill style={{ ...layer, opacity, mixBlendMode: 'overlay' }} />
-      <AbsoluteFill style={{ ...layer, opacity: 0.045, mixBlendMode: 'screen' }} />
+      <AbsoluteFill style={{ ...layer, opacity: 0.025, mixBlendMode: 'multiply' }} />
     </>
   );
 };
 
-export const Vignette = ({ strength = 0.72 }) => (
+/** Soft, cool light falloff toward the corners. */
+export const Vignette = ({ strength = 0.07 }) => (
   <AbsoluteFill
     style={{
       pointerEvents: 'none',
-      background: `radial-gradient(ellipse 75% 70% at 50% 50%, transparent 52%, rgba(0,0,0,${strength}) 100%)`,
+      background: `radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(31,52,96,${strength}) 100%)`,
     }}
   />
 );
 
-export const Letterbox = ({ size }) =>
-  size > 0.5 ? (
-    <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, height: size, background: '#000' }} />
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: size, background: '#000' }} />
+/**
+ * Light-theme letterbox: the film sits in a rounded card on a pale matte, opens to full
+ * bleed on the first impact and closes back into a card at the end.
+ * The children always render in the same slot, so nothing remounts as the matte opens.
+ */
+export const FrameMatte = ({ inset, children }) => {
+  const on = inset > 0.5;
+  const ix = inset * 0.5;
+  const radius = Math.min(32, inset * 0.3);
+  return (
+    <AbsoluteFill style={{ background: C.page }}>
+      {on && <div style={{ position: 'absolute', left: ix, right: ix, top: inset, bottom: inset, borderRadius: radius, boxShadow: SHADOW.float }} />}
+      <AbsoluteFill style={{ clipPath: on ? `inset(${inset}px ${ix}px round ${radius}px)` : undefined }}>{children}</AbsoluteFill>
     </AbsoluteFill>
-  ) : null;
+  );
+};
 
 export const Flash = ({ at, duration = 7, peak = 0.85, color = '#ffffff' }) => {
   const frame = useCurrentFrame();
@@ -48,7 +58,7 @@ export const Flash = ({ at, duration = 7, peak = 0.85, color = '#ffffff' }) => {
     easing: EASE.out,
   });
   if (o <= 0.001) return null;
-  return <AbsoluteFill style={{ background: color, opacity: o, mixBlendMode: 'screen', pointerEvents: 'none' }} />;
+  return <AbsoluteFill style={{ background: color, opacity: o, pointerEvents: 'none' }} />;
 };
 
 /** Camera shake driven by simplex noise; each event decays out. */
@@ -69,8 +79,8 @@ export const Shake = ({ events, children, style }) => {
   );
 };
 
-/** Expanding ring(s) — impact shockwave. */
-export const Shockwave = ({ at, x = 960, y = 540, maxR = 900, dur = 22, rings = 3, color = C.green }) => {
+/** Expanding ring(s) — a soft impact ripple. */
+export const Shockwave = ({ at, x = 960, y = 540, maxR = 900, dur = 22, rings = 3, color = C.greenSoft, peak = 0.7 }) => {
   const frame = useCurrentFrame();
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
@@ -79,8 +89,8 @@ export const Shockwave = ({ at, x = 960, y = 540, maxR = 900, dur = 22, rings = 
           const f = frame - at - k * 3;
           if (f < 0 || f > dur) return null;
           const r = ip(f, [0, dur], [10, maxR * (1 - k * 0.18)], EASE.out);
-          const o = ip(f, [0, dur], [0.9, 0], EASE.smooth);
-          const w = ip(f, [0, dur], [10, 0.5], EASE.out);
+          const o = ip(f, [0, dur], [peak, 0], EASE.smooth);
+          const w = ip(f, [0, dur], [7, 0.5], EASE.out);
           return <circle key={k} cx={x} cy={y} r={r} fill="none" stroke={color} strokeWidth={w} opacity={o} />;
         })}
       </svg>
@@ -88,8 +98,8 @@ export const Shockwave = ({ at, x = 960, y = 540, maxR = 900, dur = 22, rings = 
   );
 };
 
-/** Anamorphic horizontal lens streak that blooms on an impact. */
-export const LensStreak = ({ at, y = 540, x = 960, dur = 18, width = 1700, color = '120,255,170' }) => {
+/** Horizontal light ray that blooms on an impact — tinted so it reads on a light page. */
+export const LensStreak = ({ at, y = 540, x = 960, dur = 18, width = 1700, color = '110,160,250', core = '92,201,142' }) => {
   const frame = useCurrentFrame();
   const f = frame - at;
   if (f < -1 || f > dur) return null;
@@ -101,7 +111,6 @@ export const LensStreak = ({ at, y = 540, x = 960, dur = 18, width = 1700, color
     width,
     transform: `scaleX(${sx})`,
     pointerEvents: 'none',
-    mixBlendMode: 'screen',
   };
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
@@ -110,31 +119,31 @@ export const LensStreak = ({ at, y = 540, x = 960, dur = 18, width = 1700, color
           ...base,
           top: y - 40,
           height: 80,
-          opacity: o * 0.35,
+          opacity: o * 0.3,
           filter: 'blur(22px)',
-          background: `linear-gradient(90deg, transparent, rgba(${color},0.8) 35%, #fff 50%, rgba(${color},0.8) 65%, transparent)`,
+          background: `linear-gradient(90deg, transparent, rgba(${color},0.7) 35%, rgba(${core},0.8) 50%, rgba(${color},0.7) 65%, transparent)`,
         }}
       />
       <div
         style={{
           ...base,
-          top: y - 2,
-          height: 4,
-          opacity: o,
-          filter: 'blur(1.5px)',
-          background: `linear-gradient(90deg, transparent, rgba(${color},0.9) 30%, #fff 50%, rgba(${color},0.9) 70%, transparent)`,
+          top: y - 1.5,
+          height: 3,
+          opacity: o * 0.85,
+          filter: 'blur(1px)',
+          background: `linear-gradient(90deg, transparent, rgba(${color},0.8) 30%, rgba(${core},1) 50%, rgba(${color},0.8) 70%, transparent)`,
         }}
       />
     </AbsoluteFill>
   );
 };
 
-/** Text-shadow chromatic aberration (cheap RGB split). */
+/** Text-shadow double exposure in pastel mint / sky (a soft take on an RGB split). */
 export const rgbSplit = (px) =>
-  px > 0.15 ? `${px}px 0 rgba(255,40,90,0.85), ${-px}px 0 rgba(0,230,255,0.85)` : undefined;
+  px > 0.15 ? `${px}px 0 rgba(92,201,142,0.5), ${-px}px 0 rgba(120,160,250,0.5)` : undefined;
 
 /** HUD corner brackets around a box. */
-export const Brackets = ({ x, y, w, h, len = 26, color = C.green, opacity = 1, thickness = 2 }) => {
+export const Brackets = ({ x, y, w, h, len = 26, color = C.blueSoft, opacity = 1, thickness = 2 }) => {
   const s = { position: 'absolute', borderColor: color, borderStyle: 'solid', width: len, height: len, opacity };
   return (
     <>

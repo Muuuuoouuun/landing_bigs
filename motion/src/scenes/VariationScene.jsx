@@ -5,23 +5,28 @@ import { FONT } from '../fonts';
 
 /*
  * Interlude — a "variation" on the film's theme, dropped into the middle of the reel.
- * Same message, opposite treatment: ivory paper instead of dark glass, a flat Swiss grid
- * instead of glowing HUD, color blocks instead of light, and motion stepped on twos
- * (stop-motion staccato) instead of smooth easing.
+ * Same message, different treatment: warm ivory paper instead of cool white glass, a flat
+ * Swiss grid instead of floating cards and soft shadows, solid pastel blocks instead of light,
+ * and motion stepped on twos (stop-motion staccato) instead of smooth easing.
  *
  * Global 352–408 (four beats). Beats 1–2: the system's eight parts stamp into the grid on
  * 16th notes (each stamp is a marimba note in the score). Beats 3–4: the grid folds into a
  * header band and the chapter's statement is stamped like a poster (words at 34/36/38/42).
- * The last 8 frames overlap the iris that opens into the dark data-core bridge.
+ * The last 8 frames overlap the iris that opens into the data-core bridge.
  */
 export const VARIATION_DURATION = 64;
 
-const PAPER = '#f2efe6';
-const INK = '#0c1f16';
-const DEEP = '#0b3d2b';
-const BRAND = '#04bc09';
-const GOLD = '#e6b800';
-const HAIR = 'rgba(12,31,22,0.16)';
+// a warm poster palette: ivory paper, navy ink and flat pastel blocks
+const PAPER = '#F4F0E6';
+const INK = '#17233C';
+const MINT = '#BDEBD2';
+const SKY = '#C9DBFF';
+const BUTTER = '#FFE19E';
+const LILAC = '#D9D0FF';
+const BLUE = '#3F7CF0';
+const BRAND = '#1EA85A';
+const GOLD = '#F2B94B';
+const HAIR = 'rgba(23,35,60,0.16)';
 
 const X0 = 96;
 const Y0 = 186;
@@ -34,13 +39,13 @@ const STAMPS = [0, 4, 7, 11, 14, 18, 21, 25];
 const FOLD = [28, 32]; // the grid folds into the header band on beat 3
 
 const CELLS = [
-  { word: '인프라', group: '표준화', bg: INK, fg: PAPER, accent: BRAND, icon: 'rack' },
-  { word: '수업', group: '표준화', bg: BRAND, fg: INK, accent: INK, icon: 'curve' },
+  { word: '인프라', group: '표준화', bg: INK, fg: PAPER, accent: MINT, icon: 'rack' },
+  { word: '수업', group: '표준화', bg: MINT, fg: INK, accent: INK, icon: 'curve' },
   { word: '콘텐츠', group: '표준화', bg: PAPER, fg: INK, accent: BRAND, icon: 'docs' },
-  { word: '보안', group: '관리', bg: DEEP, fg: PAPER, accent: GOLD, icon: 'lock' },
-  { word: '녹화', group: '관리', bg: GOLD, fg: INK, accent: INK, icon: 'rec' },
-  { word: '권한', group: '관리', bg: PAPER, fg: INK, accent: BRAND, icon: 'key' },
-  { word: '데이터', group: '관리', bg: INK, fg: BRAND, accent: BRAND, icon: 'bars' },
+  { word: '보안', group: '관리', bg: SKY, fg: INK, accent: INK, icon: 'lock' },
+  { word: '녹화', group: '관리', bg: BUTTER, fg: INK, accent: INK, icon: 'rec' },
+  { word: '권한', group: '관리', bg: PAPER, fg: INK, accent: BLUE, icon: 'key' },
+  { word: '데이터', group: '관리', bg: LILAC, fg: INK, accent: INK, icon: 'bars' },
   { word: 'ClassIn', group: 'ONE SYSTEM', bg: BRAND, fg: '#ffffff', accent: '#ffffff', icon: 'logo' },
 ];
 
@@ -261,9 +266,9 @@ const VariationContent = () => {
                   bottom: 10,
                   height: 16,
                   width: `${underline * 88}%`,
-                  background: BRAND,
+                  background: BUTTER,
                   zIndex: -1,
-                  opacity: 0.35,
+                  opacity: 0.9,
                 }}
               />
             </span>

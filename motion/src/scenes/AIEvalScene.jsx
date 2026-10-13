@@ -2,13 +2,14 @@ import React from 'react';
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { noise2D } from '@remotion/noise';
 import { evolvePath } from '@remotion/paths';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Brackets, Flash } from '../components/Fx';
 import { KineticText, RollingNumber, Typewriter } from '../components/Kinetic';
 import { ChapterPill } from '../components/ChapterPill';
 
+// Chapter accent: violet.
 export const AI_EVAL_DURATION = 80;
 
 const PANEL = { x: 820, y: 150, w: 980, h: 780 };
@@ -43,15 +44,15 @@ const Radar = () => {
           width: (RADAR.r + 10) * 2,
           height: (RADAR.r + 10) * 2,
           borderRadius: '50%',
-          background: `conic-gradient(from ${sweep}deg, rgba(0,223,69,0.32) 0deg, rgba(0,223,69,0) 70deg, rgba(0,223,69,0) 360deg)`,
+          background: `conic-gradient(from ${sweep}deg, rgba(123,108,240,0.2) 0deg, rgba(123,108,240,0) 70deg, rgba(123,108,240,0) 360deg)`,
           opacity: ip(frame, [6, 14], [0, 1]) * ip(frame, [COMPLETE - 6, COMPLETE + 4], [1, 0.25]),
         }}
       />
       <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
         <defs>
           <radialGradient id="radarFill" cx={RADAR.cx} cy={RADAR.cy} r={RADAR.r} gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor={C.green} stopOpacity="0.05" />
-            <stop offset="1" stopColor={C.green} stopOpacity="0.45" />
+            <stop offset="0" stopColor={C.violet} stopOpacity="0.06" />
+            <stop offset="1" stopColor={C.violet} stopOpacity="0.32" />
           </radialGradient>
         </defs>
         {[0.25, 0.5, 0.75, 1].map((f, k) => {
@@ -61,7 +62,7 @@ const Radar = () => {
               key={f}
               d={ring(RADAR.r * f)}
               fill="none"
-              stroke="rgba(255,255,255,0.16)"
+              stroke="rgba(23,35,60,0.13)"
               strokeWidth={1.2}
               strokeDasharray={ev.strokeDasharray}
               strokeDashoffset={ev.strokeDashoffset}
@@ -71,13 +72,13 @@ const Radar = () => {
         {AXES.map((_, k) => {
           const p = ip(frame, [8 + k, 16 + k], [0, 1]);
           const [x, y] = polar(k, RADAR.r * p);
-          return <line key={k} x1={RADAR.cx} y1={RADAR.cy} x2={x} y2={y} stroke="rgba(255,255,255,0.18)" strokeWidth={1} />;
+          return <line key={k} x1={RADAR.cx} y1={RADAR.cy} x2={x} y2={y} stroke="rgba(23,35,60,0.13)" strokeWidth={1} />;
         })}
-        <path d={data} fill="url(#radarFill)" stroke={C.greenSoft} strokeWidth={3} strokeLinejoin="round" style={{ filter: `drop-shadow(0 0 10px ${C.green})` }} />
+        <path d={data} fill="url(#radarFill)" stroke={C.violet} strokeWidth={3} strokeLinejoin="round" style={{ filter: `drop-shadow(0 8px 16px ${alpha(C.violet, 0.3)})` }} />
         {VALUES.map((v, k) => {
           const [x, y] = polar(k, RADAR.r * v * grow * breathe);
           const pop = spring({ frame: frame - 24 - k * 2, fps, config: { damping: 9, stiffness: 220 } });
-          return <circle key={k} cx={x} cy={y} r={6.5 * pop} fill="#fff" stroke={C.green} strokeWidth={3} />;
+          return <circle key={k} cx={x} cy={y} r={6.5 * pop} fill="#fff" stroke={C.violet} strokeWidth={3} />;
         })}
       </svg>
       {AXES.map((label, k) => {
@@ -97,8 +98,8 @@ const Radar = () => {
               fontFamily: FONT.sans,
             }}
           >
-            <div style={{ color: C.white, fontWeight: 700, fontSize: 19 }}>{label}</div>
-            <div style={{ color: C.green, fontFamily: FONT.mono, fontWeight: 700, fontSize: 15 }}>{score}</div>
+            <div style={{ color: C.ink, fontWeight: 700, fontSize: 19 }}>{label}</div>
+            <div style={{ color: C.violetInk, fontFamily: FONT.mono, fontWeight: 700, fontSize: 15 }}>{score}</div>
           </div>
         );
       })}
@@ -106,23 +107,23 @@ const Radar = () => {
   );
 };
 
-const MetricRow = ({ label, value, bar, delay, accent = C.green, split }) => {
+const MetricRow = ({ label, value, bar, delay, accent = C.violet, split }) => {
   const frame = useCurrentFrame();
   const p = ip(frame, [delay, delay + 18], [0, 1], EASE.out);
   return (
     <div style={{ opacity: ip(frame, [delay - 4, delay + 2], [0, 1]), marginBottom: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontFamily: FONT.sans, marginBottom: 9 }}>
         <span style={{ color: C.mute, fontWeight: 600, fontSize: 19 }}>{label}</span>
-        <span style={{ color: C.white, fontFamily: FONT.mono, fontWeight: 700, fontSize: 21 }}>{value(p)}</span>
+        <span style={{ color: C.ink, fontFamily: FONT.mono, fontWeight: 700, fontSize: 21 }}>{value(p)}</span>
       </div>
-      <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', display: 'flex' }}>
+      <div style={{ height: 8, borderRadius: 4, background: C.hair, overflow: 'hidden', display: 'flex' }}>
         {split ? (
           <>
-            <div style={{ width: `${split[0] * p}%`, background: C.green, boxShadow: `0 0 12px ${C.green}` }} />
-            <div style={{ width: `${split[1] * p}%`, background: C.gold, marginLeft: 3 }} />
+            <div style={{ width: `${split[0] * p}%`, background: C.blue, borderRadius: 4 }} />
+            <div style={{ width: `${split[1] * p}%`, background: C.gold, marginLeft: 3, borderRadius: 4 }} />
           </>
         ) : (
-          <div style={{ width: `${bar * p}%`, background: `linear-gradient(90deg, ${C.greenDeep}, ${accent})`, boxShadow: `0 0 12px ${accent}` }} />
+          <div style={{ width: `${bar * p}%`, borderRadius: 4, background: `linear-gradient(90deg, ${C.violetSoft}, ${accent})` }} />
         )}
       </div>
     </div>
@@ -145,8 +146,8 @@ const Waveform = ({ x, y, w, h, bars = 56 }) => {
               flex: 1,
               height: `${Math.max(6, v * 100)}%`,
               borderRadius: 2,
-              background: teacher ? C.green : C.gold,
-              opacity: 0.85,
+              background: teacher ? C.violet : C.gold,
+              opacity: 0.8,
             }}
           />
         );
@@ -162,7 +163,7 @@ const FeatureWheel = ({ x, y }) => {
   const appear = ip(frame, [8, 18], [0, 1], EASE.out);
   return (
     <div style={{ position: 'absolute', left: x, top: y, width: 600, height: 300, perspective: 900, perspectiveOrigin: '40px 150px', opacity: appear }}>
-      <div style={{ position: 'absolute', left: 0, top: 128, width: 5, height: 46, background: C.green, boxShadow: `0 0 16px ${C.green}` }} />
+      <div style={{ position: 'absolute', left: 0, top: 128, width: 5, height: 46, borderRadius: 3, background: C.violet }} />
       {FEATURES.map((f, i) => {
         let d = (((i - active) % n) + n) % n;
         if (d > n / 2) d -= n;
@@ -185,9 +186,8 @@ const FeatureWheel = ({ x, y }) => {
               fontWeight: isActive ? 800 : 600,
               fontSize: 46,
               letterSpacing: '-0.03em',
-              color: isActive ? C.green : C.white,
+              color: isActive ? C.violet : C.ink,
               whiteSpace: 'nowrap',
-              textShadow: isActive ? '0 0 30px rgba(0,223,69,0.45)' : undefined,
             }}
           >
             {f}
@@ -211,18 +211,18 @@ export const AIEvalScene = () => {
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
-      <BaseBackground glowX={66} glowY={50} glow={0.18} />
+      <BaseBackground glowX={66} glowY={50} glow={0.16} color="214,206,255" color2="196,214,255" />
       <GridPlane opacity={0.55} size={64} drift={0.8} />
       <Dust count={24} seed="eval-dust" opacity={0.35} />
 
       {/* ---- left column ---- */}
       <div style={{ position: 'absolute', left: 120, top: 168, width: 660 }}>
-        <ChapterPill index="03" label="AI" delay={8} />
-        <div style={{ fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.3em', color: C.green, marginBottom: 16 }}>
+        <ChapterPill index="03" label="AI" delay={8} color={C.violet} />
+        <div style={{ fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.3em', color: C.violetInk, marginBottom: 16 }}>
           <KineticText text="AI LECTURE EVALUATION" mode="scramble" delay={0} stagger={0.5} duration={12} />
         </div>
-        <div style={{ fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1.05, letterSpacing: '-0.055em', color: C.white }}>
-          <KineticText text="AI 강의평가" mode="slam" delay={2} stagger={1.4} charColor={(i) => (i < 2 ? C.green : undefined)} />
+        <div style={{ fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1.05, letterSpacing: '-0.055em', color: C.ink }}>
+          <KineticText text="AI 강의평가" mode="slam" delay={2} stagger={1.4} charColor={(i) => (i < 2 ? C.violet : undefined)} />
         </div>
         <div style={{ fontFamily: FONT.sans, fontWeight: 500, fontSize: 31, lineHeight: 1.45, color: C.mute, marginTop: 22, letterSpacing: '-0.02em' }}>
           <KineticText text="모든 강의를 같은 기준으로" mode="blur" delay={12} stagger={0.6} duration={10} />
@@ -242,8 +242,8 @@ export const AIEvalScene = () => {
           height: PANEL.h,
           borderRadius: 26,
           background: C.panel,
-          border: '1px solid rgba(255,255,255,0.1)',
-          boxShadow: '0 50px 140px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)',
+          border: `1px solid ${C.line}`,
+          boxShadow: SHADOW.float,
           opacity: panelIn,
           transform: `perspective(1800px) rotateY(${(1 - panelIn) * -18}deg) translateX(${(1 - panelIn) * 120}px)`,
           overflow: 'hidden',
@@ -257,11 +257,11 @@ export const AIEvalScene = () => {
             alignItems: 'center',
             gap: 16,
             padding: '0 28px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: `1px solid ${C.hair}`,
             fontFamily: FONT.sans,
           }}
         >
-          <span style={{ color: C.white, fontWeight: 800, fontSize: 22 }}>AI 강의 리포트</span>
+          <span style={{ color: C.ink, fontWeight: 800, fontSize: 22 }}>AI 강의 리포트</span>
           <span style={{ color: C.dim, fontSize: 18 }}>고2 수학 · 심화반 · 강남</span>
           <span style={{ flex: 1 }} />
           <span
@@ -272,11 +272,11 @@ export const AIEvalScene = () => {
               letterSpacing: '0.18em',
               padding: '7px 14px',
               borderRadius: 8,
-              color: complete ? '#04130b' : C.gold,
-              background: complete ? C.green : 'rgba(230,184,0,0.12)',
-              border: `1px solid ${complete ? C.green : 'rgba(230,184,0,0.5)'}`,
+              color: complete ? C.white : C.goldInk,
+              background: complete ? C.violet : C.amberSoft,
+              border: `1px solid ${complete ? C.violet : alpha(C.gold, 0.5)}`,
               opacity: complete || blink ? 1 : 0.55,
-              boxShadow: complete ? `0 0 24px ${C.green}` : undefined,
+              boxShadow: complete ? `0 8px 22px ${alpha(C.violet, 0.35)}` : undefined,
             }}
           >
             {complete ? '● ANALYSIS COMPLETE' : '◌ ANALYZING'}
@@ -292,22 +292,22 @@ export const AIEvalScene = () => {
             bottom: 26,
             height: 92,
             borderRadius: 14,
-            border: '1px solid rgba(0,223,69,0.25)',
-            background: 'rgba(0,223,69,0.06)',
+            border: `1px solid ${alpha(C.violet, 0.22)}`,
+            background: C.lavender,
             padding: '14px 20px',
             fontFamily: FONT.sans,
             fontSize: 21,
             lineHeight: 1.5,
-            color: C.white,
+            color: C.ink,
             opacity: ip(frame, [36, 42], [0, 1]),
           }}
         >
-          <span style={{ color: C.green, fontWeight: 800, marginRight: 10 }}>AI 요약 ▸</span>
+          <span style={{ color: C.violetInk, fontWeight: 800, marginRight: 10 }}>AI 요약 ▸</span>
           <Typewriter
             text="이차함수 꼭짓점 개념 설명 → 예제 3문항 → 질의응답 활발. 개선 제안: 학생 발화 비중 확대"
             delay={38}
             cps={1.8}
-            cursorColor={C.green}
+            cursorColor={C.violet}
           />
         </div>
       </div>
@@ -321,7 +321,7 @@ export const AIEvalScene = () => {
             OVERALL SCORE · 종합
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginTop: 6, opacity: ip(frame, [14, 20], [0, 1]) }}>
-            <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 150, lineHeight: 1, color: C.white, letterSpacing: '-0.04em' }}>
+            <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 150, lineHeight: 1, color: C.ink, letterSpacing: '-0.04em' }}>
               <RollingNumber value={score} digits={2} leadingZeros="dim" />
             </span>
             <span style={{ fontFamily: FONT.mono, fontSize: 30, color: C.dim, marginBottom: 14 }}>/100</span>
@@ -338,9 +338,9 @@ export const AIEvalScene = () => {
                 fontFamily: FONT.sans,
                 fontWeight: 900,
                 fontSize: 48,
-                color: '#1a1300',
-                background: `linear-gradient(145deg, #ffe680, ${C.gold})`,
-                boxShadow: `0 0 ${40 * grade}px rgba(230,184,0,0.7)`,
+                color: C.ink,
+                background: 'linear-gradient(145deg, #FFE7A8, #F6BE55)',
+                boxShadow: `0 ${14 * grade}px ${32 * grade}px ${alpha(C.gold, 0.45)}`,
                 transform: `scale(${grade}) rotate(${(1 - grade) * -40}deg)`,
               }}
             >
@@ -367,8 +367,8 @@ export const AIEvalScene = () => {
             top: scanY,
             height: 2,
             opacity: scanOn * ip(frame, [6, 10], [0, 1]),
-            background: `linear-gradient(90deg, transparent, ${C.greenSoft}, transparent)`,
-            boxShadow: `0 0 18px 4px rgba(0,223,69,0.5)`,
+            background: `linear-gradient(90deg, transparent, ${C.violet}, transparent)`,
+            boxShadow: `0 0 18px 4px ${alpha(C.violet, 0.2)}`,
           }}
         />
         <div
@@ -379,13 +379,13 @@ export const AIEvalScene = () => {
             top: scanY - 80,
             height: 80,
             opacity: scanOn * 0.5 * ip(frame, [6, 10], [0, 1]),
-            background: 'linear-gradient(180deg, transparent, rgba(0,223,69,0.16))',
+            background: 'linear-gradient(180deg, transparent, rgba(123,108,240,0.1))',
           }}
         />
-        <Brackets x={PANEL.x - 14} y={PANEL.y - 14} w={PANEL.w + 28} h={PANEL.h + 28} len={34} opacity={ip(frame, [4, 12], [0, 0.9])} />
+        <Brackets x={PANEL.x - 14} y={PANEL.y - 14} w={PANEL.w + 28} h={PANEL.h + 28} len={34} color={C.violetSoft} opacity={ip(frame, [4, 12], [0, 0.9])} />
       </AbsoluteFill>
 
-      <Flash at={COMPLETE} duration={6} peak={0.18} color={C.green} />
+      <Flash at={COMPLETE} duration={6} peak={0.35} color={C.white} />
     </AbsoluteFill>
   );
 };

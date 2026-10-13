@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { evolvePath } from '@remotion/paths';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Flash, LensStreak } from '../components/Fx';
@@ -12,7 +12,8 @@ import { ChapterPill } from '../components/ChapterPill';
  * ② 관리 — a 2×2 control board. Each pillar lights for two beats
  * (데이터 보안 → 녹화 강의 → 클라우드 권한 설정 → 상세 수업 데이터 축적),
  * then all four pulse together on the last 8th note and the film hard-cuts into the
- * light-paper interlude (VariationScene) on the downbeat.
+ * ivory-paper interlude (VariationScene) on the downbeat.
+ * Chapter accent: blue (trust / control).
  * Global 240–352, no outgoing transition (hard cut).
  */
 export const MANAGE_DURATION = 112;
@@ -40,7 +41,7 @@ const cipher = (plain, hex, t, start, dur, seed) => {
     .join('');
 };
 
-const MiniLock = ({ color = C.green, size = 12 }) => (
+const MiniLock = ({ color = C.blue, size = 12 }) => (
   <svg width={size} height={size * 1.2} viewBox="0 0 12 14" style={{ flexShrink: 0 }}>
     <path d="M 3.5 6 V 4.2 A 2.5 2.5 0 0 1 8.5 4.2 V 6" fill="none" stroke={color} strokeWidth={1.6} />
     <rect x={1.5} y={6} width={9} height={7} rx={1.6} fill={color} />
@@ -89,25 +90,25 @@ const SecurityBody = ({ t }) => {
   return (
     <div style={{ display: 'flex', gap: 18, height: '100%' }}>
       <div style={{ width: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {t >= 9 && <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: 60, border: `2px solid ${C.green}`, opacity: 1 - ring, transform: `scale(${0.7 + ring * 0.6})` }} />}
-        <svg width="104" height="124" viewBox="0 0 120 140" style={{ filter: t >= 9 ? 'drop-shadow(0 0 14px rgba(0,223,69,0.6))' : undefined }}>
+        {t >= 9 && <div style={{ position: 'absolute', width: 120, height: 120, borderRadius: 60, border: `2px solid ${C.blue}`, opacity: 1 - ring, transform: `scale(${0.7 + ring * 0.6})` }} />}
+        <svg width="104" height="124" viewBox="0 0 120 140" style={{ filter: t >= 9 ? `drop-shadow(0 10px 18px ${alpha(C.blue, 0.35)})` : undefined }}>
           <defs>
             <linearGradient id="lock-body" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor={t >= 9 ? '#1f8f52' : '#2a3a31'} />
-              <stop offset="1" stopColor={t >= 9 ? '#0b4a2a' : '#162019'} />
+              <stop offset="0" stopColor={t >= 9 ? '#6E9CF6' : '#D5DCE7'} />
+              <stop offset="1" stopColor={t >= 9 ? '#2F62D6' : '#B4C0D2'} />
             </linearGradient>
           </defs>
           <path
             d="M 32 62 V 40 A 28 28 0 0 1 88 40 V 62"
             fill="none"
-            stroke={t >= 9 ? C.greenSoft : 'rgba(255,255,255,0.55)'}
+            stroke={t >= 9 ? C.blueSoft : '#C3CCDA'}
             strokeWidth={12}
             strokeLinecap="round"
             transform={`translate(0 ${shackle})`}
           />
-          <rect x={14} y={58} width={92} height={74} rx={14} fill="url(#lock-body)" stroke={t >= 9 ? C.green : 'rgba(255,255,255,0.3)'} strokeWidth={2} />
-          <circle cx={60} cy={89} r={9} fill="#04130b" />
-          <rect x={56} y={92} width={8} height={20} rx={3} fill="#04130b" />
+          <rect x={14} y={58} width={92} height={74} rx={14} fill="url(#lock-body)" stroke={t >= 9 ? C.blue : '#B4C0D2'} strokeWidth={2} />
+          <circle cx={60} cy={89} r={9} fill="#FFFFFF" />
+          <rect x={56} y={92} width={8} height={20} rx={3} fill="#FFFFFF" />
         </svg>
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -123,8 +124,8 @@ const SecurityBody = ({ t }) => {
                     fontFamily: FONT.mono,
                     fontWeight: 700,
                     fontSize: 15,
-                    color: t >= 4 + i * 3 ? C.greenSoft : 'rgba(255,255,255,0.75)',
-                    background: 'rgba(0,0,0,0.3)',
+                    color: t >= 4 + i * 3 ? C.blueInk : C.inkSoft,
+                    background: t >= 4 + i * 3 ? C.sky : C.surfaceAlt,
                     borderRadius: 6,
                     padding: '4px 8px',
                     whiteSpace: 'nowrap',
@@ -140,12 +141,13 @@ const SecurityBody = ({ t }) => {
             );
           })}
         </div>
-        <div style={{ fontFamily: FONT.mono, fontSize: 13, lineHeight: 1.75, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8 }}>
+        <div style={{ fontFamily: FONT.mono, fontSize: 13, lineHeight: 1.75, borderTop: `1px solid ${C.hair}`, paddingTop: 8 }}>
           <div style={{ opacity: ip(t, [12, 15], [0, 1]), color: C.mute }}>
-            08:31 강남 원장 <span style={{ color: C.green, fontWeight: 700 }}>✓ 열람 허용</span>
+            08:31 강남 원장 <span style={{ color: C.greenInk, fontWeight: 700 }}>✓ 열람 허용</span>
           </div>
           <div style={{ opacity: ip(t, [16, 19], [0, 1]), color: C.mute }}>
-            08:32 미등록 기기 <span style={{ color: '#ff6b6b', fontWeight: 700, textShadow: t >= 16 && t < 22 && Math.floor(t) % 2 === 0 ? '0 0 10px #ff6b6b' : undefined }}>✕ 접근 차단</span>
+            08:32 미등록 기기{' '}
+            <span style={{ color: C.coral, fontWeight: 700, padding: '1px 6px', borderRadius: 5, background: t >= 16 && t < 22 && Math.floor(t) % 2 === 0 ? C.peach : 'transparent' }}>✕ 접근 차단</span>
           </div>
         </div>
       </div>
@@ -161,13 +163,13 @@ const RecordingBody = ({ t }) => {
   const blink = Math.floor(t / 4) % 2 === 0;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
-      <div style={{ position: 'relative', height: 120, borderRadius: 10, overflow: 'hidden', background: '#0c241a', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ position: 'relative', height: 120, borderRadius: 10, overflow: 'hidden', background: '#FCFDFF', border: `1px solid ${C.line}` }}>
         <svg viewBox="0 0 400 120" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
-          <line x1={40} y1={92} x2={370} y2={92} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} />
-          <line x1={110} y1={14} x2={110} y2={110} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5} />
-          <path d="M 70 20 Q 170 170 270 20" fill="none" stroke={C.greenSoft} strokeWidth={3} strokeLinecap="round" />
+          <line x1={40} y1={92} x2={370} y2={92} stroke="rgba(23,35,60,0.4)" strokeWidth={1.5} />
+          <line x1={110} y1={14} x2={110} y2={110} stroke="rgba(23,35,60,0.4)" strokeWidth={1.5} />
+          <path d="M 70 20 Q 170 170 270 20" fill="none" stroke={C.green} strokeWidth={3} strokeLinecap="round" />
           <circle cx={170} cy={95} r={5} fill={C.gold} />
-          <text x={292} y={40} fill="rgba(255,255,255,0.8)" fontSize={15} fontFamily={FONT.sans} fontWeight={600}>
+          <text x={292} y={40} fill={C.greenInk} fontSize={15} fontFamily={FONT.sans} fontWeight={600}>
             y = x² − 4x + 3
           </text>
         </svg>
@@ -184,8 +186,8 @@ const RecordingBody = ({ t }) => {
             fontFamily: FONT.mono,
             fontSize: 12,
             fontWeight: 700,
-            color: saved ? '#04130b' : '#fff',
-            background: saved ? C.green : 'rgba(255,60,60,0.85)',
+            color: C.white,
+            background: saved ? C.green : C.coral,
             opacity: t < 0 ? 0.5 : 1,
           }}
         >
@@ -202,8 +204,9 @@ const RecordingBody = ({ t }) => {
               marginLeft: -23,
               marginTop: -23,
               borderRadius: 23,
-              background: 'rgba(0,0,0,0.55)',
-              border: `2px solid ${C.green}`,
+              background: C.surface,
+              border: `2px solid ${C.blue}`,
+              boxShadow: SHADOW.soft,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -211,7 +214,7 @@ const RecordingBody = ({ t }) => {
             }}
           >
             <svg width="16" height="18" viewBox="0 0 16 18">
-              <path d="M2 1 L15 9 L2 17 Z" fill={C.white} />
+              <path d="M4 1 L15 9 L4 17 Z" fill={C.blue} />
             </svg>
           </div>
         )}
@@ -222,12 +225,12 @@ const RecordingBody = ({ t }) => {
           {CHAPTERS.map((c, i) => {
             const segFill = Math.max(0, Math.min(1, rec * 4 - i));
             return (
-              <div key={c} style={{ flex: 1, borderRadius: 3, background: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
-                <div style={{ width: `${segFill * 100}%`, height: '100%', background: saved ? C.green : '#ff5a5a' }} />
+              <div key={c} style={{ flex: 1, borderRadius: 3, background: C.hair, overflow: 'hidden' }}>
+                <div style={{ width: `${segFill * 100}%`, height: '100%', background: saved ? C.blue : C.coral }} />
               </div>
             );
           })}
-          {saved && <div style={{ position: 'absolute', top: -4, left: `${head * 100}%`, width: 3, height: 15, borderRadius: 2, background: '#fff', boxShadow: '0 0 8px #fff' }} />}
+          {saved && <div style={{ position: 'absolute', top: -4, left: `${head * 100}%`, width: 4, height: 15, borderRadius: 2, background: C.ink, boxShadow: '0 0 0 2px #FFFFFF' }} />}
         </div>
         <div style={{ display: 'flex', marginTop: 5 }}>
           {CHAPTERS.map((c) => (
@@ -248,8 +251,8 @@ const RecordingBody = ({ t }) => {
                 flex: 1,
                 height: 44,
                 borderRadius: 8,
-                background: 'linear-gradient(140deg, #14402a, #0a2116)',
-                border: `1px solid ${i === 0 ? C.green : 'rgba(255,255,255,0.1)'}`,
+                background: i === 0 ? C.sky : C.surfaceAlt,
+                border: `1px solid ${i === 0 ? alpha(C.blue, 0.6) : C.line}`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 7,
@@ -259,9 +262,9 @@ const RecordingBody = ({ t }) => {
               }}
             >
               <svg width="11" height="12" viewBox="0 0 16 18">
-                <path d="M2 1 L15 9 L2 17 Z" fill={C.green} />
+                <path d="M2 1 L15 9 L2 17 Z" fill={C.blue} />
               </svg>
-              <span style={{ fontFamily: FONT.sans, fontSize: 13, fontWeight: 700, color: C.white, whiteSpace: 'nowrap' }}>{label}</span>
+              <span style={{ fontFamily: FONT.sans, fontSize: 13, fontWeight: 700, color: C.ink, whiteSpace: 'nowrap' }}>{label}</span>
             </div>
           );
         })}
@@ -282,9 +285,9 @@ const PermissionBody = ({ t }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: FONT.mono, fontSize: 13, color: C.mute }}>
       <svg width="20" height="14" viewBox="0 0 24 16">
-        <path d="M6 15 H18 A4.5 4.5 0 0 0 18.5 6 A6.5 6.5 0 0 0 6.2 5.5 A4.8 4.8 0 0 0 6 15 Z" fill="none" stroke={C.green} strokeWidth={1.8} />
+        <path d="M6 15 H18 A4.5 4.5 0 0 0 18.5 6 A6.5 6.5 0 0 0 6.2 5.5 A4.8 4.8 0 0 0 6 15 Z" fill="none" stroke={C.blue} strokeWidth={1.8} />
       </svg>
-      ClassIn 드라이브 / 본사 / <span style={{ color: C.white, fontWeight: 700 }}>2026 커리큘럼</span>
+      ClassIn 드라이브 / 본사 / <span style={{ color: C.ink, fontWeight: 700 }}>2026 커리큘럼</span>
     </div>
     <div style={{ display: 'grid', gridTemplateColumns: '64px repeat(4, 1fr)', rowGap: 8, columnGap: 8, alignItems: 'center' }}>
       <span />
@@ -295,7 +298,7 @@ const PermissionBody = ({ t }) => (
       ))}
       {ROLES.map((role, ri) => (
         <React.Fragment key={role}>
-          <span style={{ fontFamily: FONT.sans, fontSize: 16, fontWeight: 800, color: C.white }}>{role}</span>
+          <span style={{ fontFamily: FONT.sans, fontSize: 16, fontWeight: 800, color: C.ink }}>{role}</span>
           {MATRIX[ri].map((on, ci) => {
             const at = 2 + (ri + ci) * 1.5;
             const v = ip(t, [at, at + 4], [0, 1], EASE.back);
@@ -309,17 +312,17 @@ const PermissionBody = ({ t }) => (
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: shown && on ? `rgba(0,223,69,${0.22 * Math.min(1, v)})` : 'rgba(255,255,255,0.03)',
-                  border: `1.5px ${shown && on ? 'solid' : 'dashed'} ${shown && on ? C.green : 'rgba(255,255,255,0.14)'}`,
+                  background: shown && on ? alpha(C.blue, 0.13 * Math.min(1, v)) : C.surfaceAlt,
+                  border: `1.5px ${shown && on ? 'solid' : 'dashed'} ${shown && on ? alpha(C.blue, 0.65) : C.line}`,
                   transform: `scale(${shown ? 0.85 + 0.15 * v : 1})`,
                 }}
               >
                 {shown && on ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" style={{ opacity: Math.min(1, v) }}>
-                    <polyline points="4 12.5 9.5 18 20 6.5" fill="none" stroke={C.green} strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points="4 12.5 9.5 18 20 6.5" fill="none" stroke={C.blue} strokeWidth={3.4} strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ) : shown ? (
-                  <MiniLock color="rgba(255,255,255,0.35)" size={10} />
+                  <MiniLock color="#B4C0D2" size={10} />
                 ) : null}
               </div>
             );
@@ -332,10 +335,10 @@ const PermissionBody = ({ t }) => (
 
 const DATA_KINDS = [
   { k: '출결', c: C.green, n: 6 },
-  { k: '판서', c: '#4aa3ff', n: 5 },
+  { k: '판서', c: C.blue, n: 5 },
   { k: '발화', c: C.gold, n: 7 },
-  { k: '과제', c: '#b98cff', n: 4 },
-  { k: '평가', c: '#ff7a59', n: 5 },
+  { k: '과제', c: C.violet, n: 4 },
+  { k: '평가', c: C.coral, n: 5 },
 ];
 const SPARK = 'M 0 34 L 20 30 L 40 31 L 60 24 L 80 22 L 100 15 L 120 12 L 140 5';
 const DataBody = ({ t }) => {
@@ -361,7 +364,7 @@ const DataBody = ({ t }) => {
                       background: d.c,
                       opacity: 0.55 + 0.45 * (bi / d.n),
                       transform: `translateY(${(1 - s) * -90}px)`,
-                      boxShadow: `0 0 8px ${d.c}55`,
+                      boxShadow: `0 3px 8px ${d.c}33`,
                     }}
                   />
                 );
@@ -379,16 +382,16 @@ const DataBody = ({ t }) => {
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6 }}>
         <span style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 700, color: C.mute }}>누적 수업 기록</span>
-        <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 40, lineHeight: 1, color: C.white, whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 40, lineHeight: 1, color: C.ink, whiteSpace: 'nowrap' }}>
           <RollingNumber value={Math.floor(value / 1000)} digits={2} />,
           <RollingNumber value={value % 1000} digits={3} leadingZeros="show" />
-          <span style={{ fontFamily: FONT.sans, fontSize: 22, color: C.green, marginLeft: 6 }}>건</span>
+          <span style={{ fontFamily: FONT.sans, fontSize: 22, color: C.blue, marginLeft: 6 }}>건</span>
         </span>
         <svg width="140" height="40" viewBox="0 0 140 40" style={{ overflow: 'visible', marginTop: 6 }}>
-          <path d={SPARK} fill="none" stroke={C.green} strokeWidth={2.4} strokeLinecap="round" strokeDasharray={spark.strokeDasharray} strokeDashoffset={spark.strokeDashoffset} />
+          <path d={SPARK} fill="none" stroke={C.blue} strokeWidth={2.4} strokeLinecap="round" strokeDasharray={spark.strokeDasharray} strokeDashoffset={spark.strokeDashoffset} />
         </svg>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: FONT.sans, fontSize: 13, fontWeight: 700, color: C.green }}>
-          <span style={{ width: 8, height: 8, borderRadius: 4, background: C.green, opacity: t >= 0 && Math.floor(t / 6) % 2 === 0 ? 1 : 0.35 }} />
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: FONT.sans, fontSize: 13, fontWeight: 700, color: C.blueInk }}>
+          <span style={{ width: 8, height: 8, borderRadius: 4, background: C.blue, opacity: t >= 0 && Math.floor(t / 6) % 2 === 0 ? 1 : 0.35 }} />
           실시간 수집 중
         </span>
       </div>
@@ -418,9 +421,9 @@ const Panel = ({ index, t, all }) => {
         width: PANEL_W,
         height: PANEL_H,
         borderRadius: 22,
-        background: 'linear-gradient(165deg, rgba(16,36,25,0.94), rgba(5,13,9,0.96))',
-        border: `${lit ? 2 : 1}px solid ${lit ? C.green : done ? 'rgba(0,223,69,0.4)' : 'rgba(255,255,255,0.09)'}`,
-        boxShadow: lit ? `0 0 ${50 * (all ? 1 : focus)}px rgba(0,223,69,0.32), 0 30px 80px rgba(0,0,0,0.55)` : '0 30px 80px rgba(0,0,0,0.5)',
+        background: C.surface,
+        border: `${lit ? 2 : 1}px solid ${lit ? C.blue : done ? alpha(C.blue, 0.35) : C.line}`,
+        boxShadow: lit ? `${SHADOW.float}, 0 0 0 ${6 * (all ? 1 : focus)}px ${alpha(C.blue, 0.12)}` : SHADOW.card,
         opacity: opacity * Math.min(1, enter * 1.3),
         transform: `translateY(${(1 - enter) * 80}px) scale(${1 + 0.035 * focus})`,
         filter: t < 0 && !all ? 'saturate(0.4)' : undefined,
@@ -430,9 +433,9 @@ const Panel = ({ index, t, all }) => {
         flexDirection: 'column',
       }}
     >
-      <div style={{ height: 54, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', flexShrink: 0 }}>
-        <PanelIcon kind={index} color={t >= 0 || all ? C.green : 'rgba(255,255,255,0.6)'} />
-        <span style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 21, color: C.white, letterSpacing: '-0.02em' }}>{pillar.title}</span>
+      <div style={{ height: 54, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px', borderBottom: `1px solid ${C.hair}`, background: lit ? alpha(C.blue, 0.04) : undefined, flexShrink: 0 }}>
+        <PanelIcon kind={index} color={t >= 0 || all ? C.blue : C.dim} />
+        <span style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 21, color: C.ink, letterSpacing: '-0.02em' }}>{pillar.title}</span>
         <span style={{ flex: 1 }} />
         <span
           style={{
@@ -442,8 +445,8 @@ const Panel = ({ index, t, all }) => {
             letterSpacing: '0.16em',
             padding: '4px 9px',
             borderRadius: 6,
-            color: status === pillar.done ? '#04130b' : status === pillar.idle ? C.dim : C.gold,
-            background: status === pillar.done ? C.green : status === pillar.idle ? 'rgba(255,255,255,0.05)' : 'rgba(230,184,0,0.14)',
+            color: status === pillar.done ? C.greenInk : status === pillar.idle ? C.dim : C.goldInk,
+            background: status === pillar.done ? C.mint : status === pillar.idle ? C.surfaceAlt : C.amberSoft,
           }}
         >
           {status}
@@ -462,8 +465,8 @@ const Panel = ({ index, t, all }) => {
             right: 0,
             top: `${scan * 100}%`,
             height: 3,
-            background: `linear-gradient(90deg, transparent, ${C.greenSoft}, transparent)`,
-            boxShadow: `0 0 20px 6px rgba(0,223,69,0.35)`,
+            background: `linear-gradient(90deg, transparent, ${C.blue}, transparent)`,
+            boxShadow: `0 0 20px 6px ${alpha(C.blue, 0.18)}`,
           }}
         />
       )}
@@ -480,16 +483,15 @@ const PillarList = ({ frame }) => (
       const shift = active ? ip(t, [0, 6], [0, 1], EASE.out) : 0;
       return (
         <div key={p.title} style={{ height: 54, display: 'flex', alignItems: 'center', gap: 16, transform: `translateX(${shift * 14}px)` }}>
-          <span style={{ width: 5, height: 34, borderRadius: 3, background: active ? C.green : 'transparent', boxShadow: active ? `0 0 14px ${C.green}` : undefined }} />
-          <span style={{ fontFamily: FONT.mono, fontSize: 16, color: active ? C.green : C.dim, width: 26 }}>0{i + 1}</span>
+          <span style={{ width: 5, height: 34, borderRadius: 3, background: active ? C.blue : 'transparent' }} />
+          <span style={{ fontFamily: FONT.mono, fontSize: 16, color: active ? C.blue : C.dim, width: 26 }}>0{i + 1}</span>
           <span
             style={{
               fontFamily: FONT.sans,
               fontWeight: active ? 800 : 700,
               fontSize: active ? 36 : 30,
               letterSpacing: '-0.03em',
-              color: active ? C.green : done ? 'rgba(243,247,244,0.85)' : 'rgba(243,247,244,0.32)',
-              textShadow: active ? '0 0 30px rgba(0,223,69,0.35)' : undefined,
+              color: active ? C.blue : done ? 'rgba(23,35,60,0.86)' : 'rgba(23,35,60,0.3)',
             }}
           >
             {p.title}
@@ -524,7 +526,7 @@ export const ManageScene = () => {
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
-      <BaseBackground glowX={66} glowY={52} glow={all ? 0.24 : 0.14} />
+      <BaseBackground glowX={66} glowY={52} glow={all ? 0.22 : 0.14} color="190,212,255" color2="216,208,255" />
       <GridPlane opacity={0.45} size={64} drift={0.6} />
       <Dust count={26} seed="mgmt-dust" opacity={0.35} />
 
@@ -536,9 +538,9 @@ export const ManageScene = () => {
             {panels.map((p) => {
               const d = `M ${p.x} ${p.y} L 0 0`;
               const ev = evolvePath(ip(frame, [ALL, ALL + 5], [0, 1], EASE.out), d);
-              return <path key={p.i} d={d} stroke={C.greenSoft} strokeWidth={3} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} opacity={0.8} />;
+              return <path key={p.i} d={d} stroke={C.blueSoft} strokeWidth={3} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} opacity={0.9} />;
             })}
-            <circle cx={0} cy={0} r={10 * ip(frame, [ALL + 3, ALL + 6], [0, 1], EASE.back)} fill="#fff" style={{ filter: `drop-shadow(0 0 14px ${C.green})` }} />
+            <circle cx={0} cy={0} r={11 * ip(frame, [ALL + 3, ALL + 6], [0, 1], EASE.back)} fill={C.blue} stroke="#FFFFFF" strokeWidth={4} style={{ filter: `drop-shadow(0 4px 12px ${alpha(C.blue, 0.45)})` }} />
           </svg>
         )}
         {panels.map((p) => (
@@ -557,18 +559,18 @@ export const ManageScene = () => {
 
       {/* left column: chapter copy + pillar list */}
       <div style={{ position: 'absolute', left: 140, top: 236, width: 660 }}>
-        <ChapterPill index="02" label="관리" delay={1} />
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.green, height: 30 }}>
+        <ChapterPill index="02" label="관리" delay={1} color={C.blue} />
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.blueInk, height: 30 }}>
           <span style={{ fontWeight: 700, fontSize: 22 }}>
             0<RollingNumber value={indexValue} digits={1} />
             <span style={{ color: C.dim }}> / 04</span>
           </span>
           <KineticText key={pillar} text={PILLARS[pillar].en} mode="scramble" delay={pillar * STEP + 1} stagger={0.5} duration={12} />
         </div>
-        <div style={{ fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1.08, letterSpacing: '-0.055em', color: C.white, marginTop: 18 }}>
+        <div style={{ fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1.08, letterSpacing: '-0.055em', color: C.ink, marginTop: 18 }}>
           <KineticText text="관리는," mode="rise" delay={2} stagger={2} duration={14} />
           <br />
-          <span style={{ color: C.green, textShadow: '0 0 60px rgba(0,223,69,0.35)' }}>
+          <span style={{ color: C.blue }}>
             <KineticText text="시스템이." mode="rise" delay={8} stagger={2} duration={14} />
           </span>
         </div>
@@ -578,10 +580,10 @@ export const ManageScene = () => {
       </div>
 
       {[STEP, STEP * 2, STEP * 3].map((b) => (
-        <Flash key={b} at={b} duration={4} peak={0.1} color={C.greenSoft} />
+        <Flash key={b} at={b} duration={4} peak={0.22} color={C.white} />
       ))}
-      <Flash at={ALL} duration={6} peak={0.28} color={C.greenSoft} />
-      <LensStreak at={ALL} y={GRID.y} dur={10} />
+      <Flash at={ALL} duration={6} peak={0.4} color={C.white} />
+      <LensStreak at={ALL} y={GRID.y} dur={10} color="120,165,250" core="150,140,245" />
     </AbsoluteFill>
   );
 };

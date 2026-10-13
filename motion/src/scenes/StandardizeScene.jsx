@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Sequence, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { evolvePath, getPointAtLength, getLength } from '@remotion/paths';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Flash, LensStreak } from '../components/Fx';
@@ -51,10 +51,10 @@ const infraLink = (k) => {
 
 const DeviceIcon = ({ kind, on, flicker }) => {
   const screenOn = on ? (flicker ? 0.55 : 1) : 0;
-  const stroke = on ? C.green : 'rgba(255,255,255,0.28)';
+  const stroke = on ? C.green : C.dim;
   const screen = (x, y, w, h, r) => (
     <>
-      <rect x={x} y={y} width={w} height={h} rx={r} fill="#06110b" stroke={stroke} strokeWidth={1.6} />
+      <rect x={x} y={y} width={w} height={h} rx={r} fill={C.surfaceAlt} stroke={stroke} strokeWidth={1.6} />
       <g opacity={screenOn}>
         <rect x={x + 1.5} y={y + 1.5} width={w - 3} height={h - 3} rx={r - 1} fill="url(#dev-screen)" />
         <rect x={x + 4} y={y + 4} width={w * 0.35} height={2.5} rx={1} fill={C.green} />
@@ -69,7 +69,7 @@ const DeviceIcon = ({ kind, on, flicker }) => {
     </>
   );
   return (
-    <svg width="56" height="46" viewBox="0 0 56 46" style={{ overflow: 'visible', filter: on ? 'drop-shadow(0 0 6px rgba(0,223,69,0.55))' : undefined }}>
+    <svg width="56" height="46" viewBox="0 0 56 46" style={{ overflow: 'visible', filter: on ? `drop-shadow(0 3px 6px ${alpha(C.green, 0.25)})` : undefined }}>
       {kind === 'pc' && (
         <>
           {screen(4, 2, 48, 31, 3)}
@@ -104,15 +104,15 @@ const InfraVisual = () => {
       <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0 }}>
         <defs>
           <linearGradient id="dev-screen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#14583a" />
-            <stop offset="1" stopColor="#0a2d1e" />
+            <stop offset="0" stopColor="#EAF8F0" />
+            <stop offset="1" stopColor="#C9EDD9" />
           </linearGradient>
         </defs>
         {INFRA_BRANCHES.map((_, k) => {
           const d = infraLink(k);
           const ev = evolvePath(ip(frame, [3 + k, 13 + k], [0, 1], EASE.inOut), d);
           return (
-            <path key={k} d={d} fill="none" stroke={C.green} strokeOpacity={0.5} strokeWidth={2} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} />
+            <path key={k} d={d} fill="none" stroke={C.green} strokeOpacity={0.45} strokeWidth={2} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} />
           );
         })}
         {/* data pulses flowing core → branches */}
@@ -122,7 +122,7 @@ const InfraVisual = () => {
               const d = infraLink(k);
               const t = (((frame - 12) / 16 + off + k * 0.13) % 1 + 1) % 1;
               const pt = getPointAtLength(d, getLength(d) * t);
-              return <circle key={`${k}-${off}`} cx={pt.x} cy={pt.y} r={4.5} fill={C.greenSoft} style={{ filter: `drop-shadow(0 0 6px ${C.green})` }} />;
+              return <circle key={`${k}-${off}`} cx={pt.x} cy={pt.y} r={5} fill={C.green} stroke="#FFFFFF" strokeWidth={2} />;
             }),
           )}
         {/* rotating orbit around the core */}
@@ -133,7 +133,7 @@ const InfraVisual = () => {
           ry={70}
           fill="none"
           stroke={C.green}
-          strokeOpacity={0.35 * core}
+          strokeOpacity={0.4 * core}
           strokeWidth={1.5}
           strokeDasharray="3 12"
           transform={`rotate(${frame * 0.6} ${CORE.x} ${CORE.y})`}
@@ -150,9 +150,9 @@ const InfraVisual = () => {
           height: 92,
           borderRadius: 46,
           transform: `scale(${core})`,
-          background: 'radial-gradient(ellipse at 50% 30%, rgba(0,223,69,0.42), rgba(0,70,30,0.35) 70%)',
+          background: `linear-gradient(180deg, #FFFFFF, ${C.mint})`,
           border: `2px solid ${C.green}`,
-          boxShadow: `0 0 ${50 + 20 * Math.sin(frame * 0.35)}px rgba(0,223,69,0.45)`,
+          boxShadow: `${SHADOW.card}, 0 0 0 ${8 + 4 * Math.sin(frame * 0.35)}px ${alpha(C.green, 0.1)}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -161,11 +161,11 @@ const InfraVisual = () => {
         }}
       >
         <svg width="46" height="32" viewBox="0 0 46 32">
-          <path d="M 12 29 H 36 A 9 9 0 0 0 37 11 A 12 12 0 0 0 14 9 A 10 10 0 0 0 12 29 Z" fill="none" stroke={C.white} strokeWidth={2.6} strokeLinejoin="round" />
+          <path d="M 12 29 H 36 A 9 9 0 0 0 37 11 A 12 12 0 0 0 14 9 A 10 10 0 0 0 12 29 Z" fill="none" stroke={C.green} strokeWidth={2.6} strokeLinejoin="round" />
         </svg>
         <div>
-          <div style={{ color: C.white, fontWeight: 900, fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1 }}>ClassIn Cloud</div>
-          <div style={{ color: C.green, fontFamily: FONT.mono, fontWeight: 700, fontSize: 12, letterSpacing: '0.26em', marginTop: 5 }}>ENTERPRISE CORE</div>
+          <div style={{ color: C.ink, fontWeight: 900, fontSize: 28, letterSpacing: '-0.03em', lineHeight: 1 }}>ClassIn Cloud</div>
+          <div style={{ color: C.greenInk, fontFamily: FONT.mono, fontWeight: 700, fontSize: 12, letterSpacing: '0.26em', marginTop: 5 }}>ENTERPRISE CORE</div>
         </div>
       </div>
 
@@ -186,9 +186,9 @@ const InfraVisual = () => {
               height: CARD.h,
               borderRadius: 18,
               transform: `scale(${pop})`,
-              background: 'linear-gradient(165deg, rgba(18,40,28,0.95), rgba(6,16,11,0.95))',
-              border: `1.5px solid ${allOn ? 'rgba(0,223,69,0.7)' : 'rgba(255,255,255,0.12)'}`,
-              boxShadow: allOn ? '0 0 34px rgba(0,223,69,0.3)' : '0 20px 50px rgba(0,0,0,0.5)',
+              background: C.surface,
+              border: `1.5px solid ${allOn ? alpha(C.green, 0.7) : C.line}`,
+              boxShadow: allOn ? `${SHADOW.card}, 0 0 0 4px ${alpha(C.green, 0.1)}` : SHADOW.card,
               padding: '16px 16px 12px',
               boxSizing: 'border-box',
               display: 'flex',
@@ -197,8 +197,8 @@ const InfraVisual = () => {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: C.white, fontWeight: 800, fontSize: 21 }}>{name} 지점</span>
-              <span style={{ width: 10, height: 10, borderRadius: 5, background: allOn ? C.green : 'rgba(255,255,255,0.25)', boxShadow: allOn ? `0 0 10px ${C.green}` : undefined }} />
+              <span style={{ color: C.ink, fontWeight: 800, fontSize: 21 }}>{name} 지점</span>
+              <span style={{ width: 10, height: 10, borderRadius: 5, background: allOn ? C.green : C.line, boxShadow: allOn ? `0 0 0 4px ${alpha(C.green, 0.18)}` : undefined }} />
             </div>
             <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', justifyItems: 'center', rowGap: 6, marginTop: 8 }}>
               {devices.map((d, j) => {
@@ -210,7 +210,7 @@ const InfraVisual = () => {
                 );
               })}
             </div>
-            <div style={{ fontFamily: FONT.mono, fontSize: 12, letterSpacing: '0.2em', color: allOn ? C.green : C.dim }}>{allOn ? '● ONLINE' : '○ BOOTING'}</div>
+            <div style={{ fontFamily: FONT.mono, fontSize: 12, letterSpacing: '0.2em', color: allOn ? C.greenInk : C.dim }}>{allOn ? '● ONLINE' : '○ BOOTING'}</div>
           </div>
         );
       })}
@@ -228,9 +228,9 @@ const InfraVisual = () => {
                 gap: 8,
                 padding: '9px 18px',
                 borderRadius: 999,
-                border: `1.5px solid ${C.green}`,
-                background: 'rgba(0,223,69,0.12)',
-                color: C.white,
+                border: `1.5px solid ${alpha(C.green, 0.55)}`,
+                background: C.mint,
+                color: C.ink,
                 fontFamily: FONT.sans,
                 fontWeight: 800,
                 fontSize: 21,
@@ -238,7 +238,7 @@ const InfraVisual = () => {
                 opacity: Math.min(1, s * 1.5),
               }}
             >
-              <span style={{ color: C.green }}>=</span>
+              <span style={{ color: C.greenInk }}>=</span>
               {label}
             </span>
           );
@@ -306,12 +306,12 @@ const ClassVisual = () => {
                 fontFamily: FONT.sans,
                 fontWeight: 700,
                 fontSize: 54,
-                color: C.white,
+                color: C.ink,
               }}
             >
-              <span style={{ width: 26, height: 26, borderRadius: 13, background: C.green, boxShadow: `0 0 30px ${C.green}` }} />
+              <span style={{ width: 26, height: 26, borderRadius: 13, background: C.green, boxShadow: `0 0 0 10px ${alpha(C.green, 0.16)}` }} />
               {AREAS[k]}
-              <span style={{ fontFamily: FONT.mono, fontSize: 40, color: C.green, letterSpacing: '0.1em' }}>SYNC</span>
+              <span style={{ fontFamily: FONT.mono, fontSize: 40, color: C.greenInk, letterSpacing: '0.1em' }}>SYNC</span>
             </div>
           </div>
         );
@@ -323,10 +323,10 @@ const ClassVisual = () => {
 /* ---------------- Beat B — curriculum deployed to every branch ---------------- */
 const DOCS = [
   { t: '커리큘럼', c: C.green },
-  { t: '교재', c: '#4aa3ff' },
+  { t: '교재', c: C.blue },
   { t: '진도표', c: C.gold },
-  { t: '평가지', c: '#ff7a59' },
-  { t: '과제', c: '#b98cff' },
+  { t: '평가지', c: C.coral },
+  { t: '과제', c: C.violet },
 ];
 const RX = 430;
 const RY = 290;
@@ -337,18 +337,18 @@ const DocCard = ({ title, color, w = 104, h = 132 }) => (
       width: w,
       height: h,
       borderRadius: 10,
-      background: 'linear-gradient(160deg, #13261d, #0a1510)',
-      border: '1px solid rgba(255,255,255,0.14)',
-      boxShadow: '0 18px 40px rgba(0,0,0,0.55)',
+      background: C.surface,
+      border: `1px solid ${C.hair}`,
+      boxShadow: SHADOW.card,
       overflow: 'hidden',
       fontFamily: FONT.sans,
     }}
   >
     <div style={{ height: 8, background: color }} />
     <div style={{ padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-      <div style={{ color: C.white, fontWeight: 800, fontSize: 17 }}>{title}</div>
+      <div style={{ color: C.ink, fontWeight: 800, fontSize: 17 }}>{title}</div>
       {[86, 64, 78, 52, 70].map((wd, k) => (
-        <div key={k} style={{ height: 4, width: `${wd}%`, borderRadius: 2, background: 'rgba(255,255,255,0.18)' }} />
+        <div key={k} style={{ height: 4, width: `${wd}%`, borderRadius: 2, background: k === 0 ? alpha(color, 0.45) : C.hair }} />
       ))}
     </div>
   </div>
@@ -398,7 +398,7 @@ const ContentVisual = () => {
               x2={VCX + (n.x - VCX) * p}
               y2={VCY + (n.y - VCY) * p}
               stroke={C.green}
-              strokeOpacity={0.35}
+              strokeOpacity={0.3}
               strokeWidth={1.2}
             />
           );
@@ -425,9 +425,9 @@ const ContentVisual = () => {
               width: 30,
               height: 38,
               borderRadius: 5,
-              background: '#10231a',
-              border: `1.5px solid ${doc.c}`,
-              boxShadow: `0 0 18px ${doc.c}`,
+              background: C.surface,
+              border: `2px solid ${doc.c}`,
+              boxShadow: `0 6px 16px ${alpha(doc.c, 0.35)}`,
               transform: `rotate(${(1 - t) * 30}deg) scale(${0.7 + Math.sin(t * Math.PI) * 0.5})`,
             }}
           />
@@ -459,9 +459,9 @@ const ContentVisual = () => {
                 height: 68,
                 borderRadius: 18,
                 transform: `scale(${pop})`,
-                background: done ? 'rgba(0,223,69,0.18)' : 'rgba(255,255,255,0.05)',
-                border: `2px solid ${done ? C.green : 'rgba(255,255,255,0.2)'}`,
-                boxShadow: done ? `0 0 26px rgba(0,223,69,0.55)` : undefined,
+                background: done ? C.mint : C.surface,
+                border: `2px solid ${done ? C.green : C.line}`,
+                boxShadow: done ? `0 8px 22px ${alpha(C.green, 0.25)}` : SHADOW.soft,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -472,7 +472,7 @@ const ContentVisual = () => {
                   <polyline points="4 12.5 9.5 18 20 6.5" fill="none" stroke={C.green} strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               ) : (
-                <div style={{ width: 10, height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.4)' }} />
+                <div style={{ width: 10, height: 10, borderRadius: 5, background: C.line }} />
               )}
             </div>
             <div
@@ -485,7 +485,7 @@ const ContentVisual = () => {
                 fontFamily: FONT.sans,
                 fontWeight: 600,
                 fontSize: 18,
-                color: done ? C.white : C.dim,
+                color: done ? C.ink : C.dim,
                 opacity: pop,
               }}
             >
@@ -505,9 +505,9 @@ const ContentVisual = () => {
           height: 160,
           borderRadius: 34,
           transform: `scale(${hub})`,
-          background: 'radial-gradient(circle at 50% 35%, rgba(0,223,69,0.45), rgba(0,80,30,0.25) 60%, rgba(0,0,0,0.2))',
+          background: `linear-gradient(180deg, #FFFFFF, ${C.mint})`,
           border: `2px solid ${C.green}`,
-          boxShadow: `0 0 60px rgba(0,223,69,${0.35 + 0.25 * Math.sin(frame * 0.4)})`,
+          boxShadow: `${SHADOW.card}, 0 0 0 ${10 + 5 * Math.sin(frame * 0.4)}px ${alpha(C.green, 0.1)}`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -515,8 +515,8 @@ const ContentVisual = () => {
           fontFamily: FONT.sans,
         }}
       >
-        <div style={{ color: C.white, fontWeight: 900, fontSize: 34, letterSpacing: '-0.03em' }}>본사</div>
-        <div style={{ color: C.green, fontFamily: FONT.mono, fontWeight: 700, fontSize: 16, letterSpacing: '0.2em' }}>HQ</div>
+        <div style={{ color: C.ink, fontWeight: 900, fontSize: 34, letterSpacing: '-0.03em' }}>본사</div>
+        <div style={{ color: C.greenInk, fontFamily: FONT.mono, fontWeight: 700, fontSize: 16, letterSpacing: '0.2em' }}>HQ</div>
       </div>
       {DOCS.map((d, k) => {
         const s = spring({ frame: frame - 2 - k * 1.5, fps, config: { damping: 14, stiffness: 150 } });
@@ -551,17 +551,17 @@ const ContentVisual = () => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', color: C.mute, fontSize: 18, letterSpacing: '0.12em', marginBottom: 10 }}>
           <span>DEPLOY → ALL BRANCHES</span>
-          <span style={{ color: C.green, fontWeight: 700 }}>
+          <span style={{ color: C.greenInk, fontWeight: 700 }}>
             <RollingNumber value={progress * 128} digits={3} /> / 128
           </span>
         </div>
-        <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+        <div style={{ height: 6, borderRadius: 3, background: C.hair, overflow: 'hidden' }}>
           <div
             style={{
               height: '100%',
               width: `${progress * 100}%`,
-              background: `linear-gradient(90deg, ${C.greenDeep}, ${C.green})`,
-              boxShadow: `0 0 16px ${C.green}`,
+              borderRadius: 3,
+              background: `linear-gradient(90deg, ${C.greenSoft}, ${C.green})`,
             }}
           />
         </div>
@@ -584,8 +584,9 @@ const Chip = ({ label, delay }) => {
         padding: '10px 18px',
         borderRadius: 999,
         border: `1px solid ${C.line}`,
-        background: 'rgba(0,223,69,0.08)',
-        color: C.white,
+        background: C.surface,
+        boxShadow: SHADOW.soft,
+        color: C.ink,
         fontFamily: FONT.sans,
         fontWeight: 600,
         fontSize: 22,
@@ -639,8 +640,8 @@ export const StandardizeScene = () => {
         <ContentVisual />
       </Sequence>
 
-      {/* left fade so copy always reads */}
-      <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(3,8,6,0.95) 0%, rgba(3,8,6,0.85) 32%, rgba(3,8,6,0) 48%)' }} />
+      {/* left wash so copy always reads */}
+      <AbsoluteFill style={{ background: 'linear-gradient(90deg, rgba(246,248,252,0.96) 0%, rgba(246,248,252,0.86) 32%, rgba(246,248,252,0) 48%)' }} />
 
       {/* divider */}
       <div
@@ -657,7 +658,7 @@ export const StandardizeScene = () => {
       {/* headline column */}
       <div style={{ position: 'absolute', left: 140, top: 236, width: 660 }}>
         <ChapterPill index="01" label="표준화" delay={1} />
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.green, height: 30 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.greenInk, height: 30 }}>
           <span style={{ fontWeight: 700, fontSize: 22 }}>
             0<RollingNumber value={indexValue} digits={1} />
             <span style={{ color: C.dim }}> / 03</span>
@@ -677,12 +678,12 @@ export const StandardizeScene = () => {
             fontSize: 172,
             lineHeight: 1.08,
             letterSpacing: '-0.055em',
-            color: C.white,
+            color: C.ink,
             marginTop: 18,
           }}
         >
           <KineticText text="같은" mode="rise" delay={1} stagger={2.2} duration={14} />
-          <div style={{ color: C.green, textShadow: '0 0 60px rgba(0,223,69,0.35)' }}>
+          <div style={{ color: C.green }}>
             <WordSlot id="std" words={['인프라', '수업', '콘텐츠']} changes={[4, BEATS[1] - 3, BEATS[2] - 3]} size={172} />
           </div>
         </div>
@@ -699,7 +700,7 @@ export const StandardizeScene = () => {
 
       {BEATS.slice(1).map((b) => (
         <React.Fragment key={b}>
-          <Flash at={b - 1} duration={4} peak={0.12} color={C.greenSoft} />
+          <Flash at={b - 1} duration={4} peak={0.35} color={C.white} />
           <LensStreak at={b - 1} y={540} dur={12} />
         </React.Fragment>
       ))}

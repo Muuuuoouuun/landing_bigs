@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AbsoluteFill, random, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { noise2D } from '@remotion/noise';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust } from '../components/Background';
 import { Flash, LensStreak, Shake, Shockwave, SliceGlitch, rgbSplit } from '../components/Fx';
@@ -17,7 +17,7 @@ const SX = 104;
 const SY = 96;
 const NODE_W = 60;
 const NODE_H = 40;
-const CHAOS_COLORS = [C.gold, '#ff5a4e', '#7d8b85', C.green, '#4aa3ff'];
+const CHAOS_COLORS = [C.gold, C.coral, '#8A97AD', C.violet, C.blue];
 const AREAS = ['강남', '분당', '대치', '목동', '송도', '일산', '해운대', '수성', '둔산', '광교', '평촌', '중계'];
 
 const useNodes = () =>
@@ -60,8 +60,8 @@ const BranchNode = ({ status, border, bars, glow, label, labelOpacity }) => (
       height: NODE_H,
       borderRadius: 7,
       border: `1.5px solid ${border}`,
-      background: 'rgba(255,255,255,0.04)',
-      boxShadow: glow > 0.01 ? `0 0 ${18 * glow}px ${4 * glow}px rgba(0,223,69,${0.55 * glow})` : undefined,
+      background: C.surface,
+      boxShadow: glow > 0.01 ? `${SHADOW.soft}, 0 0 0 ${5 * glow}px ${alpha(C.green, 0.22 * glow)}` : SHADOW.soft,
       padding: '7px 8px',
       boxSizing: 'border-box',
       display: 'flex',
@@ -71,10 +71,10 @@ const BranchNode = ({ status, border, bars, glow, label, labelOpacity }) => (
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
       <div style={{ width: 6, height: 6, borderRadius: 3, background: status, flexShrink: 0 }} />
-      <div style={{ height: 4, width: `${bars[0]}%`, background: 'rgba(255,255,255,0.4)', borderRadius: 2 }} />
+      <div style={{ height: 4, width: `${bars[0]}%`, background: 'rgba(23,35,60,0.28)', borderRadius: 2 }} />
     </div>
-    <div style={{ height: 4, width: `${bars[1]}%`, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
-    <div style={{ height: 4, width: `${bars[2]}%`, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
+    <div style={{ height: 4, width: `${bars[1]}%`, background: C.line, borderRadius: 2 }} />
+    <div style={{ height: 4, width: `${bars[2]}%`, background: C.line, borderRadius: 2 }} />
     {label && (
       <div
         style={{
@@ -109,8 +109,8 @@ const NodeField = () => {
       <svg width="1920" height="1080" style={{ position: 'absolute', inset: 0 }}>
         <defs>
           <radialGradient id="hqLine" cx="960" cy="540" r="900" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor={C.greenSoft} stopOpacity="0.9" />
-            <stop offset="1" stopColor={C.green} stopOpacity="0.15" />
+            <stop offset="0" stopColor={C.green} stopOpacity="0.7" />
+            <stop offset="1" stopColor={C.greenSoft} stopOpacity="0.15" />
           </radialGradient>
         </defs>
         {nodes.map((n) => {
@@ -160,7 +160,7 @@ const NodeField = () => {
           >
             <BranchNode
               status={ordered ? C.green : n.color}
-              border={ordered ? `rgba(0,223,69,${0.45 + pulse * 0.55})` : `${n.color}66`}
+              border={ordered ? alpha(C.green, 0.4 + pulse * 0.6) : `${n.color}88`}
               bars={bars}
               glow={pulse}
               label={n.label}
@@ -207,25 +207,25 @@ export const BranchesScene = () => {
         <AbsoluteFill
           style={{
             opacity: leftShade,
-            background: 'linear-gradient(90deg, rgba(3,8,6,0.92) 0%, rgba(3,8,6,0.75) 38%, rgba(3,8,6,0) 70%)',
+            background: 'linear-gradient(90deg, rgba(246,248,252,0.94) 0%, rgba(246,248,252,0.8) 38%, rgba(246,248,252,0) 70%)',
           }}
         />
         {/* center shade behind the slam headline */}
         <AbsoluteFill
           style={{
             opacity: centerShade,
-            background: 'radial-gradient(ellipse 46% 34% at 50% 52%, rgba(3,8,6,0.9) 0%, rgba(3,8,6,0.55) 55%, rgba(3,8,6,0) 100%)',
+            background: 'radial-gradient(ellipse 46% 34% at 50% 52%, rgba(246,248,252,0.94) 0%, rgba(246,248,252,0.65) 55%, rgba(246,248,252,0) 100%)',
           }}
         />
 
-        {/* HQ core glow */}
+        {/* HQ core bloom */}
         <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div
             style={{
               width: 520,
               height: 520,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(0,223,69,0.55) 0%, rgba(0,223,69,0.12) 35%, rgba(0,223,69,0) 70%)',
+              background: 'radial-gradient(circle, rgba(92,201,142,0.55) 0%, rgba(92,201,142,0.16) 35%, rgba(92,201,142,0) 70%)',
               opacity: ip(frame, [IMPACT + 2, IMPACT + 10], [0, 1]) * ip(frame, [SLAM, SLAM + 20], [1, 0.55]),
               transform: `scale(${ip(frame, [IMPACT + 2, IMPACT + 14], [0.2, 1], EASE.back)})`,
             }}
@@ -235,10 +235,10 @@ export const BranchesScene = () => {
         {/* --- PROBLEM: chaos copy --- */}
         {frame < IMPACT + 2 && (
           <AbsoluteFill style={{ padding: '0 150px', justifyContent: 'center', textShadow: rgbSplit(glitch * 9) }}>
-            <div style={{ fontFamily: FONT.mono, fontSize: 22, letterSpacing: '0.32em', color: C.gold, marginBottom: 28 }}>
+            <div style={{ fontFamily: FONT.mono, fontSize: 22, letterSpacing: '0.32em', color: C.goldInk, marginBottom: 28 }}>
               <KineticText text="SCALING WITHOUT A STANDARD" mode="scramble" delay={4} stagger={0.6} duration={14} exitAt={50} exitMode="scatter" />
             </div>
-            <div style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 96, lineHeight: 1.12, letterSpacing: '-0.04em', color: C.white }}>
+            <div style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 96, lineHeight: 1.12, letterSpacing: '-0.04em', color: C.ink }}>
               <KineticText text="지점이 늘어날수록," mode="rise" delay={7} stagger={1.6} duration={14} exitAt={51} exitMode="scatter" />
               <br />
               <KineticText
@@ -249,7 +249,7 @@ export const BranchesScene = () => {
                 duration={14}
                 exitAt={52}
                 exitMode="scatter"
-                charColor={(i) => (isChaosWord(i) ? C.gold : undefined)}
+                charColor={(i) => (isChaosWord(i) ? C.coral : undefined)}
                 jitter={(f, i) => (isChaosWord(i) ? ip(f, [22, 54], [1.5, 13], EASE.in) : ip(f, [44, 56], [0, 4], EASE.in))}
               />
             </div>
@@ -268,7 +268,7 @@ export const BranchesScene = () => {
               textShadow: rgbSplit(glitch * 7),
             }}
           >
-            <div style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 168, lineHeight: 1, color: C.white, letterSpacing: '-0.02em' }}>
+            <div style={{ fontFamily: FONT.mono, fontWeight: 700, fontSize: 168, lineHeight: 1, color: C.ink, letterSpacing: '-0.02em' }}>
               <RollingNumber value={branchCount} digits={3} />
             </div>
             <div style={{ fontFamily: FONT.mono, fontSize: 20, letterSpacing: '0.4em', color: C.mute, marginTop: 12 }}>
@@ -284,7 +284,7 @@ export const BranchesScene = () => {
               fontFamily: FONT.sans,
               fontWeight: 600,
               fontSize: 60,
-              color: C.white,
+              color: C.inkSoft,
               letterSpacing: '-0.02em',
               marginBottom: 6,
               opacity: frame >= IMPACT + 8 ? 1 : 0,
@@ -299,7 +299,7 @@ export const BranchesScene = () => {
               fontSize: 220,
               lineHeight: 1.05,
               letterSpacing: '-0.055em',
-              color: C.white,
+              color: C.ink,
               textShadow: rgbSplit(slamSplit),
               opacity: frame >= SLAM ? 1 : 0,
             }}
@@ -316,7 +316,7 @@ export const BranchesScene = () => {
             style={{
               fontFamily: FONT.mono,
               fontSize: 22,
-              color: C.green,
+              color: C.greenInk,
               letterSpacing: `${ip(frame, [SLAM + 8, SLAM + 34], [0.2, 0.62])}em`,
               marginTop: 26,
               opacity: frame >= SLAM + 8 ? 1 : 0,
@@ -333,18 +333,18 @@ export const BranchesScene = () => {
           style={{
             width: `${scan * 100}%`,
             height: 2,
-            background: `linear-gradient(90deg, transparent, ${C.greenSoft}, #fff, ${C.greenSoft}, transparent)`,
-            boxShadow: `0 0 24px ${C.green}`,
+            background: `linear-gradient(90deg, transparent, ${C.greenSoft}, ${C.green}, ${C.greenSoft}, transparent)`,
+            boxShadow: `0 0 18px ${alpha(C.green, 0.35)}`,
           }}
         />
       </AbsoluteFill>
 
       <Shockwave at={IMPACT} maxR={1100} dur={24} />
-      <Shockwave at={SLAM} maxR={700} dur={20} rings={2} color={C.greenSoft} />
+      <Shockwave at={SLAM} maxR={700} dur={20} rings={2} color={C.blueSoft} />
       <LensStreak at={IMPACT} />
       <LensStreak at={SLAM} y={560} dur={14} />
-      <Flash at={IMPACT} duration={9} peak={0.95} />
-      <Flash at={SLAM} duration={5} peak={0.18} color={C.greenSoft} />
+      <Flash at={IMPACT} duration={9} peak={0.6} />
+      <Flash at={SLAM} duration={5} peak={0.4} color={C.white} />
     </AbsoluteFill>
   );
 };

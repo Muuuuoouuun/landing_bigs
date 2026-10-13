@@ -1,17 +1,17 @@
 import React from 'react';
 import { AbsoluteFill, Img, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
-import { C, EASE, ip } from '../theme';
+import { C, EASE, SHADOW, alpha, ip } from '../theme';
 import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridFloor, SpeedLines } from '../components/Background';
 import { Flash, LensStreak } from '../components/Fx';
 import { KineticText } from '../components/Kinetic';
 
-// Global 604–672. The first 10 frames overlap the dip-to-black transition.
+// Global 632–700. The first 10 frames overlap the dip-to-white transition.
 export const OUTRO_DURATION = 68;
 const LOGO_W = 820;
 const LOGO_H = Math.round((LOGO_W * 469) / 1800);
 const LOGO_TOP = 300;
-// Logo lands on the final music hit (outro frame 14 = global 618).
+// Logo lands on the final music hit (outro frame 14 = global 646).
 const HIT = 14;
 
 export const OutroScene = () => {
@@ -25,13 +25,13 @@ export const OutroScene = () => {
   const converge = ip(frame, [0, HIT], [1, 0], EASE.in);
 
   return (
-    <AbsoluteFill style={{ background: C.bgDeep, overflow: 'hidden' }}>
-      <BaseBackground glowY={40} glow={0.12 + glow * 0.12} />
-      <GridFloor opacity={0.25} speed={2} top={62} />
-      <Dust count={40} seed="outro-dust" opacity={0.55} speed={0.6} />
-      <SpeedLines cy={LOGO_TOP + LOGO_H / 2} progress={converge} opacity={converge} seed="outro-sl" />
+    <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
+      <BaseBackground glowY={40} glow={0.1 + glow * 0.08} />
+      <GridFloor opacity={0.22} speed={2} top={62} />
+      <Dust count={40} seed="outro-dust" opacity={0.5} speed={0.6} />
+      <SpeedLines cy={LOGO_TOP + LOGO_H / 2} progress={converge} opacity={converge * 0.8} seed="outro-sl" color={C.greenSoft} color2={C.blueSoft} />
 
-      {/* logo with wipe reveal + specular sweep (glow on the outer layer so clip-path never crops it) */}
+      {/* logo with wipe reveal + specular sweep (shadow on the outer layer so clip-path never crops it) */}
       <div
         style={{
           position: 'absolute',
@@ -40,7 +40,7 @@ export const OutroScene = () => {
           width: LOGO_W,
           height: LOGO_H,
           transform: `scale(${logoScale})`,
-          filter: `drop-shadow(0 0 ${24 + glow * 36}px rgba(4,188,9,${0.2 + glow * 0.35}))`,
+          filter: `drop-shadow(0 ${14 + glow * 10}px ${30 + glow * 20}px rgba(4,188,9,${0.1 + glow * 0.12}))`,
         }}
       >
         <div style={{ position: 'absolute', inset: 0, clipPath: `inset(-10% ${(1 - reveal) * 100}% -10% 0)` }}>
@@ -67,15 +67,16 @@ export const OutroScene = () => {
               bottom: -40,
               left: `${reveal * 100}%`,
               width: 4,
-              background: '#fff',
-              boxShadow: `0 0 30px 8px ${C.green}`,
+              borderRadius: 2,
+              background: C.green,
+              boxShadow: `0 0 24px 6px ${alpha(C.green, 0.3)}`,
             }}
           />
         )}
       </div>
 
       <AbsoluteFill style={{ alignItems: 'center', top: LOGO_TOP + LOGO_H + 70 }}>
-        <div style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 64, color: C.white, letterSpacing: '-0.035em' }}>
+        <div style={{ fontFamily: FONT.sans, fontWeight: 800, fontSize: 64, color: C.ink, letterSpacing: '-0.035em' }}>
           <KineticText text="모든 지점을, 하나의 기준으로." mode="rise" delay={HIT + 2} stagger={1} duration={12} charColor={(i) => (i >= 8 && i <= 13 ? C.green : undefined)} />
         </div>
         <div
@@ -94,27 +95,26 @@ export const OutroScene = () => {
             marginTop: 40,
             padding: '16px 34px',
             borderRadius: 999,
-            border: `1.5px solid ${C.green}`,
-            background: 'rgba(0,223,69,0.1)',
+            background: C.ink,
             color: C.white,
             fontFamily: FONT.sans,
             fontWeight: 700,
             fontSize: 26,
             transform: `scale(${cta})`,
             opacity: Math.min(1, cta * 1.4),
-            boxShadow: `0 0 ${30 * cta}px rgba(0,223,69,0.35)`,
+            boxShadow: SHADOW.card,
             display: 'flex',
             alignItems: 'center',
             gap: 14,
           }}
         >
           도입 상담 · 데모 신청
-          <span style={{ color: C.green, fontSize: 28 }}>→</span>
+          <span style={{ color: C.greenSoft, fontSize: 28 }}>→</span>
         </div>
       </AbsoluteFill>
 
       <LensStreak at={HIT} y={LOGO_TOP + LOGO_H / 2} dur={22} width={1900} />
-      <Flash at={HIT} duration={8} peak={0.15} color={C.greenSoft} />
+      <Flash at={HIT} duration={8} peak={0.3} color={C.white} />
     </AbsoluteFill>
   );
 };
