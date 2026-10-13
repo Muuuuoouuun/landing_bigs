@@ -6,9 +6,9 @@ import { BaseBackground, Dust, SpeedLines } from '../components/Background';
 import { Flash, LensStreak, Shake, Shockwave, SliceGlitch } from '../components/Fx';
 import { KineticText } from '../components/Kinetic';
 
-// Content runs 56 frames (global 408–464); the extra 8 frames are the outgoing light-wipe.
+// Content runs 56 frames (global 478–534); the extra 8 frames are the outgoing light-wipe.
 export const AI_INTRO_DURATION = 64;
-// "쌓인 데이터 위에서," builds over the data core, then AI slams on the beat (global 436).
+// "쌓인 데이터 위에서," builds over the data core, then AI slams on the beat (global 506).
 // Chapter accent: violet, with a blue → violet "AI" gradient.
 const HIT = 28;
 const CORE = { x: 960, y: 500 };

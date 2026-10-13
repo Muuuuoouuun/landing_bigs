@@ -7,18 +7,23 @@ import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Flash, LensStreak } from '../components/Fx';
 import { KineticText, RollingNumber } from '../components/Kinetic';
 import { ChapterPill } from '../components/ChapterPill';
+import { Camera, ShotCaption, shotAt } from '../components/Camera';
 
 /*
- * ② 관리 — a 2×2 control board. Each pillar lights for two beats
- * (데이터 보안 → 녹화 강의 → 클라우드 권한 설정 → 상세 수업 데이터 축적),
- * then all four pulse together on the last 8th note and the film hard-cuts into the
- * ivory-paper interlude (VariationScene) on the downbeat.
+ * ② 관리 — a 2×2 control board, covered like a product film:
+ *   wide (headline + board in standby) → one close-up per pillar, two beats each, with a
+ *   one-line caption (데이터 보안 → 녹화 강의 → 클라우드 권한 설정 → 상세 수업 데이터 축적)
+ *   → back to the wide board, where all four pulse on the last 8th note before the hard cut
+ *   into the ivory-paper interlude (VariationScene) on the downbeat.
  * Chapter accent: blue (trust / control).
- * Global 240–352, no outgoing transition (hard cut).
+ * Global 268–422 (11 beats), no outgoing transition (hard cut).
  */
-export const MANAGE_DURATION = 112;
-const STEP = 28; // two beats per pillar
-const ALL = 104; // all-lit pulse, one 8th note before the cut
+export const MANAGE_DURATION = 154;
+const INTRO = 28; // wide establishing shot (two beats)
+const STEP = 28; // two beats per pillar close-up
+const BACK_WIDE = INTRO + 4 * STEP; // 140 — cut back to the wide board
+const ALL = MANAGE_DURATION - 7; // all-lit pulse, one 8th note before the cut
+const pillarStart = (i) => INTRO + i * STEP;
 
 const PANEL_W = 440;
 const PANEL_H = 320;
@@ -26,10 +31,23 @@ const GAP = 26;
 const GRID = { x: 1340, y: 560 };
 
 const PILLARS = [
-  { title: '데이터 보안', en: 'DATA SECURITY', idle: 'STANDBY', active: 'ENCRYPTING', done: 'SECURED' },
-  { title: '녹화 강의', en: 'RECORDED CLASSES', idle: 'STANDBY', active: '● REC', done: 'SAVED' },
-  { title: '클라우드 권한 설정', en: 'CLOUD PERMISSIONS', idle: 'STANDBY', active: 'APPLYING', done: 'SYNCED' },
-  { title: '상세 수업 데이터 축적', en: 'CLASS DATA', idle: 'STANDBY', active: 'COLLECTING', done: 'LIVE' },
+  { title: '데이터 보안', lines: ['데이터 보안'], desc: '수업 기록은 암호화, 접근은 허가된 기기만', en: 'DATA SECURITY', idle: 'STANDBY', active: 'ENCRYPTING', done: 'SECURED' },
+  { title: '녹화 강의', lines: ['녹화 강의'], desc: '모든 수업 자동 녹화 · 챕터별 다시보기', en: 'RECORDED CLASSES', idle: 'STANDBY', active: '● REC', done: 'SAVED' },
+  { title: '클라우드 권한 설정', lines: ['클라우드', '권한 설정'], desc: '역할별 열람·편집·배포 권한을 본사에서 한 번에', en: 'CLOUD PERMISSIONS', idle: 'STANDBY', active: 'APPLYING', done: 'SYNCED' },
+  { title: '상세 수업 데이터 축적', lines: ['상세 수업', '데이터 축적'], desc: '출결부터 발화·평가까지, 수업마다 자동 기록', en: 'CLASS DATA', idle: 'STANDBY', active: 'COLLECTING', done: 'LIVE' },
+];
+
+const PANEL_POS = [0, 1, 2, 3].map((i) => ({
+  i,
+  x: (i % 2 ? 1 : -1) * (PANEL_W / 2 + GAP / 2),
+  y: (i < 2 ? -1 : 1) * (PANEL_H / 2 + GAP / 2),
+}));
+
+// Shot list: the close-up puts the focused panel right of centre and leaves the left third to the caption.
+const SHOTS = [
+  { at: 0 },
+  ...PANEL_POS.map((p) => ({ at: pillarStart(p.i), panel: p.i, cam: { cx: GRID.x + p.x, cy: GRID.y + p.y, scale: 1.9, sx: 1255, sy: 545 } })),
+  { at: BACK_WIDE },
 ];
 
 const HEX = '0123456789ABCDEF';
@@ -401,7 +419,7 @@ const DataBody = ({ t }) => {
 
 const BODIES = [SecurityBody, RecordingBody, PermissionBody, DataBody];
 
-const Panel = ({ index, t, all }) => {
+const Panel = ({ index, t, all, recede }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const pillar = PILLARS[index];
@@ -410,7 +428,7 @@ const Panel = ({ index, t, all }) => {
   const active = t >= 0 && t < STEP;
   const done = t >= STEP;
   const focus = active ? ip(t, [0, 5], [0, 1], EASE.out) : 0;
-  const opacity = all ? 1 : t < 0 ? 0.34 : active ? 1 : 0.8;
+  const opacity = (all ? 1 : t < 0 ? 0.6 : active ? 1 : 0.8) * (recede ? 0.2 : 1);
   const lit = all || active;
   const status = t < 0 ? pillar.idle : active && t < 9 ? pillar.active : pillar.done;
   const scan = active ? ip(t, [0, 10], [0, 1], EASE.inOut) : 1;
@@ -477,7 +495,7 @@ const Panel = ({ index, t, all }) => {
 const PillarList = ({ frame }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
     {PILLARS.map((p, i) => {
-      const t = frame - i * STEP;
+      const t = frame - pillarStart(i);
       const active = t >= 0 && t < STEP;
       const done = t >= STEP || frame >= ALL;
       const shift = active ? ip(t, [0, 6], [0, 1], EASE.out) : 0;
@@ -510,19 +528,9 @@ const PillarList = ({ frame }) => (
 export const ManageScene = () => {
   const frame = useCurrentFrame();
   const all = frame >= ALL;
-  const pillar = Math.min(3, Math.floor(frame / STEP));
-  const indexValue = 1 + [1, 2, 3].reduce((acc, k) => acc + ip(frame, [k * STEP - 2, k * STEP + 6], [0, 1], EASE.inOut), 0);
+  const shot = shotAt(SHOTS, frame);
+  const wide = !shot.cam;
   const pulse = all ? ip(frame, [ALL, ALL + 3, MANAGE_DURATION], [1, 1.025, 1.012], EASE.out) : 1;
-
-  const panels = [0, 1, 2, 3].map((i) => {
-    const col = i % 2 ? 1 : -1;
-    const row = i < 2 ? -1 : 1;
-    return {
-      i,
-      x: col * (PANEL_W / 2 + GAP / 2),
-      y: row * (PANEL_H / 2 + GAP / 2),
-    };
-  });
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: 'hidden' }}>
@@ -530,58 +538,66 @@ export const ManageScene = () => {
       <GridPlane opacity={0.45} size={64} drift={0.6} />
       <Dust count={26} seed="mgmt-dust" opacity={0.35} />
 
-      {/* the board */}
-      <div style={{ position: 'absolute', left: GRID.x, top: GRID.y, transform: `scale(${pulse})` }}>
-        {/* links between the panels when everything is lit */}
-        {all && (
-          <svg width="1200" height="900" viewBox="-600 -450 1200 900" style={{ position: 'absolute', left: -600, top: -450, overflow: 'visible' }}>
-            {panels.map((p) => {
-              const d = `M ${p.x} ${p.y} L 0 0`;
-              const ev = evolvePath(ip(frame, [ALL, ALL + 5], [0, 1], EASE.out), d);
-              return <path key={p.i} d={d} stroke={C.blueSoft} strokeWidth={3} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} opacity={0.9} />;
-            })}
-            <circle cx={0} cy={0} r={11 * ip(frame, [ALL + 3, ALL + 6], [0, 1], EASE.back)} fill={C.blue} stroke="#FFFFFF" strokeWidth={4} style={{ filter: `drop-shadow(0 4px 12px ${alpha(C.blue, 0.45)})` }} />
-          </svg>
-        )}
-        {panels.map((p) => (
-          <div
-            key={p.i}
-            style={{
-              position: 'absolute',
-              left: p.x - PANEL_W / 2,
-              top: p.y - PANEL_H / 2,
-            }}
-          >
-            <Panel index={p.i} t={frame - p.i * STEP} all={all} />
+      <Camera shots={SHOTS}>
+        {/* the board */}
+        <div style={{ position: 'absolute', left: GRID.x, top: GRID.y, transform: `scale(${pulse})` }}>
+          {/* links between the panels when everything is lit */}
+          {all && (
+            <svg width="1200" height="900" viewBox="-600 -450 1200 900" style={{ position: 'absolute', left: -600, top: -450, overflow: 'visible' }}>
+              {PANEL_POS.map((p) => {
+                const d = `M ${p.x} ${p.y} L 0 0`;
+                const ev = evolvePath(ip(frame, [ALL, ALL + 5], [0, 1], EASE.out), d);
+                return <path key={p.i} d={d} stroke={C.blueSoft} strokeWidth={3} strokeDasharray={ev.strokeDasharray} strokeDashoffset={ev.strokeDashoffset} opacity={0.9} />;
+              })}
+              <circle cx={0} cy={0} r={11 * ip(frame, [ALL + 3, ALL + 6], [0, 1], EASE.back)} fill={C.blue} stroke="#FFFFFF" strokeWidth={4} style={{ filter: `drop-shadow(0 4px 12px ${alpha(C.blue, 0.45)})` }} />
+            </svg>
+          )}
+          {PANEL_POS.map((p) => (
+            <div
+              key={p.i}
+              style={{
+                position: 'absolute',
+                left: p.x - PANEL_W / 2,
+                top: p.y - PANEL_H / 2,
+              }}
+            >
+              <Panel index={p.i} t={frame - pillarStart(p.i)} all={all} recede={!wide && shot.panel !== p.i} />
+            </div>
+          ))}
+        </div>
+
+        {/* left column (wide shots only): chapter copy + pillar list */}
+        <div style={{ position: 'absolute', left: 140, top: 236, width: 660, opacity: wide ? 1 : 0 }}>
+          <ChapterPill index="02" label="관리" delay={1} color={C.blue} />
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.blueInk, height: 30 }}>
+            <span style={{ fontWeight: 700, fontSize: 22 }}>04</span>
+            <KineticText text={frame >= BACK_WIDE ? 'ALL SYSTEMS LIVE' : 'PILLARS · ONE SYSTEM'} mode="scramble" delay={frame >= BACK_WIDE ? BACK_WIDE : 1} stagger={0.5} duration={10} />
           </div>
-        ))}
-      </div>
+          <div style={{ fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1.08, letterSpacing: '-0.055em', color: C.ink, marginTop: 18 }}>
+            <KineticText text="관리는," mode="rise" delay={2} stagger={2} duration={14} />
+            <br />
+            <span style={{ color: C.blue }}>
+              <KineticText text="시스템이." mode="rise" delay={8} stagger={2} duration={14} />
+            </span>
+          </div>
+          <div style={{ marginTop: 34 }}>
+            <PillarList frame={frame} />
+          </div>
+        </div>
+      </Camera>
 
-      {/* left column: chapter copy + pillar list */}
-      <div style={{ position: 'absolute', left: 140, top: 236, width: 660 }}>
-        <ChapterPill index="02" label="관리" delay={1} color={C.blue} />
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.28em', color: C.blueInk, height: 30 }}>
-          <span style={{ fontWeight: 700, fontSize: 22 }}>
-            0<RollingNumber value={indexValue} digits={1} />
-            <span style={{ color: C.dim }}> / 04</span>
-          </span>
-          <KineticText key={pillar} text={PILLARS[pillar].en} mode="scramble" delay={pillar * STEP + 1} stagger={0.5} duration={12} />
-        </div>
-        <div style={{ fontFamily: FONT.sans, fontWeight: 900, fontSize: 132, lineHeight: 1.08, letterSpacing: '-0.055em', color: C.ink, marginTop: 18 }}>
-          <KineticText text="관리는," mode="rise" delay={2} stagger={2} duration={14} />
-          <br />
-          <span style={{ color: C.blue }}>
-            <KineticText text="시스템이." mode="rise" delay={8} stagger={2} duration={14} />
-          </span>
-        </div>
-        <div style={{ marginTop: 34 }}>
-          <PillarList frame={frame} />
-        </div>
-      </div>
-
-      {[STEP, STEP * 2, STEP * 3].map((b) => (
-        <Flash key={b} at={b} duration={4} peak={0.22} color={C.white} />
+      {PILLARS.map((p, i) => (
+        <ShotCaption
+          key={p.title}
+          from={pillarStart(i)}
+          to={pillarStart(i) + STEP}
+          kicker={`0${i + 1} / 04 · ${p.en}`}
+          title={p.lines}
+          desc={p.desc}
+          color={C.blue}
+        />
       ))}
+
       <Flash at={ALL} duration={6} peak={0.4} color={C.white} />
       <LensStreak at={ALL} y={GRID.y} dur={10} color="120,165,250" core="150,140,245" />
     </AbsoluteFill>

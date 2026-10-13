@@ -8,16 +8,23 @@ import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Brackets, Flash } from '../components/Fx';
 import { KineticText, RollingNumber, Typewriter } from '../components/Kinetic';
 import { ChapterPill } from '../components/ChapterPill';
+import { Camera, ShotCaption, isCloseUp } from '../components/Camera';
 
 // Chapter accent: violet.
-export const AI_EVAL_DURATION = 80;
+// Content runs 98 frames (global 534–632); the extra 10 frames are the outgoing whip-pan.
+// Coverage: wide (headline + report) → close-up on the 6-axis radar → wide, where the score lands,
+// the grade stamps, the metrics fill and the AI summary types out.
+export const AI_EVAL_DURATION = 108;
 
 const PANEL = { x: 820, y: 150, w: 980, h: 780 };
 const RADAR = { cx: 1060, cy: 486, r: 170 };
 const AXES = ['전달력', '상호작용', '질문 유도', '진도 준수', '시간 관리', '학생 참여'];
 const VALUES = [0.92, 0.86, 0.95, 0.9, 0.84, 0.93];
 const FEATURES = ['AI 수업 요약', 'AI 강의평가', 'AI 학습 리포트', 'AI 참여도 분석', 'AI 이상 감지', 'AI 출결 관리'];
-const COMPLETE = 60;
+const COMPLETE = 70;
+const RADAR_CU = 28;
+const BACK_WIDE = 56;
+const SHOTS = [{ at: 0 }, { at: RADAR_CU, cam: { cx: 1060, cy: 486, scale: 1.7, sx: 1290, sy: 545 } }, { at: BACK_WIDE }];
 
 const polar = (k, r) => {
   const a = (k / AXES.length) * Math.PI * 2 - Math.PI / 2;
@@ -77,14 +84,14 @@ const Radar = () => {
         <path d={data} fill="url(#radarFill)" stroke={C.violet} strokeWidth={3} strokeLinejoin="round" style={{ filter: `drop-shadow(0 8px 16px ${alpha(C.violet, 0.3)})` }} />
         {VALUES.map((v, k) => {
           const [x, y] = polar(k, RADAR.r * v * grow * breathe);
-          const pop = spring({ frame: frame - 24 - k * 2, fps, config: { damping: 9, stiffness: 220 } });
+          const pop = spring({ frame: frame - 30 - k * 2, fps, config: { damping: 9, stiffness: 220 } });
           return <circle key={k} cx={x} cy={y} r={6.5 * pop} fill="#fff" stroke={C.violet} strokeWidth={3} />;
         })}
       </svg>
       {AXES.map((label, k) => {
         const [x, y] = polar(k, RADAR.r + 44);
         const o = ip(frame, [14 + k, 22 + k], [0, 1]);
-        const score = Math.round(VALUES[k] * 100 * ip(frame, [18, 44], [0, 1], EASE.out));
+        const score = Math.round(VALUES[k] * 100 * ip(frame, [28, 50], [0, 1], EASE.out));
         return (
           <div
             key={label}
@@ -132,7 +139,7 @@ const MetricRow = ({ label, value, bar, delay, accent = C.violet, split }) => {
 
 const Waveform = ({ x, y, w, h, bars = 56 }) => {
   const frame = useCurrentFrame();
-  const o = ip(frame, [30, 38], [0, 1]);
+  const o = ip(frame, [60, 68], [0, 1]);
   return (
     <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, display: 'flex', alignItems: 'center', gap: 3, opacity: o }}>
       {Array.from({ length: bars }).map((_, k) => {
@@ -159,7 +166,8 @@ const Waveform = ({ x, y, w, h, bars = 56 }) => {
 const FeatureWheel = ({ x, y }) => {
   const frame = useCurrentFrame();
   const n = FEATURES.length;
-  const active = [0, 1, 2, 3, 4].reduce((acc, k) => acc + ip(frame, [16 + k * 13, 22 + k * 13], [0, 1], EASE.inOut), 1);
+  // starts on "AI 강의평가", then walks the rest of the AI features once the wide shot returns
+  const active = [0, 1, 2, 3, 4].reduce((acc, k) => acc + ip(frame, [BACK_WIDE + 2 + k * 8, BACK_WIDE + 7 + k * 8], [0, 1], EASE.inOut), 1);
   const appear = ip(frame, [8, 18], [0, 1], EASE.out);
   return (
     <div style={{ position: 'absolute', left: x, top: y, width: 600, height: 300, perspective: 900, perspectiveOrigin: '40px 150px', opacity: appear }}>
@@ -204,8 +212,9 @@ export const AIEvalScene = () => {
   const panelIn = ip(frame, [0, 14], [0, 1], EASE.out);
   const scanY = PANEL.y + 70 + ((frame * 16) % (PANEL.h - 80));
   const scanOn = frame < COMPLETE ? 1 : ip(frame, [COMPLETE, COMPLETE + 6], [1, 0]);
-  const score = ip(frame, [18, 54], [0, 94], EASE.out);
-  const grade = spring({ frame: frame - 56, fps, config: { damping: 8, stiffness: 200 } });
+  const score = ip(frame, [18, 64], [0, 94], EASE.out);
+  const grade = spring({ frame: frame - 64, fps, config: { damping: 8, stiffness: 200 } });
+  const wide = !isCloseUp(SHOTS, frame);
   const complete = frame >= COMPLETE;
   const blink = Math.floor(frame / 5) % 2 === 0;
 
@@ -215,8 +224,9 @@ export const AIEvalScene = () => {
       <GridPlane opacity={0.55} size={64} drift={0.8} />
       <Dust count={24} seed="eval-dust" opacity={0.35} />
 
-      {/* ---- left column ---- */}
-      <div style={{ position: 'absolute', left: 120, top: 168, width: 660 }}>
+      <Camera shots={SHOTS}>
+      {/* ---- left column (wide shots only) ---- */}
+      <div style={{ position: 'absolute', left: 120, top: 168, width: 660, opacity: wide ? 1 : 0 }}>
         <ChapterPill index="03" label="AI" delay={8} color={C.violet} />
         <div style={{ fontFamily: FONT.mono, fontSize: 21, letterSpacing: '0.3em', color: C.violetInk, marginBottom: 16 }}>
           <KineticText text="AI LECTURE EVALUATION" mode="scramble" delay={0} stagger={0.5} duration={12} />
@@ -230,7 +240,7 @@ export const AIEvalScene = () => {
           <KineticText text="자동 분석하고 리포트합니다." mode="blur" delay={18} stagger={0.6} duration={10} />
         </div>
       </div>
-      <FeatureWheel x={120} y={560} />
+      {wide && <FeatureWheel x={120} y={560} />}
 
       {/* ---- right analysis panel ---- */}
       <div
@@ -299,13 +309,13 @@ export const AIEvalScene = () => {
             fontSize: 21,
             lineHeight: 1.5,
             color: C.ink,
-            opacity: ip(frame, [36, 42], [0, 1]),
+            opacity: ip(frame, [66, 72], [0, 1]),
           }}
         >
           <span style={{ color: C.violetInk, fontWeight: 800, marginRight: 10 }}>AI 요약 ▸</span>
           <Typewriter
             text="이차함수 꼭짓점 개념 설명 → 예제 3문항 → 질의응답 활발. 개선 제안: 학생 발화 비중 확대"
-            delay={38}
+            delay={70}
             cps={1.8}
             cursorColor={C.violet}
           />
@@ -316,7 +326,8 @@ export const AIEvalScene = () => {
       <AbsoluteFill style={{ opacity: panelIn }}>
         <Radar />
 
-        <div style={{ position: 'absolute', left: 1340, top: 236, width: 420 }}>
+        {/* score + metrics step aside while the camera is on the radar */}
+        <div style={{ position: 'absolute', left: 1340, top: 236, width: 420, opacity: wide ? 1 : 0 }}>
           <div style={{ fontFamily: FONT.mono, fontSize: 16, letterSpacing: '0.28em', color: C.mute, opacity: ip(frame, [12, 18], [0, 1]) }}>
             OVERALL SCORE · 종합
           </div>
@@ -348,15 +359,15 @@ export const AIEvalScene = () => {
             </span>
           </div>
           <div style={{ marginTop: 26 }}>
-            <MetricRow label="발화 비율  강사 58 : 학생 42" value={(p) => `${Math.round(58 * p)} : ${Math.round(42 * p)}`} split={[58, 42]} delay={26} />
-            <MetricRow label="질문 유도" value={(p) => `${Math.round(37 * p)}회`} bar={74} delay={30} />
-            <MetricRow label="학생 참여도" value={(p) => `${Math.round(92 * p)}%`} bar={92} delay={34} />
+            <MetricRow label="발화 비율  강사 58 : 학생 42" value={(p) => `${Math.round(58 * p)} : ${Math.round(42 * p)}`} split={[58, 42]} delay={58} />
+            <MetricRow label="질문 유도" value={(p) => `${Math.round(37 * p)}회`} bar={74} delay={62} />
+            <MetricRow label="학생 참여도" value={(p) => `${Math.round(92 * p)}%`} bar={92} delay={66} />
           </div>
-          <div style={{ fontFamily: FONT.mono, fontSize: 14, letterSpacing: '0.26em', color: C.dim, marginTop: 6, opacity: ip(frame, [30, 38], [0, 1]) }}>
+          <div style={{ fontFamily: FONT.mono, fontSize: 14, letterSpacing: '0.26em', color: C.dim, marginTop: 6, opacity: ip(frame, [60, 68], [0, 1]) }}>
             VOICE ANALYSIS
           </div>
         </div>
-        <Waveform x={1340} y={720} w={420} h={64} />
+        {wide && <Waveform x={1340} y={720} w={420} h={64} />}
 
         {/* scan beam */}
         <div
@@ -384,6 +395,16 @@ export const AIEvalScene = () => {
         />
         <Brackets x={PANEL.x - 14} y={PANEL.y - 14} w={PANEL.w + 28} h={PANEL.h + 28} len={34} color={C.violetSoft} opacity={ip(frame, [4, 12], [0, 0.9])} />
       </AbsoluteFill>
+      </Camera>
+
+      <ShotCaption
+        from={RADAR_CU}
+        to={BACK_WIDE}
+        kicker="AI 강의평가 · 6 METRICS"
+        title={['6개 지표', '자동 채점']}
+        desc="전달력 · 상호작용 · 질문 유도 · 진도 · 시간 · 참여"
+        color={C.violet}
+      />
 
       <Flash at={COMPLETE} duration={6} peak={0.35} color={C.white} />
     </AbsoluteFill>

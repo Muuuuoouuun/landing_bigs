@@ -6,12 +6,12 @@ import { BaseBackground, Dust, GridFloor, SpeedLines } from '../components/Backg
 import { Flash, LensStreak } from '../components/Fx';
 import { KineticText } from '../components/Kinetic';
 
-// Global 632–700. The first 10 frames overlap the dip-to-white transition.
-export const OUTRO_DURATION = 68;
+// Global 730–810. The first 10 frames overlap the dip-to-white transition.
+export const OUTRO_DURATION = 80;
 const LOGO_W = 820;
 const LOGO_H = Math.round((LOGO_W * 469) / 1800);
 const LOGO_TOP = 300;
-// Logo lands on the final music hit (outro frame 14 = global 646).
+// Logo lands on the final music hit (outro frame 14 = global 744).
 const HIT = 14;
 
 export const OutroScene = () => {

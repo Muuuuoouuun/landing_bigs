@@ -9,7 +9,7 @@ import { FONT } from '../fonts';
  * Swiss grid instead of floating cards and soft shadows, solid pastel blocks instead of light,
  * and motion stepped on twos (stop-motion staccato) instead of smooth easing.
  *
- * Global 352–408 (four beats). Beats 1–2: the system's eight parts stamp into the grid on
+ * Global 422–478 (four beats). Beats 1–2: the system's eight parts stamp into the grid on
  * 16th notes (each stamp is a marimba note in the score). Beats 3–4: the grid folds into a
  * header band and the chapter's statement is stamped like a poster (words at 34/36/38/42).
  * The last 8 frames overlap the iris that opens into the data-core bridge.

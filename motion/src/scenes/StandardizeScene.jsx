@@ -8,13 +8,14 @@ import { Flash, LensStreak } from '../components/Fx';
 import { KineticText, RollingNumber, WordSlot } from '../components/Kinetic';
 import { ClassroomWindow } from '../components/ClassroomWindow';
 import { ChapterPill } from '../components/ChapterPill';
+import { Camera, LowerThird } from '../components/Camera';
 
 // ① 표준화 — 같은 인프라 · 같은 수업 · 같은 콘텐츠.
-// Content runs 140 frames (global 100–240); the extra 8 frames are the outgoing push-cut.
-export const STANDARDIZE_DURATION = 148;
+// Content runs 168 frames (global 100–268); the extra 8 frames are the outgoing push-cut.
+export const STANDARDIZE_DURATION = 176;
 // Beat changes land on the music grid (one beat = 14 frames).
-const BEATS = [0, 42, 98];
-const BEAT_LENS = [42, 56, 42];
+const BEATS = [0, 56, 126];
+const BEAT_LENS = [56, 70, 42];
 const VCX = 1340; // visual column center
 const VCY = 540;
 
@@ -37,6 +38,17 @@ const COPY = [
 ];
 
 const AREAS = ['강남', '분당', '대치', '목동', '송도', '일산', '해운대', '수성', '둔산', '광교', '평촌', '중계'];
+
+// Coverage: each feature gets a close-up insert, cut on the beat.
+//   infra — wide · close-up on the branch devices powering on · wide with the "same" badges
+//   class — wide (window enters) · close-up on the live whiteboard · wide for the 3×3 sync
+const SHOTS = [
+  { at: 0 },
+  { at: 28, cam: { cx: 1340, cy: 610, scale: 1.85, sy: 560 } },
+  { at: 42 },
+  { at: BEATS[1] + 14, cam: { cx: 1340, cy: 584, scale: 1.95, sy: 530 } },
+  { at: BEATS[1] + 42 },
+];
 
 /* ---------------- Beat 0 — one cloud infrastructure for every branch ---------------- */
 const INFRA_BRANCHES = ['강남', '분당', '대치', '송도'];
@@ -90,7 +102,7 @@ const DeviceIcon = ({ kind, on, flicker }) => {
 const InfraVisual = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const exit = ip(frame, [36, 42], [0, 1], EASE.in);
+  const exit = ip(frame, [50, 56], [0, 1], EASE.in);
   const core = spring({ frame, fps, config: { damping: 12, stiffness: 150 } });
 
   return (
@@ -173,7 +185,7 @@ const InfraVisual = () => {
       {INFRA_BRANCHES.map((name, k) => {
         const pop = spring({ frame: frame - 8 - k * 1.5, fps, config: { damping: 13, stiffness: 180 } });
         const devices = ['pc', 'tablet', 'board'];
-        const onAt = (j) => 14 + k * 2 + j * 2.5;
+        const onAt = (j) => 28 + k * 2 + j * 2.5; // powers on inside the close-up
         const allOn = frame >= onAt(2) + 3;
         return (
           <div
@@ -218,7 +230,7 @@ const InfraVisual = () => {
       {/* "same" badges */}
       <div style={{ position: 'absolute', left: VCX - 330, top: 752, width: 660, display: 'flex', justifyContent: 'center', gap: 14 }}>
         {['같은 계정', '같은 화면', '같은 도구'].map((label, k) => {
-          const s = spring({ frame: frame - 22 - k * 3, fps, config: { damping: 12, stiffness: 200 } });
+          const s = spring({ frame: frame - 14 - k * 3, fps, config: { damping: 12, stiffness: 200 } });
           return (
             <span
               key={label}
@@ -253,9 +265,9 @@ const ClassVisual = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const enter = ip(frame, [0, 13], [0, 1], EASE.out);
-  const shrink = ip(frame, [32, 42], [0, 1], EASE.inOut);
-  const push = ip(frame, [0, 32], [0.97, 1.03], EASE.smooth);
-  const exit = ip(frame, [50, 56], [0, 1], EASE.in);
+  const shrink = ip(frame, [42, 52], [0, 1], EASE.inOut);
+  const push = ip(frame, [0, 42], [0.97, 1.03], EASE.smooth);
+  const exit = ip(frame, [64, 70], [0, 1], EASE.in);
   const TILE = 0.3;
   const GAP_X = 900 * TILE + 26;
   const GAP_Y = 540 * TILE + 46;
@@ -272,13 +284,13 @@ const ClassVisual = () => {
         const col = (k % 3) - 1;
         const row = Math.floor(k / 3) - 1;
         const hero = k === 4;
-        const pop = hero ? 1 : spring({ frame: frame - 35 - Math.abs(col) * 2 - Math.abs(row) * 3 - (k % 2), fps, config: { damping: 13, stiffness: 170 } });
-        if (!hero && frame < 35) return null;
+        const pop = hero ? 1 : spring({ frame: frame - 45 - Math.abs(col) * 2 - Math.abs(row) * 3 - (k % 2), fps, config: { damping: 13, stiffness: 170 } });
+        if (!hero && frame < 45) return null;
         const scale = hero ? (push + (TILE - push) * shrink) : TILE * pop;
         const x = VCX + col * GAP_X;
         const y = VCY + row * GAP_Y - 10;
         const heroIn = hero ? { x: (1 - enter) * 340, rotY: (1 - enter) * -32, op: enter } : { x: 0, rotY: 0, op: 1 };
-        const labelOp = ip(frame, [40, 46], [0, 1]);
+        const labelOp = ip(frame, [50, 56], [0, 1]);
         return (
           <div
             key={k}
@@ -629,6 +641,7 @@ export const StandardizeScene = () => {
       <GridPlane opacity={0.5} size={72} />
       <Dust count={28} seed="std-dust" opacity={0.35} />
 
+      <Camera shots={SHOTS}>
       {/* right visual column */}
       <Sequence from={BEATS[0]} durationInFrames={BEAT_LENS[0]}>
         <InfraVisual />
@@ -697,6 +710,9 @@ export const StandardizeScene = () => {
           ))}
         </div>
       </div>
+      </Camera>
+
+      <LowerThird from={SHOTS[3].at} to={SHOTS[4].at} kicker="같은 수업" text="실시간 판서 · 단계별 풀이 · 학생 참여" color={C.green} />
 
       {BEATS.slice(1).map((b) => (
         <React.Fragment key={b}>

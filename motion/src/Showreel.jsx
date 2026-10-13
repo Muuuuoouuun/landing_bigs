@@ -19,7 +19,7 @@ import { Soundtrack } from './audio/Soundtrack';
 // Scene list + the transition that leads OUT of each scene (null = hard cut).
 // `accent` tints the HUD chapter label and progress bar while the scene is on screen.
 // Every scene starts on the music grid (beat = 14 frames from the impact at 58):
-// 0 · 100 · 240 · 352 · 408 · 464 · 534 · 632 → 700 frames = 23.33 s.
+// 0 · 100 · 268 · 422 · 478 · 534 · 632 · 730 → 810 frames = 27 s.
 const TIMELINE = [
   { id: 'branches', label: '01 · BRANCHES', accent: C.green, Comp: BranchesScene, dur: BRANCHES_DURATION, out: { p: zoomBlur(), d: 10 } },
   { id: 'standardize', label: '02 · 표준화', accent: C.green, Comp: StandardizeScene, dur: STANDARDIZE_DURATION, out: { p: pushCut({ flashOpacity: 0.5, flashColor: C.white, outgoingScale: 1.1, incomingStartScale: 1.12, incomingEndScale: 1 }), d: 8 } },
@@ -80,7 +80,7 @@ export const Showreel = ({ audio = 'mix' }) => {
   const inset =
     frame < OUTRO_START
       ? ip(frame, [IMPACT, IMPACT + 12], [140, 0], EASE.out)
-      : ip(frame, [OUTRO_START + 20, OUTRO_START + 40], [0, 92], EASE.inOut);
+      : ip(frame, [OUTRO_START + 40, OUTRO_START + 60], [0, 92], EASE.inOut);
 
   return (
     <AbsoluteFill style={{ background: C.bgDeep }}>

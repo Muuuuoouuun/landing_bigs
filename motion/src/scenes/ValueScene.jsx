@@ -10,12 +10,12 @@ import { ChapterPill } from '../components/ChapterPill';
 
 /*
  * ④ 가치 — waste and cost fall while quality and efficiency rise.
- * Content runs 98 frames (global 534–632); the extra 10 frames are the outgoing dip to white.
+ * Content runs 98 frames (global 632–730); the extra 10 frames are the outgoing dip to white.
  * Colour story: cost / waste in coral, quality / efficiency in green.
  * Claims stay qualitative; the two numeric tags (1일, 0건) come from the landing page copy.
  */
 export const VALUE_DURATION = 108;
-const SLAM = 14; // "품질은 높이고." lands on the beat (global 548)
+const SLAM = 14; // "품질은 높이고." lands on the beat (global 646)
 // Lines draw linearly so every tag lands on an 8th note of the music
 // (strikes at 21/28/35/42, the crossing on the beat at 42, checks at 49/56/63/70).
 const DRAW = [12, 74];
