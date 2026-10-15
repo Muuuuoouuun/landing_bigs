@@ -6,7 +6,7 @@ import { FONT } from '../fonts';
 import { BaseBackground, Dust, GridPlane } from '../components/Background';
 import { Flash, LensStreak } from '../components/Fx';
 import { KineticText, RollingNumber, WordSlot } from '../components/Kinetic';
-import { ClassroomWindow } from '../components/ClassroomWindow';
+import { ClassroomWindow, PROBLEM, SOLUTIONS } from '../components/ClassroomWindow';
 import { ChapterPill } from '../components/ChapterPill';
 import { Camera, LowerThird } from '../components/Camera';
 
@@ -260,7 +260,10 @@ const InfraVisual = () => {
   );
 };
 
-/* ---------------- Beat A — one class, cloned to every branch ---------------- */
+/* ---------------- Beat A — one class, the same problem in every branch ---------------- */
+// Every branch board carries the same HQ problem; each class works it a different way and lands on
+// the same answer. Tile k uses SOLUTIONS[k] (the centre tile is the hero class); the clones run a
+// few frames behind the hero and finish their answers one after another once the grid is up.
 const ClassVisual = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -280,6 +283,30 @@ const ClassVisual = () => {
         filter: exit > 0.05 ? `blur(${exit * 14}px)` : undefined,
       }}
     >
+      {/* the grid's caption: one problem, nine ways */}
+      <div
+        style={{
+          position: 'absolute',
+          left: VCX,
+          top: VCY - GAP_Y - 182,
+          transform: `translateX(-50%) translateY(${(1 - ip(frame, [50, 57], [0, 1])) * 16}px)`,
+          opacity: ip(frame, [50, 56], [0, 1]),
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          padding: '9px 20px 9px 9px',
+          borderRadius: 999,
+          background: C.surface,
+          boxShadow: SHADOW.card,
+          fontFamily: FONT.sans,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <span style={{ padding: '5px 12px', borderRadius: 999, background: C.green, color: C.white, fontSize: 17, fontWeight: 800 }}>같은 문제</span>
+        <span style={{ fontSize: 24, fontWeight: 700, fontStyle: 'italic', color: C.ink }}>{PROBLEM}</span>
+        <span style={{ width: 1, height: 22, background: C.line }} />
+        <span style={{ fontSize: 21, fontWeight: 700, color: C.inkSoft }}>9개 지점 · 9가지 풀이</span>
+      </div>
       {Array.from({ length: 9 }).map((_, k) => {
         const col = (k % 3) - 1;
         const row = Math.floor(k / 3) - 1;
@@ -291,6 +318,8 @@ const ClassVisual = () => {
         const y = VCY + row * GAP_Y - 10;
         const heroIn = hero ? { x: (1 - enter) * 340, rotY: (1 - enter) * -32, op: enter } : { x: 0, rotY: 0, op: 1 };
         const labelOp = ip(frame, [50, 56], [0, 1]);
+        const sol = SOLUTIONS[k];
+        const lessonT = hero ? frame : frame - 19 - (k < 4 ? k : k - 1);
         return (
           <div
             key={k}
@@ -304,8 +333,8 @@ const ClassVisual = () => {
               transform: `perspective(1600px) translateX(${heroIn.x}px) rotateY(${heroIn.rotY}deg) scale(${scale})`,
             }}
           >
-            <ClassroomWindow t={frame} branch={AREAS[k]} live={hero} />
-            {/* branch label under each tile (sized to survive the 0.3 scale) */}
+            <ClassroomWindow t={lessonT} branch={AREAS[k]} live={hero} method={k} detail={hero ? 1 - shrink : 0} />
+            {/* branch + method label under each tile (sized to survive the 0.3 scale) */}
             <div
               style={{
                 position: 'absolute',
@@ -319,11 +348,12 @@ const ClassVisual = () => {
                 fontWeight: 700,
                 fontSize: 54,
                 color: C.ink,
+                whiteSpace: 'nowrap',
               }}
             >
-              <span style={{ width: 26, height: 26, borderRadius: 13, background: C.green, boxShadow: `0 0 0 10px ${alpha(C.green, 0.16)}` }} />
+              <span style={{ width: 26, height: 26, borderRadius: 13, background: sol.color, boxShadow: `0 0 0 10px ${alpha(sol.color, 0.16)}` }} />
               {AREAS[k]}
-              <span style={{ fontFamily: FONT.mono, fontSize: 40, color: C.greenInk, letterSpacing: '0.1em' }}>SYNC</span>
+              <span style={{ color: sol.ink, fontWeight: 800 }}>{sol.name}</span>
             </div>
           </div>
         );

@@ -9,11 +9,28 @@ import black from 'pretendard/dist/web/static/woff2/Pretendard-Black.woff2';
 import mono400 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2';
 import mono500 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2';
 import mono700 from '@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2';
+// Handwriting for the whiteboard (Korean + math symbols). Fontsource splits it into unicode-range
+// slices, so it is declared through its stylesheet and the slices we use are preloaded below.
+import '@fontsource/nanum-pen-script/400.css';
 
 // All fonts ship from node_modules, so rendering never needs network access.
 export const FONT = {
   sans: '"Pretendard", "Apple SD Gothic Neo", sans-serif',
   mono: '"JetBrains Mono", "Pretendard", ui-monospace, monospace',
+  hand: '"Nanum Pen Script", "Pretendard", sans-serif',
+};
+
+/** Holds the render until every handwriting slice needed for `text` has loaded. */
+export const preloadHand = (text) => {
+  if (typeof document === 'undefined' || !document.fonts) return;
+  const handle = delayRender('Loading handwriting font');
+  document.fonts
+    .load('400 60px "Nanum Pen Script"', text)
+    .then(() => continueRender(handle))
+    .catch((err) => {
+      console.error('Handwriting font failed to load', err);
+      continueRender(handle);
+    });
 };
 
 const FACES = [

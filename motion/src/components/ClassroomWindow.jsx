@@ -3,68 +3,50 @@ import { interpolate } from 'remotion';
 import { noise2D } from '@remotion/noise';
 import { evolvePath, getLength, getPointAtLength } from '@remotion/paths';
 import { C, EASE, SHADOW, alpha, ip } from '../theme';
-import { FONT } from '../fonts';
+import { FONT, preloadHand } from '../fonts';
 
 /*
- * A ClassIn-style live classroom with an interactive whiteboard lesson:
- * y = x² − 4x + 3 drawn live, with roots, intercept, axis of symmetry, vertex,
- * a student annotating, a tracing point and a step-by-step derivation.
- * Everything is driven by `t` (lesson clock in frames) so every clone stays in sync.
+ * A ClassIn-style live classroom with a handwritten whiteboard lesson.
+ * Every board carries the same HQ problem card (x² − 4x + 3 = 0); underneath, one of nine
+ * solution methods is written out line by line with a pen, and every method lands on the same
+ * answer. Everything is driven by `t` (lesson clock in frames), so any copy can run on its own
+ * clock — the 3×3 sync shot gives each branch a different method and a slightly different pace.
  */
 
-// Board coordinate system (SVG user units inside the 872×402 board)
-const BW = 872;
-const BH = 402;
-const OX = 176;
-const OY = 300;
-const UX = 58;
-const UY = 40;
-const X = (x) => OX + x * UX;
-const Y = (y) => OY - y * UY;
-const f = (x) => x * x - 4 * x + 3;
+export const PROBLEM = 'x² − 4x + 3 = 0';
+const ANSWER = '∴ x = 1 또는 x = 3';
 
-const PARABOLA = (() => {
-  const pts = [];
-  const n = 90;
-  for (let k = 0; k <= n; k++) {
-    const x = -0.42 + (k / n) * 4.84;
-    pts.push(`${k === 0 ? 'M' : 'L'} ${X(x).toFixed(2)} ${Y(f(x)).toFixed(2)}`);
-  }
-  return pts.join(' ');
-})();
-const PARABOLA_LEN = getLength(PARABOLA);
-
-// Region where y < 0 (between the roots)
-const NEG_REGION = (() => {
-  const pts = [];
-  for (let k = 0; k <= 40; k++) {
-    const x = 1 + (k / 40) * 2;
-    pts.push(`${k === 0 ? 'M' : 'L'} ${X(x).toFixed(2)} ${Y(f(x)).toFixed(2)}`);
-  }
-  return `${pts.join(' ')} Z`;
-})();
-
-const X_AXIS = `M ${X(-1.3)} ${OY} L ${X(6.6)} ${OY}`;
-const Y_AXIS = `M ${OX} ${Y(-1.6)} L ${OX} ${Y(6.3)}`;
-const SYMMETRY = `M ${X(2)} ${Y(6.1)} L ${X(2)} ${Y(-1.65)}`;
-const CIRCLE_VERTEX = (() => {
-  // hand-drawn, slightly open ellipse around the vertex
-  const cx = X(2);
-  const cy = Y(-1) + 2;
-  const pts = [];
-  for (let k = 0; k <= 48; k++) {
-    const a = -0.6 + (k / 48) * Math.PI * 2.15;
-    const r = 1 + 0.06 * Math.sin(a * 3);
-    pts.push(`${k === 0 ? 'M' : 'L'} ${(cx + Math.cos(a) * 52 * r).toFixed(1)} ${(cy + Math.sin(a) * 26 * r).toFixed(1)}`);
-  }
-  return pts.join(' ');
-})();
-
-const DERIVATION = [
-  { text: 'y = x² − 4x + 3', from: 6, to: 14 },
-  { text: '  = (x − 2)² − 1', from: 14, to: 22, mark: true },
-  { text: '  = (x − 1)(x − 3)', from: 22, to: 30 },
+// Nine roads to the same answer, one per branch in the 3×3 shot (index 4 is the hero class).
+// A line is an array of segments: plain text, { frac: [numerator, denominator] } or { sqrt: radicand }.
+export const SOLUTIONS = [
+  { name: '인수분해', color: C.green, ink: C.greenInk, lines: [['(x − 1)(x − 3) = 0']] },
+  { name: '근의 공식', color: C.blue, ink: C.blueInk, size: 48, lines: [['x = ', { frac: [['4 ± ', { sqrt: '16 − 12' }], '2'] }], ['  = ', { frac: ['4 ± 2', '2'] }]] },
+  { name: '짝수 공식', color: C.gold, ink: C.goldInk, lines: [['x = 2 ± ', { sqrt: '2² − 3' }], ['  = 2 ± 1']] },
+  { name: '근과 계수', color: C.coral, ink: C.coral, lines: [['α + β = 4,  αβ = 3'], ['→ 1 + 3 = 4,  1 × 3 = 3']] },
+  { name: '완전제곱식', color: C.violet, ink: C.violetInk, lines: [['(x − 2)² − 1 = 0'], ['x − 2 = ±1']] },
+  { name: '치환', color: C.blue, ink: C.blueInk, lines: [['x = t + 2  →  t² − 1 = 0'], ['t = ±1']] },
+  { name: '인수정리', color: C.green, ink: C.greenInk, lines: [['f(1) = 1 − 4 + 3 = 0'], ['→ (x − 1)(x − 3) = 0']] },
+  { name: '판별식', color: C.violet, ink: C.violetInk, size: 52, lines: [['D = 16 − 12 = 4 > 0'], ['x = ', { frac: ['4 ± 2', '2'] }]] },
+  { name: '묶어서 인수분해', color: C.gold, ink: C.goldInk, lines: [['x² − x − 3x + 3 = 0'], ['x(x − 1) − 3(x − 1) = 0']] },
 ];
+const HERO_METHOD = 4;
+const HERO_MENU = [0, 1, 4, 3]; // the method list on the hero board (완전제곱식 is being written)
+
+const flatten = (seg) => {
+  if (typeof seg === 'string') return seg;
+  if (Array.isArray(seg)) return seg.map(flatten).join('');
+  if (seg.frac) return seg.frac.map(flatten).join('');
+  return flatten(seg.sqrt);
+};
+const LESSON_TEXT = [ANSWER, ...SOLUTIONS.flatMap((s) => s.lines.map(flatten))].join('') + '√∴';
+preloadHand(LESSON_TEXT);
+
+// Lesson clock (frames): the card lands, the method tag pops, then one line every 8 frames.
+const CARD_AT = 2;
+const TAG_AT = 10;
+const WRITE_AT = 13;
+const LINE = 8;
+export const answerDoneAt = (method) => WRITE_AT + SOLUTIONS[method].lines.length * LINE + 7;
 
 const TOOLS = ['pen', 'marker', 'eraser', 'shape', 'text', 'laser', 'ruler'];
 
@@ -124,26 +106,89 @@ const clock = (t) => {
   return `00:${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-export const ClassroomWindow = ({ t = 60, title = '고2 수학 · 심화반', branch = '강남', live = true }) => {
-  const axes = ip(t, [0, 8], [0, 1], EASE.inOut);
-  const draw = ip(t, [3, 22], [0, 1], EASE.smooth);
-  const curve = evolvePath(draw, PARABOLA);
-  const tip = getPointAtLength(PARABOLA, Math.max(0.01, PARABOLA_LEN * draw));
-  const penOn = draw > 0 && draw < 1;
+/* ---------------- handwriting ---------------- */
+/** Renders a handwritten math segment: text, stacked fraction or square root. */
+const Ink = ({ seg }) => {
+  if (Array.isArray(seg)) return seg.map((s, i) => <Ink key={i} seg={s} />);
+  if (typeof seg === 'string') return <span style={{ whiteSpace: 'pre' }}>{seg}</span>;
+  if (seg.frac) {
+    return (
+      <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', verticalAlign: 'middle', fontSize: '0.74em', lineHeight: 1.02, margin: '0 0.1em' }}>
+        <span>
+          <Ink seg={seg.frac[0]} />
+        </span>
+        <span style={{ alignSelf: 'stretch', height: '0.08em', background: 'currentColor', borderRadius: 3, margin: '0.05em 0' }} />
+        <span>
+          <Ink seg={seg.frac[1]} />
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span style={{ whiteSpace: 'pre' }}>
+      √<span style={{ borderTop: '0.07em solid currentColor', paddingTop: '0.02em' }}>
+        <Ink seg={seg.sqrt} />
+      </span>
+    </span>
+  );
+};
+
+/** Marker pen whose tip sits on (left, top) of its container. */
+const PenTip = ({ left }) => (
+  <svg width="52" height="66" viewBox="-14 -58 52 66" style={{ position: 'absolute', left, top: '64%', transform: 'translate(-14px, -58px)', overflow: 'visible', pointerEvents: 'none' }}>
+    <circle r={9} fill={alpha(C.green, 0.22)} style={{ filter: 'blur(3px)' }} />
+    <g transform="rotate(28)">
+      <path d="M0 0 L5 -9 L5 -52 L-5 -52 L-5 -9 Z" fill="#FFFFFF" stroke={inkA(0.35)} strokeWidth={1} />
+      <rect x={-5} y={-52} width={10} height={9} fill={C.green} />
+    </g>
+  </svg>
+);
+
+/** One written line: revealed left → right as the pen travels, with a slight hand tilt. */
+const InkLine = ({ seg, p, color, tilt = 0, pen, children }) => (
+  <div style={{ position: 'relative', display: 'inline-block', transform: `rotate(${tilt}deg)`, color }}>
+    <div style={{ clipPath: `inset(-40% ${(1 - p) * 100}% -40% -6%)`, whiteSpace: 'nowrap' }}>
+      <Ink seg={seg} />
+    </div>
+    {children}
+    {pen && p > 0.02 && p < 0.98 && <PenTip left={`${p * 100}%`} />}
+  </div>
+);
+
+// student's loop around the answer (in a 600×100 box stretched over the answer line)
+const LOOP = (() => {
+  const pts = [];
+  for (let k = 0; k <= 56; k++) {
+    const a = -0.5 + (k / 56) * Math.PI * 2.12;
+    const r = 1 + 0.05 * Math.sin(a * 3);
+    pts.push(`${k === 0 ? 'M' : 'L'} ${(300 + Math.cos(a) * 300 * r).toFixed(1)} ${(50 + Math.sin(a) * 50 * r).toFixed(1)}`);
+  }
+  return pts.join(' ');
+})();
+const LOOP_LEN = getLength(LOOP);
+
+export const ClassroomWindow = ({ t = 60, title = '고2 수학 · 심화반', branch = '강남', live = true, method = HERO_METHOD, detail = 1 }) => {
+  const sol = SOLUTIONS[method];
   const pop = (start) => ip(t, [start, start + 5], [0, 1], EASE.back);
-  const sym = ip(t, [18, 26], [0, 1], EASE.inOut);
-  const neg = ip(t, [24, 32], [0, 1]);
-  const ring = (t % 18) / 18;
-  const studentDraw = ip(t, [28, 40], [0, 1], EASE.inOut);
-  const studentCircle = evolvePath(studentDraw, CIRCLE_VERTEX);
-  const studentIn = ip(t, [24, 30], [0, 1], EASE.out) * ip(t, [44, 50], [1, 0]);
-  const studentTip = getPointAtLength(CIRCLE_VERTEX, Math.max(0.01, getLength(CIRCLE_VERTEX) * studentDraw));
-  const studentPos = t < 28 ? { x: interpolate(studentIn, [0, 1], [BW - 80, studentTip.x]), y: interpolate(studentIn, [0, 1], [60, studentTip.y]) } : studentTip;
-  const traceX = interpolate(t, [32, 56], [0.25, 3.75], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: EASE.smooth });
-  const traceOn = ip(t, [30, 34], [0, 1]);
-  const px = X(traceX);
-  const py = Y(f(traceX));
   const hand = pop(20);
+  const card = ip(t, [CARD_AT, CARD_AT + 6], [0, 1], EASE.out);
+  const tag = pop(TAG_AT);
+  const rows = [...sol.lines, [ANSWER]];
+  const writeP = (i) => ip(t, [WRITE_AT + i * LINE, WRITE_AT + i * LINE + 7], [0, 1], EASE.linear);
+  const doneAt = answerDoneAt(method);
+  const check = pop(doneAt + 1);
+  const highlight = ip(t, [doneAt + 1, doneAt + 6], [0, 1], EASE.out);
+  const writing = rows.findIndex((_, i) => writeP(i) > 0 && writeP(i) < 1);
+  const size = sol.size ?? 56;
+  // hero-only extras: student loop around the answer, cursor, method list, chat bubble
+  const loopDraw = ip(t, [doneAt + 2, doneAt + 10], [0, 1], EASE.inOut);
+  const loop = evolvePath(loopDraw, LOOP);
+  const cursorIn = ip(t, [doneAt - 3, doneAt + 2], [0, 1], EASE.out) * ip(t, [doneAt + 12, doneAt + 17], [1, 0]);
+  const loopTip = getPointAtLength(LOOP, Math.max(0.01, LOOP_LEN * loopDraw));
+  const cursor = {
+    left: interpolate(cursorIn, [0, 1], [150, -6 + (112 * loopTip.x) / 600], { extrapolateRight: 'clamp' }),
+    top: interpolate(cursorIn, [0, 1], [-260, -22 + (144 * loopTip.y) / 100], { extrapolateRight: 'clamp' }),
+  };
 
   return (
     <div
@@ -258,15 +303,14 @@ export const ClassroomWindow = ({ t = 60, title = '고2 수학 · 심화반', br
 
       {/* whiteboard */}
       <div style={{ flex: 1, margin: '0 14px 14px', borderRadius: 12, position: 'relative', overflow: 'hidden', background: '#FCFDFF', border: `1px solid ${C.hair}` }}>
-        {/* graph paper: minor + major grid */}
+        {/* faint board grid */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage:
-              'linear-gradient(rgba(63,124,240,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(63,124,240,0.05) 1px, transparent 1px), linear-gradient(rgba(63,124,240,0.11) 1px, transparent 1px), linear-gradient(90deg, rgba(63,124,240,0.11) 1px, transparent 1px)',
-            backgroundSize: `${UX / 4}px ${UY / 4}px, ${UX / 4}px ${UY / 4}px, ${UX}px ${UY}px, ${UX}px ${UY}px`,
-            backgroundPosition: `${OX}px ${OY}px`,
+            backgroundImage: 'linear-gradient(rgba(63,124,240,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(63,124,240,0.06) 1px, transparent 1px)',
+            backgroundSize: '29px 29px',
+            backgroundPosition: '6px 6px',
           }}
         />
 
@@ -327,232 +371,180 @@ export const ClassroomWindow = ({ t = 60, title = '고2 수학 · 심화반', br
             color: C.mute,
           }}
         >
-          <span style={{ color: C.greenInk }}>3차시</span> · 이차함수의 그래프
+          <span style={{ color: C.greenInk }}>3차시</span> · 이차방정식의 풀이
         </div>
 
-        <svg viewBox={`0 0 ${BW} ${BH}`} width="100%" height="100%" style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
-          <defs>
-            <pattern id="cw-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <line x1="0" y1="0" x2="0" y2="8" stroke={C.green} strokeWidth="2" strokeOpacity="0.32" />
-            </pattern>
-            <marker id="cw-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M0 0 L10 5 L0 10 Z" fill={inkA(0.7)} />
-            </marker>
-          </defs>
-
-          {/* axes */}
-          {[X_AXIS, Y_AXIS].map((d) => {
-            const ev = evolvePath(axes, d);
-            return (
-              <path
-                key={d}
-                d={d}
-                stroke={inkA(0.7)}
-                strokeWidth={2}
-                fill="none"
-                strokeDasharray={ev.strokeDasharray}
-                strokeDashoffset={ev.strokeDashoffset}
-                markerEnd={axes > 0.98 ? 'url(#cw-arrow)' : undefined}
-              />
-            );
-          })}
-          <text x={X(6.55)} y={OY + 24} fill={inkA(0.8)} fontSize={17} fontStyle="italic" fontFamily={FONT.sans} opacity={axes}>
-            x
-          </text>
-          <text x={OX + 10} y={Y(6.2)} fill={inkA(0.8)} fontSize={17} fontStyle="italic" fontFamily={FONT.sans} opacity={axes}>
-            y
-          </text>
-          <text x={OX - 18} y={OY + 20} fill={inkA(0.55)} fontSize={14} fontStyle="italic" fontFamily={FONT.sans} opacity={axes}>
-            O
-          </text>
-          {/* ticks + numbers */}
-          {[-1, 1, 2, 3, 4, 5, 6].map((n, i) => (
-            <g key={`xt${n}`} opacity={ip(t, [2 + i * 0.6, 6 + i * 0.6], [0, 1])}>
-              <line x1={X(n)} y1={OY - 5} x2={X(n)} y2={OY + 5} stroke={inkA(0.55)} strokeWidth={1.5} />
-              <text x={X(n)} y={OY + 21} fill={inkA(0.5)} fontSize={12.5} textAnchor="middle" fontFamily={FONT.mono}>
-                {n}
-              </text>
-            </g>
-          ))}
-          {[-1, 1, 2, 3, 4, 5, 6].map((n, i) => (
-            <g key={`yt${n}`} opacity={ip(t, [2 + i * 0.6, 6 + i * 0.6], [0, 1])}>
-              <line x1={OX - 5} y1={Y(n)} x2={OX + 5} y2={Y(n)} stroke={inkA(0.55)} strokeWidth={1.5} />
-              <text x={OX - 12} y={Y(n) + 4} fill={inkA(0.5)} fontSize={12.5} textAnchor="end" fontFamily={FONT.mono}>
-                {n}
-              </text>
-            </g>
-          ))}
-
-          {/* y < 0 region */}
-          <path d={NEG_REGION} fill="url(#cw-hatch)" opacity={neg} />
-          <path d={NEG_REGION} fill={alpha(C.green, 0.07)} opacity={neg} />
-          <text x={X(2)} y={OY + 21} fill={C.greenInk} fontSize={13} fontWeight={700} textAnchor="middle" fontFamily={FONT.sans} opacity={neg * (1 - ip(t, [22, 26], [0, 1]))}>
-            y&lt;0
-          </text>
-
-          {/* axis of symmetry */}
-          <clipPath id="cw-sym-clip">
-            <rect x={X(2) - 10} y={Y(6.1)} width={20} height={(Y(-1.65) - Y(6.1)) * sym} />
-          </clipPath>
-          <path d={SYMMETRY} stroke={C.gold} strokeWidth={1.8} strokeDasharray="7 6" fill="none" opacity={0.85} clipPath="url(#cw-sym-clip)" />
-          <text x={X(2) + 8} y={Y(5.6)} fill={C.goldInk} fontSize={15} fontWeight={700} fontFamily={FONT.sans} opacity={pop(24)}>
-            x = 2
-          </text>
-
-          {/* parabola — soft marker bleed + crisp stroke */}
-          <path d={PARABOLA} fill="none" stroke={C.green} strokeOpacity={0.18} strokeWidth={11} strokeLinecap="round" strokeDasharray={curve.strokeDasharray} strokeDashoffset={curve.strokeDashoffset} style={{ filter: 'blur(5px)' }} />
-          <path d={PARABOLA} fill="none" stroke={C.green} strokeWidth={4.2} strokeLinecap="round" strokeDasharray={curve.strokeDasharray} strokeDashoffset={curve.strokeDashoffset} />
-          <text x={X(4.5)} y={Y(4.6)} fill={C.greenInk} fontSize={17} fontWeight={700} fontFamily={FONT.sans} opacity={pop(21)}>
-            y = x² − 4x + 3
-          </text>
-
-          {/* key points */}
-          {[
-            { x: 0, y: 3, label: '(0, 3)', at: 12, dx: 10, dy: -8, anchor: 'start' },
-            { x: 1, y: 0, label: '(1, 0)', at: 15, dx: -10, dy: 38, anchor: 'end' },
-            { x: 3, y: 0, label: '(3, 0)', at: 17, dx: -10, dy: -12, anchor: 'end' },
-          ].map((p) => (
-            <g key={p.label} opacity={Math.min(1, pop(p.at) * 1.5)}>
-              <circle cx={X(p.x)} cy={Y(p.y)} r={6.5 * pop(p.at)} fill="#ffffff" stroke={C.green} strokeWidth={2.5} />
-              <text x={X(p.x) + p.dx} y={Y(p.y) + p.dy} fill={inkA(0.85)} fontSize={14} fontWeight={700} textAnchor={p.anchor} fontFamily={FONT.mono}>
-                {p.label}
-              </text>
-            </g>
-          ))}
-
-          {/* vertex */}
-          <circle cx={X(2)} cy={Y(-1)} r={8 + ring * 22} fill="none" stroke={C.gold} strokeWidth={2} opacity={pop(22) * (1 - ring)} />
-          <circle cx={X(2)} cy={Y(-1)} r={8.5 * pop(22)} fill={C.gold} stroke="#FFFFFF" strokeWidth={2.5} style={{ filter: `drop-shadow(0 2px 6px ${alpha(C.gold, 0.55)})` }} />
-          <g opacity={pop(23)}>
-            <text x={X(2) + 76} y={Y(-1) - 8} fill={C.goldInk} fontSize={16} fontWeight={800} fontFamily={FONT.sans}>
-              꼭짓점 (2, −1)
-            </text>
-            <text x={X(2) + 76} y={Y(-1) + 12} fill={alpha(C.goldInk, 0.8)} fontSize={13} fontWeight={600} fontFamily={FONT.sans}>
-              최솟값 −1
-            </text>
-          </g>
-
-          {/* student annotation */}
-          <path d={CIRCLE_VERTEX} fill="none" stroke={C.coral} strokeWidth={3} strokeLinecap="round" strokeDasharray={studentCircle.strokeDasharray} strokeDashoffset={studentCircle.strokeDashoffset} opacity={ip(t, [28, 30], [0, 1]) * ip(t, [56, 62], [1, 0.4])} />
-
-          {/* tracing point P */}
-          <g opacity={traceOn}>
-            <line x1={px} y1={py} x2={px} y2={OY} stroke={inkA(0.32)} strokeWidth={1.3} strokeDasharray="4 4" />
-            <line x1={px} y1={py} x2={OX} y2={py} stroke={inkA(0.32)} strokeWidth={1.3} strokeDasharray="4 4" />
-            <circle cx={px} cy={py} r={13} fill={alpha(C.green, 0.16)} />
-            <circle cx={px} cy={py} r={6} fill={C.white} stroke={C.green} strokeWidth={3} />
-            <g transform={`translate(${px + 14} ${py - 42})`}>
-              <rect width={124} height={26} rx={6} fill={C.ink} />
-              <text x={10} y={18} fill={C.white} fontSize={13} fontWeight={700} fontFamily={FONT.mono}>
-                P({traceX.toFixed(1)}, {f(traceX).toFixed(2)})
-              </text>
-            </g>
-          </g>
-
-          {/* teacher pen tip */}
-          {penOn && (
-            <g transform={`translate(${tip.x} ${tip.y})`}>
-              <circle r={10} fill={alpha(C.green, 0.25)} style={{ filter: 'blur(3px)' }} />
-              <g transform="rotate(-35)">
-                <path d="M0 0 L5 -9 L5 -52 L-5 -52 L-5 -9 Z" fill="#FFFFFF" stroke={inkA(0.35)} strokeWidth={1} />
-                <rect x={-5} y={-52} width={10} height={9} fill={C.green} />
-              </g>
-            </g>
-          )}
-
-          {/* student cursor */}
-          {studentIn > 0.01 && (
-            <g transform={`translate(${studentPos.x} ${studentPos.y})`} opacity={studentIn}>
-              <path d="M0 0 L0 20 L5.5 15 L9.5 24 L13 22.5 L9 13.8 L16 13.5 Z" fill={C.gold} stroke="#FFFFFF" strokeWidth={1.4} />
-              <g transform="translate(16 22)">
-                <rect width={58} height={20} rx={6} fill={C.gold} />
-                <text x={29} y={14.5} fill="#FFFFFF" fontSize={11.5} fontWeight={800} textAnchor="middle" fontFamily={FONT.sans}>
-                  학생 2
-                </text>
-              </g>
-            </g>
-          )}
-        </svg>
-
-        {/* derivation panel */}
+        {/* HQ problem card — identical on every board */}
         <div
           style={{
             position: 'absolute',
-            right: 14,
-            top: 52,
-            width: 248,
-            padding: '12px 14px 14px',
+            left: 58,
+            top: 50,
+            height: 50,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '0 16px 0 8px',
             borderRadius: 12,
-            background: 'rgba(255,255,255,0.94)',
-            border: `1px solid ${C.hair}`,
-            boxShadow: SHADOW.card,
-            opacity: ip(t, [4, 8], [0, 1]),
+            background: C.surface,
+            border: `1px solid ${C.line}`,
+            boxShadow: SHADOW.soft,
+            opacity: card,
+            transform: `translateY(${(1 - card) * -14}px)`,
+            whiteSpace: 'nowrap',
           }}
         >
-          <div style={{ fontSize: 11.5, fontWeight: 800, color: C.greenInk, letterSpacing: '0.12em', marginBottom: 8 }}>풀이 · 꼭짓점 구하기</div>
-          {DERIVATION.map((line) => {
-            const chars = Array.from(line.text);
-            const shown = Math.round(ip(t, [line.from, line.to], [0, chars.length], EASE.linear));
-            const underline = line.mark ? ip(t, [line.to, line.to + 6], [0, 1], EASE.out) : 0;
+          <span style={{ padding: '5px 10px', borderRadius: 8, background: C.green, color: C.white, fontSize: 15, fontWeight: 800 }}>문제</span>
+          <span style={{ fontSize: 26, fontWeight: 700, fontStyle: 'italic', color: C.ink, letterSpacing: '-0.01em' }}>{PROBLEM}</span>
+          <span style={{ fontSize: 17, fontWeight: 600, color: C.inkSoft }}>의 해를 구하시오.</span>
+          <span style={{ fontFamily: FONT.mono, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: C.greenInk, background: C.mint, borderRadius: 6, padding: '3px 7px' }}>본사 공통 문항</span>
+        </div>
+
+        {/* method tag */}
+        <div
+          style={{
+            position: 'absolute',
+            left: 72,
+            top: 114,
+            padding: '4px 12px',
+            borderRadius: 999,
+            background: alpha(sol.color, 0.14),
+            color: sol.ink,
+            fontSize: 16,
+            fontWeight: 800,
+            transform: `scale(${tag})`,
+            transformOrigin: 'left center',
+            opacity: Math.min(1, tag * 1.5),
+          }}
+        >
+          풀이 · {sol.name}
+        </div>
+
+        {/* the written solution */}
+        <div style={{ position: 'absolute', left: 76, top: 150, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, fontFamily: FONT.hand, fontSize: size, lineHeight: 1.12 }}>
+          {rows.map((seg, i) => {
+            const isAnswer = i === rows.length - 1;
             return (
-              <div key={line.text} style={{ position: 'relative', height: 30, fontSize: 19, fontWeight: 600, color: C.ink, whiteSpace: 'pre', fontStyle: 'italic' }}>
-                {chars.slice(0, shown).join('')}
-                {shown > 0 && shown < chars.length && <span style={{ display: 'inline-block', width: 2, height: 18, background: C.green, marginLeft: 1, verticalAlign: '-2px' }} />}
-                {line.mark && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      left: 22,
-                      bottom: 3,
-                      height: 7,
-                      width: `${underline * 150}px`,
-                      background: alpha(C.gold, 0.35),
-                      borderRadius: 3,
-                    }}
-                  />
+              <InkLine key={i} seg={seg} p={writeP(i)} color={isAnswer ? C.greenInk : C.ink} tilt={[-0.8, 0.5, -0.4][i % 3]} pen={writing === i}>
+                {isAnswer && (
+                  <>
+                    {/* highlighter swipe under the answer */}
+                    <span style={{ position: 'absolute', left: '-2%', bottom: '10%', height: '24%', width: `${highlight * 104}%`, background: alpha(C.gold, 0.3), borderRadius: 6, zIndex: -1 }} />
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: 'calc(100% + 14px)',
+                        top: '50%',
+                        width: 38,
+                        height: 38,
+                        marginTop: -19,
+                        borderRadius: 19,
+                        background: C.green,
+                        color: C.white,
+                        fontFamily: FONT.sans,
+                        fontSize: 22,
+                        fontWeight: 900,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transform: `scale(${check})`,
+                      }}
+                    >
+                      ✓
+                    </span>
+                    {detail > 0.01 && (
+                      <>
+                        <svg viewBox="0 0 600 100" preserveAspectRatio="none" style={{ position: 'absolute', left: '-6%', top: '-22%', width: '112%', height: '144%', overflow: 'visible', opacity: detail }}>
+                          <path d={LOOP} fill="none" stroke={C.coral} strokeWidth={3.4} strokeLinecap="round" strokeDasharray={loop.strokeDasharray} strokeDashoffset={loop.strokeDashoffset} />
+                        </svg>
+                        {cursorIn > 0.01 && (
+                          <svg width="80" height="48" viewBox="0 0 80 48" style={{ position: 'absolute', left: `${cursor.left}%`, top: `${cursor.top}%`, overflow: 'visible', opacity: cursorIn * detail }}>
+                            <path d="M0 0 L0 20 L5.5 15 L9.5 24 L13 22.5 L9 13.8 L16 13.5 Z" fill={C.gold} stroke="#FFFFFF" strokeWidth={1.4} />
+                            <g transform="translate(16 22)">
+                              <rect width={58} height={20} rx={6} fill={C.gold} />
+                              <text x={29} y={14.5} fill="#FFFFFF" fontSize={11.5} fontWeight={800} textAnchor="middle" fontFamily={FONT.sans}>
+                                학생 2
+                              </text>
+                            </g>
+                          </svg>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
-              </div>
+              </InkLine>
             );
           })}
+        </div>
+
+        {/* hero board: the same problem's solution methods */}
+        {detail > 0.01 && (
           <div
             style={{
-              marginTop: 6,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontSize: 13,
-              fontWeight: 700,
-              color: C.greenInk,
-              opacity: pop(30),
-              transform: `scale(${0.8 + 0.2 * pop(30)})`,
-              transformOrigin: 'left center',
+              position: 'absolute',
+              right: 14,
+              top: 50,
+              width: 212,
+              padding: '12px 12px 10px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.95)',
+              border: `1px solid ${C.hair}`,
+              boxShadow: SHADOW.card,
+              opacity: ip(t, [4, 8], [0, 1]) * detail,
             }}
           >
-            <span style={{ width: 20, height: 20, borderRadius: 10, background: C.green, color: C.white, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900 }}>✓</span>
-            꼭짓점 (2, −1) · 축 x = 2
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: C.greenInk, letterSpacing: '0.1em', marginBottom: 6 }}>같은 문제 · 풀이 방법</div>
+            {HERO_MENU.map((m, i) => {
+              const active = m === method;
+              const done = active && t >= doneAt;
+              return (
+                <div
+                  key={m}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    height: 30,
+                    padding: '0 8px',
+                    borderRadius: 8,
+                    background: active ? alpha(SOLUTIONS[m].color, 0.12) : 'transparent',
+                    fontSize: 14.5,
+                    fontWeight: active ? 800 : 600,
+                    color: active ? C.ink : C.mute,
+                  }}
+                >
+                  <span style={{ width: 18, height: 18, borderRadius: 9, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', background: active ? SOLUTIONS[m].color : C.surfaceAlt, color: active ? C.white : C.dim }}>{i + 1}</span>
+                  {SOLUTIONS[m].name}
+                  {active && <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800, color: done ? C.greenInk : SOLUTIONS[m].ink }}>{done ? '✓ 완료' : '판서 중'}</span>}
+                </div>
+              );
+            })}
+            <div style={{ marginTop: 4, padding: '0 8px', fontSize: 11.5, fontWeight: 600, color: C.dim }}>+ 다른 풀이 5가지</div>
           </div>
-        </div>
+        )}
 
         {/* hand-raise / chat bubble */}
-        <div
-          style={{
-            position: 'absolute',
-            right: 14,
-            bottom: 52,
-            padding: '8px 12px',
-            borderRadius: '12px 12px 4px 12px',
-            background: '#FFF4DF',
-            border: `1px solid ${alpha(C.gold, 0.5)}`,
-            boxShadow: SHADOW.soft,
-            fontSize: 13,
-            fontWeight: 700,
-            color: C.ink,
-            transform: `translateY(${(1 - hand) * 12}px) scale(${0.9 + 0.1 * hand})`,
-            opacity: hand * ip(t, [48, 54], [1, 0]),
-          }}
-        >
-          <span style={{ color: C.goldInk }}>학생 3</span> · 축이 왜 x = 2 인가요?
-        </div>
+        {detail > 0.01 && (
+          <div
+            style={{
+              position: 'absolute',
+              right: 14,
+              bottom: 52,
+              padding: '8px 12px',
+              borderRadius: '12px 12px 4px 12px',
+              background: '#FFF4DF',
+              border: `1px solid ${alpha(C.gold, 0.5)}`,
+              boxShadow: SHADOW.soft,
+              fontSize: 13,
+              fontWeight: 700,
+              color: C.ink,
+              transform: `translateY(${(1 - hand) * 12}px) scale(${0.9 + 0.1 * hand})`,
+              opacity: hand * ip(t, [48, 54], [1, 0]) * detail,
+            }}
+          >
+            <span style={{ color: C.goldInk }}>학생 3</span> · 근의 공식으로도 풀 수 있나요?
+          </div>
+        )}
 
         {/* page indicator */}
         <div

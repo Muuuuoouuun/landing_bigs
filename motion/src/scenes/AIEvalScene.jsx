@@ -314,7 +314,7 @@ export const AIEvalScene = () => {
         >
           <span style={{ color: C.violetInk, fontWeight: 800, marginRight: 10 }}>AI 요약 ▸</span>
           <Typewriter
-            text="이차함수 꼭짓점 개념 설명 → 예제 3문항 → 질의응답 활발. 개선 제안: 학생 발화 비중 확대"
+            text="완전제곱식 풀이 → 근의 공식과 비교 → 질의응답 활발. 개선 제안: 학생 발화 비중 확대"
             delay={70}
             cps={1.8}
             cursorColor={C.violet}

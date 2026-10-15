@@ -182,13 +182,17 @@ const RecordingBody = ({ t }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, height: '100%' }}>
       <div style={{ position: 'relative', height: 120, borderRadius: 10, overflow: 'hidden', background: '#FCFDFF', border: `1px solid ${C.line}` }}>
+        {/* the recorded board: the same handwritten lesson as the 같은 수업 class */}
         <svg viewBox="0 0 400 120" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
-          <line x1={40} y1={92} x2={370} y2={92} stroke="rgba(23,35,60,0.4)" strokeWidth={1.5} />
-          <line x1={110} y1={14} x2={110} y2={110} stroke="rgba(23,35,60,0.4)" strokeWidth={1.5} />
-          <path d="M 70 20 Q 170 170 270 20" fill="none" stroke={C.green} strokeWidth={3} strokeLinecap="round" />
-          <circle cx={170} cy={95} r={5} fill={C.gold} />
-          <text x={292} y={40} fill={C.greenInk} fontSize={15} fontFamily={FONT.sans} fontWeight={600}>
-            y = x² − 4x + 3
+          <rect x={196} y={10} width={192} height={26} rx={7} fill={C.surface} stroke={C.line} />
+          <text x={292} y={28.5} fill={C.ink} fontSize={15} fontStyle="italic" fontWeight={700} textAnchor="middle" fontFamily={FONT.sans}>
+            x² − 4x + 3 = 0
+          </text>
+          <text x={22} y={72} fill={C.ink} fontSize={31} fontFamily={FONT.hand}>
+            (x − 2)² − 1 = 0
+          </text>
+          <text x={22} y={106} fill={C.greenInk} fontSize={31} fontFamily={FONT.hand}>
+            ∴ x = 1 또는 x = 3
           </text>
         </svg>
         <div
@@ -215,8 +219,8 @@ const RecordingBody = ({ t }) => {
           <div
             style={{
               position: 'absolute',
-              left: '50%',
-              top: '50%',
+              left: '82%',
+              top: '64%',
               width: 46,
               height: 46,
               marginLeft: -23,
