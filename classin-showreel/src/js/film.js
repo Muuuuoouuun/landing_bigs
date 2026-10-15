@@ -3,10 +3,11 @@
 import { LineFX } from './line.js';
 import { clamp, drift, keyed, E, h } from './core.js';
 import slam from './scenes/slam.js';
-import consoleScene from './scenes/console.js';
-import mapScene from './scenes/map.js';
+import appScene from './scenes/app.js';
 import classScene from './scenes/classroom.js';
-import dashScene from './scenes/dashboard.js';
+import familyScene from './scenes/family.js';
+import futureScene from './scenes/future.js';
+import mapScene from './scenes/map.js';
 import tagScene from './scenes/tagline.js';
 import heroScene from './scenes/hero.js';
 import { buildCues } from './cues.js';
@@ -36,16 +37,23 @@ const fx = new LineFX(W, H, shakeEl);
 fx.canvas.style.zIndex = 50;
 
 const ctx = { W, H, P, T: TL.beats, S: TL.scenes, copy: TL.copy, root: shakeEl, fx, shake: [0, 0], flash: 0 };
-const scenes = [slam, consoleScene, mapScene, classScene, dashScene, tagScene, heroScene].map(make => make(ctx));
+const scenes = [slam, appScene, classScene, familyScene, futureScene, mapScene, tagScene, heroScene].map(make => make(ctx));
 
-// the breathing stage glow: position (fraction of frame) + intensity over the film
+// the breathing stage light: position (fraction of frame), intensity and colour temperature.
+// Neutral by default; warm at home with the family, dawn-white for the future; green only as a hint
+// at the brand moments.
 const BG = [
-  { t: 0, x: 0.5, y: 0.52, a: 0.35 }, { t: 0.4, x: 0.5, y: 0.5, a: 0.9 }, { t: 1.6, x: 0.52, y: 0.5, a: 0.75 },
-  { t: 2.4, x: 0.5, y: 0.62, a: 1 }, { t: 6.4, x: 0.55, y: 0.6, a: 0.95 }, { t: 7.2, x: 0.5, y: 0.45, a: 0.55 },
-  { t: 10.4, x: 0.6, y: 0.62, a: 0.7 }, { t: 11, x: 0.5, y: 0.6, a: 1 }, { t: 14.4, x: 0.5, y: 0.5, a: 0.85 },
-  { t: 16.8, x: 0.5, y: 0.55, a: 0.55 }, { t: 21.3, x: 0.5, y: 0.55, a: 0.3 }, { t: 21.6, x: 0.5, y: 0.5, a: 0.9 },
-  { t: 24, x: 0.5, y: 0.5, a: 0.45 }, { t: 26.0, x: 0.5, y: 0.5, a: 0.35 }, { t: 26.4, x: 0.5, y: 0.5, a: 0 },
+  { t: 0, x: 0.5, y: 0.52, a: 0.3, r: 200, g: 230, b: 210 }, { t: 0.4, x: 0.5, y: 0.5, a: 0.8, r: 200, g: 232, b: 212 },
+  { t: 1.6, x: 0.52, y: 0.5, a: 0.6, r: 225, g: 230, b: 236 }, { t: 2.4, x: 0.5, y: 0.6, a: 0.9, r: 236, g: 238, b: 242 },
+  { t: 4.6, x: 0.5, y: 0.55, a: 0.85, r: 236, g: 238, b: 242 }, { t: 5.2, x: 0.5, y: 0.5, a: 0.7, r: 214, g: 222, b: 236 },
+  { t: 9.6, x: 0.55, y: 0.45, a: 0.8, r: 230, g: 222, b: 210 }, { t: 10.6, x: 0.5, y: 0.55, a: 1, r: 255, g: 196, b: 140 },
+  { t: 13.6, x: 0.5, y: 0.5, a: 0.95, r: 255, g: 204, b: 150 }, { t: 14.6, x: 0.5, y: 0.35, a: 0.9, r: 214, g: 228, b: 255 },
+  { t: 16.6, x: 0.5, y: 0.3, a: 1, r: 236, g: 242, b: 255 }, { t: 17.4, x: 0.5, y: 0.5, a: 0.6, r: 214, g: 222, b: 236 },
+  { t: 19.4, x: 0.5, y: 0.55, a: 0.5, r: 228, g: 232, b: 238 }, { t: 23.6, x: 0.5, y: 0.55, a: 0.25, r: 228, g: 232, b: 238 },
+  { t: 24.0, x: 0.5, y: 0.5, a: 0.85, r: 205, g: 236, b: 214 }, { t: 26.4, x: 0.5, y: 0.5, a: 0.45, r: 228, g: 232, b: 238 },
+  { t: 28.4, x: 0.5, y: 0.5, a: 0.35, r: 228, g: 232, b: 238 }, { t: 28.8, x: 0.5, y: 0.5, a: 0, r: 228, g: 232, b: 238 },
 ];
+const glow = (b, k) => `radial-gradient(circle, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(0.16 * k).toFixed(3)}) 0%, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(0.06 * k).toFixed(3)}) 32%, rgba(0,0,0,0) 66%)`;
 
 function render(t) {
   ctx.shake = [0, 0];
@@ -53,7 +61,9 @@ function render(t) {
   const b = keyed(t, BG);
   const bx = (b.x + drift(t, 1.3, 0.05) * 0.06) * W, by = (b.y + drift(t, 4.1, 0.045) * 0.05) * H;
   blob.style.transform = `translate(${bx}px, ${by}px) scale(${(P ? 1.25 : 1) * (1 + 0.06 * drift(t, 2, 0.08))})`;
+  blob.style.background = glow(b, 1);
   blob.style.opacity = clamp(b.a * (0.9 + 0.1 * drift(t, 7, 0.21)));
+  blob2.style.background = glow(b, 0.7);
   blob2.style.transform = `translate(${W - bx * 0.6}px, ${H * 0.95}px) scale(0.8)`;
   blob2.style.opacity = clamp(b.a * 0.35);
 

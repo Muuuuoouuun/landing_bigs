@@ -21,9 +21,10 @@ export default function heroScene(ctx) {
 
   const spot = h('div', 'spot');
   const top = h('div', 'mask'), bot = h('div', 'mask');
-  const e1 = h('div', 'e1', P ? '본사와 지점,<br>선생님과 학생을 <b>하나로.</b>' : '본사와 지점, 선생님과 학생을 <b>하나로.</b>');
+  const [e1a, e1b] = ctx.copy.end.split(', ');
+  const e1 = h('div', 'e1', P ? `${e1a},<br>${e1b.replace('잇다.', '<b>잇다.</b>')}` : `${e1a}, ${e1b.replace('잇다.', '<b>잇다.</b>')}`);
   const e2 = h('div', 'e2', `<img src="assets/logo-240.png" alt="ClassIn" style="width:240px"><span>ENTERPRISE</span>`);
-  const e3 = h('div', 'e3', P ? '1,000+ 다지점 학원이 선택한 교육 운영 시스템' : '1,000+ 다지점 학원이 선택한 교육 운영 시스템<i>|</i>14일 무료 체험');
+  const e3 = h('div', 'e3', '1,000+ 다지점 학원이 선택한 교육 운영 시스템');
   top.appendChild(e1);
   bot.append(e2, e3);
   el.append(spot, top, bot);

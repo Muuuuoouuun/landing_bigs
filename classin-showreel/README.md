@@ -1,25 +1,25 @@
-# ClassIn Enterprise — 「Class, In.」 모션그래픽 쇼릴
+# ClassIn — 「Class, In.」 모션그래픽 쇼릴 (교실 · 학생 · 가족 · 미래)
 
-Instagram 레퍼런스(“Amazon · From A to Z”, riki.bosso)의 화면 속 광고를 분석해 **ClassIn Enterprise** 버전으로 다시 설계한 26.4초 모션그래픽.
-화면의 모든 것은 코드로 렌더링된다 — AI 영상 생성 없음.
+Instagram 레퍼런스(“Amazon · From A to Z”, riki.bosso)와 제작자 공개 프롬프트를 분석해 **ClassIn** 버전으로 다시 설계한 28.8초 모션그래픽.
+화면의 모든 것은 코드로 렌더링된다 — AI 영상 생성 없음, 실사 이미지 없음(인물은 가상 일러스트).
 
 | 결과물 | |
 |---|---|
-| `out/classin_showreel_16x9.mp4` | 1920×1080 · 60fps · 26.4s · 음악+SFX (−14 LUFS) |
+| `out/classin_showreel_16x9.mp4` | 1920×1080 · 60fps · 28.8s · 오리지널 음악 + SFX (−14 LUFS) |
 | `out/classin_showreel_9x16.mp4` | 1080×1920 · 60fps · 세로 리레이아웃(크롭 아님) |
-| `docs/storyboard/` | 레퍼런스 보드, 키프레임, 컨택트시트, 수정 전/후 비교 |
+| `docs/storyboard/` | 레퍼런스 보드, 스토리보드 시트, 수정 전/후 비교, 모션 분석 그래프 |
 
 ## 문서 (작업 순서)
 1. [`docs/01_reference_analysis.md`](docs/01_reference_analysis.md) — 원본 장면별 분석, 매력 포인트, 공개 프롬프트에서 배운 제작 원칙
-2. [`docs/02_brief_and_concepts.md`](docs/02_brief_and_concepts.md) — 랜딩페이지 데이터로 만든 브랜드 브리프, 컨셉 3안 평가, 최종안(녹여내기)
-3. [`docs/03_script_storyboard.md`](docs/03_script_storyboard.md) — 프레임 단위 비트 시트, VO 대본, 음악·사운드 큐
-4. [`docs/04_revision_log.md`](docs/04_revision_log.md) — 리뷰 → 수정 → 디벨롭 기록
+2. [`docs/02_brief_and_concepts.md`](docs/02_brief_and_concepts.md) — 브랜드 브리프, 컨셉 3안 평가, 최종안(+ v4 방향 전환)
+3. [`docs/03_script_storyboard.md`](docs/03_script_storyboard.md) — **v4 최종** 비트 시트, VO 대본, 음악·사운드 큐
+4. [`docs/04_revision_log.md`](docs/04_revision_log.md) — v1 → v4 리뷰·수정·디벨롭 기록
 
 ## 아이디어 한 줄
-**Class + In = "모든 수업(Class)을, 하나의 시스템 안(In)으로."**
-ClassIn 로고의 기울어진 `i` 점에서 태어난 한 줄의 그린 라인이 모든 일을 한다 — 로고 슬램 → 콘솔 입력창 포커스 라인 → 커리큘럼 카드 트레이스 → `전 지점에 배포` 버튼 채움 → 서울 본사에서 전국 128개 지점으로 뻗는 배포 경로 → 교실을 한 바퀴 감고 칠판 정답 밑줄로 착지 → 정답 학생에게 트로피(+1), 학부모에게 알림 → 16개 교실에서 다시 본사 대시보드 차트 라인으로 → 태그라인을 한 단어씩 써 나가고 `안으로` 밑줄 → `Class`+`In` 화살표 → 숨 고르기에서 모든 연결선이 수렴 → 공식 로고의 `i` 점에 슬롯인.
+**Class + In = "교실(Class)에서 시작된 배움을, 아이의 미래 안(In)으로."**
+ClassIn 로고의 기울어진 `i` 점에서 태어난 한 줄의 빛이 사람을 따라간다 — 로고 슬램 → 지후의 폰 `수업 입장` → 선생님의 펜 끝 → 답변기 → 손들기 · 무대 → 지후의 펜 끝 → **트로피 +1** → 엄마 폰의 알림 · 리포트 → **감사의 하트** → 미래의 경로(72 → 88 → 오늘 → 지후의 꿈) → 전국 모든 교실의 빛기둥 → 태그라인을 쓰는 빛 → 모든 연결선이 수렴 → 공식 로고의 `i` 점에 슬롯인.
 
-**세 가지 기준**: 부드러운 60fps(프레임 차이 분석으로 튐 0 검증) · 하드컷 없이 빛이 직접 다음 씬으로 들어가는 연결 · 시스템 이야기가 사람(학생·가족)에게 도착해 그 감정이 로고로 이어지는 구조.
+**원칙**: 초록은 포인트 컬러로만(뉴트럴 무대 + ClassIn 실제 UI의 보조색) · ClassIn 실제 기능으로만 이야기 · 하드컷 없는 60fps 원 테이크 · 감정의 온도(교실 → 집 → 새벽 → 로고).
 
 ## 구조
 ```
@@ -30,7 +30,8 @@ src/
   js/line.js                           ★ 한 줄의 빛 — 모든 씬이 이 함수 하나로 빛을 그림
   js/logo.js                           공식 로고(PNG) 마스크·지오메트리, 브랜드 화살표
   js/cues.js                           사운드 큐 시트 (모든 움직임 → 소리)
-  js/scenes/*.js                       slam · console · map · classroom · dashboard · tagline · hero
+  js/scenes/*.js                       slam · app · classroom · family · future · map · tagline · hero
+  js/phone.js, js/avatar.js            폰 프레임 · 가상 인물 일러스트
   assets/                              로고 사전 스케일본, 글리프 좌표, 한국 도트맵, 폰트
 render/
   render.mjs      Playwright(Chromium)로 프레임 캡처, 모션블러 서브프레임
@@ -56,5 +57,6 @@ Python 3 + numpy, ffmpeg, Node 18+ 필요.
 
 ## 브랜드 · 데이터 원칙
 - 공식 워드마크(`public/image/ClassIn logo-1.png`)만 사용 — 이동·스케일·페이드·마스크만, 재작도·재색상 없음, 정지 시 픽셀 정확(사전 스케일 PNG). 빛의 화살표는 별도의 드로잉.
-- 화면 속 학원명(하람에듀)·인물·지점 데이터는 가상. 수치는 기존 랜딩페이지의 공식 수치(1,000+ 도입, 0.3초, 100%, 4분, 99.9%)만 사용.
+- 화면 속 인물(지후·이서연 선생님 등)·학원·데이터는 가상. 기관 수치는 기존 랜딩페이지의 공식 수치(1,000+ 다지점 학원)만 사용.
+- ClassIn UI는 공식 사이트의 제품 화면을 참고해 코드로 다시 그림(공식 이미지 미사용).
 - 폰트: Pretendard (OFL), Caveat (OFL). 지도: KOSTAT 2013 행정경계(southkorea/southkorea-maps) → 도트로 래스터화.

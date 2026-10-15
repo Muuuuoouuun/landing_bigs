@@ -4,8 +4,8 @@ import { clamp, lerp, measure, rng } from './core.js';
 
 export const C = {
   green: '#04BC09',
-  hi: '#39FF6A',
-  core: '#F2FFF4',
+  hi: '#4BE27A',
+  core: '#F6FFF8',
   ink: '#1FD13A',
 };
 
@@ -68,7 +68,7 @@ export class LineFX {
       const a = alpha * lerp(1 - taper, 1, f ** 1.4);
       const ww = w * lerp(1 - taper * 0.6, 1, f);
       if (cool < 1) {
-        this.stroke(this.g, seg, ww * 2.6, C.green, a * (1 - cool) * 0.9);
+        this.stroke(this.g, seg, ww * 2.4, C.green, a * (1 - cool) * 0.75);
         this.stroke(this.c, seg, ww * 1.15, C.hi, a * (1 - cool) * 0.95);
         this.stroke(this.c, seg, ww * 0.5, C.core, a * (1 - cool));
       }

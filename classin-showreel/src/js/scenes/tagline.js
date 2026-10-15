@@ -1,5 +1,5 @@
-// S7 · Class, In (16.80–21.60): the light carried out of the dashboard writes "모든 수업을, /
-// 하나의 시스템 안으로." word by word, underlines 안으로, then 수업 → Class and 안으로 → In and the
+// S7 · Class, In (19.20–24.00): the light lifted off the map writes "교실에서 시작된 배움을, /
+// 아이의 미래 안으로." word by word, underlines 안으로, then 교실 → Class and 안으로 → In and the
 // two glide together. In the breath, every connection in the film converges on the i-dot — the
 // emotion lands on the logo. (The name's own meaning is the payoff.)
 import { E, tw, prog, clamp, lerp, bezier, rng, h } from '../core.js';
@@ -9,14 +9,13 @@ export default function tagScene(ctx) {
   const { W, H, P, T, copy } = ctx;
   const el = h('section', 'scene');
   ctx.root.appendChild(el);
-  const F = P ? 108 : 148;
-  const WORDS = [
-    ...copy.tag1.map((k, i) => ({ k: i === 0 ? `${k} ` : k, line: 0 })),
-    ...copy.tag2.map((k, i) => ({ k: i < 2 ? `${k} ` : k, line: 1 })),
-  ];
-  WORDS[1].en = 'Class';
-  WORDS[5].en = 'In';
-  WORDS[5].ac = true;
+  const F = P ? 90 : 148;
+  const WORDS = [...copy.tag1.map(k => ({ k, line: 0 })), ...copy.tag2.map(k => ({ k, line: 1 }))];
+  // the name's meaning: 교실 → Class, 안으로 → In
+  const cls = WORDS.find(w => w.k.trim() === '교실'), inn = WORDS.find(w => w.k.trim() === '안으로');
+  cls.en = 'Class';
+  inn.en = 'In';
+  inn.ac = true;
   for (const w of WORDS) {
     w.ko = h('span', `tw sheen${w.ac ? ' ac' : ''}`, w.k);
     w.ko.style.fontSize = `${F}px`;
@@ -27,7 +26,6 @@ export default function tagScene(ctx) {
       el.appendChild(w.enEl);
     }
   }
-  const cls = WORDS[1], inn = WORDS[5];
   const R = logoRest(W, H, P);
 
   // the writing light: centre → along line 1 → swoop → along line 2 → into the underline
@@ -51,7 +49,7 @@ export default function tagScene(ctx) {
     L.textArrow = arrowShape(mx + 4, mx + wc + kern + wi * 0.18, my + F * 1.04, [mx + wc + kern + wi * 0.18 + F * 0.05, my - F * 0.16]);
     L.logoArrow = logoArrow(R.lx, R.ly, R.g, P);
     L.under = { x0: inn.x + 4, x1: inn.x + inn.w - 6, y: inn.y + F * 1.08 };
-    const w0 = WORDS[0], w3 = WORDS[3];
+    const w0 = WORDS[0], w3 = WORDS.find(w => w.line === 1);
     L.l1 = { x0: w0.lx - 14, x1: w0.lx + w0.lw + 10, y: w0.y + F * 1.08 };
     L.l2 = { x0: w3.lx - 14, x1: L.under.x0, y: L.under.y };
     L.swoop = bezier([L.l1.x1, L.l1.y], [L.l1.x1 + 80, L.l1.y + 60], [L.l2.x0 - 160, L.l2.y - 40], [L.l2.x0, L.l2.y], 24);
@@ -82,7 +80,7 @@ export default function tagScene(ctx) {
   }
 
   function update(t) {
-    el.style.opacity = 1 - tw(t, 21.5, 21.62);
+    el.style.opacity = 1 - tw(t, T.hero - 0.1, T.hero + 0.02);
     const fadeRest = tw(t, T.morphA, T.morphA + 0.4, E.inCubic);
     const morph = tw(t, T.morphA, T.morphB, E.inOutCubic);
     const glide = tw(t, T.morphB, T.joinB, E.inOutQuint);
@@ -130,7 +128,7 @@ export default function tagScene(ctx) {
       fx.line(pts, { w: 4.6, alpha: fade, taper: k < 1 ? 0.9 : 0.25, head: k < 1 ? 1 : 0.3 });
     }
     // Class → In arrow, then the breath, then it reshapes into the logo's arrow
-    if (t >= T.morphB && t < 21.66) {
+    if (t >= T.morphB && t < T.hero + 0.06) {
       const run = tw(t, T.morphB + 0.05, T.joinB + 0.05, E.inOutCubic);
       const re = tw(t, T.breath + 0.1, T.hero - 0.02, E.inOutQuint);
       const pts = L.textArrow.map((p, i) => [lerp(p[0], L.logoArrow[i][0], re), lerp(p[1], L.logoArrow[i][1], re)]);
