@@ -304,15 +304,16 @@ export default function consoleScene(ctx) {
       fx.line(P3(seg), { w: 4, alpha: fade, taper: t < T.fillA ? 1 : 0.2, head: 1 });
     }
     // 5) shoot out through the screen
-    if (t >= T.shoot && t < 7.3) {
+    if (t >= T.shoot && t < 7.36) {
       const c = P3([local(m, A.btn.x + A.btn.w / 2, A.btn.y + A.btn.h / 2)])[0];
       const k = prog(t, T.shoot, 7.2);
       for (let i = 0; i < 9; i++) {
         const a = -Math.PI / 2 + (i - 4) * 0.42 + Math.sin(i * 7.1) * 0.12;
         const r0 = E.inCubic(k) * (700 + i * 40), r1 = r0 + 60 + E.inCubic(k) * 900;
-        fx.line([[c[0] + Math.cos(a) * r0, c[1] + Math.sin(a) * r0], [c[0] + Math.cos(a) * r1, c[1] + Math.sin(a) * r1]], { w: i === 4 ? 6 : 2.4, alpha: (1 - k * 0.5) * (i === 4 ? 1 : 0.55), taper: 1, head: i === 4 ? 1 : 0 });
+        const fade = 1 - tw(t, 7.12, 7.33, E.inQuad);
+        fx.line([[c[0] + Math.cos(a) * r0, c[1] + Math.sin(a) * r0], [c[0] + Math.cos(a) * r1, c[1] + Math.sin(a) * r1]], { w: i === 4 ? 6 : 2.4, alpha: fade * (1 - k * 0.5) * (i === 4 ? 1 : 0.55), taper: 1, head: i === 4 ? 1 : 0 });
       }
-      fx.flare(c[0], c[1], 160 + k * 500, 0.6 * k);
+      fx.flare(c[0], c[1], 160 + k * 500, 0.6 * k * (1 - tw(t, 7.15, 7.34, E.inQuad)));
     }
   }
 

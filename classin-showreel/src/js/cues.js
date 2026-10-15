@@ -48,12 +48,15 @@ export function buildCues(T, copy) {
   add(T.land, 'zip', { dur: 0.16, gain: 0.5, f0: 900, f1: 2600 });
   add(T.land, 'thump', { gain: 0.35, f: 160 });
   add(T.lift, 'pluck', { gain: 0.45, semi: 19 });
+  add(T.trophyA, 'swipe', { dur: T.trophyB - T.trophyA, gain: 0.35, pan: [0.2, -0.3] });
+  add(T.trophyB, 'reward', { gain: 0.7 });
   add(T.wallA, 'whoosh', { dur: 1.0, gain: 0.45, f0: 2200, f1: 400 });
   for (let i = 0; i < 16; i++) {
     const dist = Math.hypot((i % 4) - 1, Math.floor(i / 4) - 1);
     if (i !== 5) add(T.wallA + 0.25 + dist * 0.12, 'tick', { gain: 0.14, seed: 200 + i, bright: 1.6 });
   }
   add(T.notify, 'notif', { gain: 0.6 });
+  add(T.notify2, 'notif', { gain: 0.5, pitch: 1.12 });
   add(T.gatherA - 0.1, 'whoosh', { dur: 0.65, gain: 0.6, f0: 3000, f1: 300, big: 1 });
   // S6 dashboard
   add(T.dashIn, 'thump', { gain: 0.6, f: 90 });
@@ -63,12 +66,13 @@ export function buildCues(T, copy) {
   add(T.resolved, 'chime', { gain: 0.45 });
   add(T.push, 'whoosh', { dur: 0.75, gain: 0.55, f0: 500, f1: 2600 });
   // S7 tagline
-  add(T.tag1 - 0.05, 'whoosh', { dur: 0.6, gain: 0.25, f0: 300, f1: 900 });
-  add(T.tag2 - 0.05, 'whoosh', { dur: 0.6, gain: 0.25, f0: 320, f1: 1000 });
+  add(T.sweepA, 'swipe', { dur: T.tag2 - T.sweepA, gain: 0.28, pan: [-0.6, 0.6] });
+  add(T.tag2 + 0.05, 'swipe', { dur: T.underA - T.tag2, gain: 0.26, pan: [-0.5, 0.3] });
   add(T.underA, 'swipe', { dur: T.underB - T.underA, gain: 0.5, pan: [-0.3, 0.4] });
   add(T.morphA, 'shimmer', { dur: 0.7, gain: 0.3 });
   add(T.morphB, 'swipe', { dur: T.joinB - T.morphB, gain: 0.45, pan: [-0.4, 0.3] });
   add(T.breath, 'reverse', { dur: T.hero - T.breath, gain: 0.8 });
+  add(T.conv, 'converge', { dur: T.hero - T.conv, gain: 0.5 });
   // S8 hero — nothing else within 60 ms of the hit
   add(T.hero, 'hit', { gain: 1 });
   add(T.shineA, 'air', { dur: T.shineB - T.shineA, gain: 0.25 });

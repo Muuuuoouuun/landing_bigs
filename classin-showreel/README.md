@@ -17,7 +17,9 @@ Instagram 레퍼런스(“Amazon · From A to Z”, riki.bosso)의 화면 속 �
 
 ## 아이디어 한 줄
 **Class + In = "모든 수업(Class)을, 하나의 시스템 안(In)으로."**
-ClassIn 로고의 기울어진 `i` 점에서 태어난 한 줄의 그린 라인이 모든 일을 한다 — 로고 슬램 → 콘솔 입력창 포커스 라인 → 커리큘럼 카드 트레이스 → `전 지점에 배포` 버튼 채움 → 서울 본사에서 전국 128개 지점으로 뻗는 배포 경로 → 교실을 한 바퀴 감고 칠판 정답 밑줄로 착지 → 16개 교실에서 다시 본사 대시보드 차트 라인으로 → `안으로` 밑줄 → `Class`+`In` 화살표 → 공식 로고의 `i` 점에 슬롯인.
+ClassIn 로고의 기울어진 `i` 점에서 태어난 한 줄의 그린 라인이 모든 일을 한다 — 로고 슬램 → 콘솔 입력창 포커스 라인 → 커리큘럼 카드 트레이스 → `전 지점에 배포` 버튼 채움 → 서울 본사에서 전국 128개 지점으로 뻗는 배포 경로 → 교실을 한 바퀴 감고 칠판 정답 밑줄로 착지 → 정답 학생에게 트로피(+1), 학부모에게 알림 → 16개 교실에서 다시 본사 대시보드 차트 라인으로 → 태그라인을 한 단어씩 써 나가고 `안으로` 밑줄 → `Class`+`In` 화살표 → 숨 고르기에서 모든 연결선이 수렴 → 공식 로고의 `i` 점에 슬롯인.
+
+**세 가지 기준**: 부드러운 60fps(프레임 차이 분석으로 튐 0 검증) · 하드컷 없이 빛이 직접 다음 씬으로 들어가는 연결 · 시스템 이야기가 사람(학생·가족)에게 도착해 그 감정이 로고로 이어지는 구조.
 
 ## 구조
 ```
@@ -43,6 +45,7 @@ cd classin-showreel
 npm install                      # playwright (Chromium 필요: npx playwright install chromium)
 npx serve src                    # 실시간 프리뷰 + 스크럽 (…/?fmt=9x16 로 세로판)
 
+bash render/build.sh             # 전체: 두 포맷 프레임 → 음악/SFX → 인코딩 (아래는 단계별)
 node render/render.mjs --fmt 16x9 --fps 60 --sub 2 --workers 3   # 프레임
 python3 render/audio.py                                          # 음악 + SFX (+ render/vo/vo_01..09.wav 있으면 VO)
 bash render/encode.sh 16x9                                       # → out/classin_showreel_16x9.mp4

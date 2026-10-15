@@ -377,10 +377,25 @@ def sfx_voice(c):
         gate = np.convolve(gate.astype(float), np.ones(200) / 200, mode='same')
         s = fft_filter(r.standard_normal(n), lo=1800, hi=6000) * gate * adsr(n, 0.01, 0.05)
         return s * g * 0.5, -0.2, 0.08
+    if ty == 'reward':  # trophy: warm bell arpeggio + sparkle
+        n = int(1.8 * SR)
+        s = np.zeros(n)
+        for k, m in enumerate((74, 78, 81, 86)):
+            j = int(k * 0.055 * SR)
+            f = midi(m)
+            v = sum(a * np.sin(2 * np.pi * f * p * tvec(1.8)) * env_exp(n, tau) for p, a, tau in ((1, 1, 0.55), (2.0, 0.25, 0.25), (3.01, 0.12, 0.12)))
+            s[j:] += v[: n - j] * (0.7 + 0.1 * k)
+        s += band_sweep(1.8, 6500, 9500, 0.4, seed=33) * env_exp(n, 0.4) * 0.25
+        return s * g * 0.3, -0.15, 0.35
+    if ty == 'converge':  # many soft threads drawn in: rising airy swell
+        n = int(dur * SR)
+        s = band_sweep(dur, 3000, 900, 0.9, seed=44) * np.linspace(0, 1, n) ** 2.5
+        s += sum(np.sin(2 * np.pi * midi(m) * tvec(dur)) for m in (81, 86, 90)) * np.linspace(0, 1, n) ** 3 * 0.12
+        return s * g * 0.55, 0.0, 0.4
     if ty == 'notif':
         n = int(0.5 * SR)
         s = np.zeros(n)
-        for k, f in enumerate((1318.5, 1760.0)):
+        for k, f in enumerate((1318.5 * c.get('pitch', 1), 1760.0 * c.get('pitch', 1))):
             j = int(k * 0.085 * SR)
             v = np.sin(2 * np.pi * f * tvec(0.5)) * env_exp(n, 0.09)
             s[j:] += v[: n - j]

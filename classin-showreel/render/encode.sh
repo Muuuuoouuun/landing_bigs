@@ -14,15 +14,17 @@ if [ "$SUB" -gt 1 ]; then
 else
   BLUR=""
 fi
-VF="${BLUR}noise=c0s=7:c0f=t+u,format=yuv420p"
+VF="${BLUR}noise=c0s=4:c0f=t+u,format=yuv420p"
 
 # audio: two-pass loudnorm
 MEAS=$(ffmpeg -hide_banner -nostats -i out/audio.wav -af loudnorm=I=-14:TP=-1.25:LRA=11:print_format=json -f null - 2>&1 | sed -n '/^{/,/^}/p')
 get() { echo "$MEAS" | python3 -c "import json,sys;print(json.load(sys.stdin)['$1'])"; }
 AF="loudnorm=I=-14:TP=-1.25:LRA=11:measured_I=$(get input_i):measured_TP=$(get input_tp):measured_LRA=$(get input_lra):measured_thresh=$(get input_thresh):offset=$(get target_offset):linear=true"
 
-ffmpeg -hide_banner -y -framerate $((FPS * SUB)) -i "$DIR/f%06d.jpg" -i out/audio.wav \
-  -vf "$VF" -r "$FPS" -c:v libx264 -preset slow -crf 15 -profile:v high -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 \
+# constant 60 fps, high-profile H.264; a VBV cap keeps the grain from ballooning the file
+ffmpeg -hide_banner -nostats -loglevel warning -y -framerate $((FPS * SUB)) -i "$DIR/f%06d.jpg" -i out/audio.wav \
+  -vf "$VF" -r "$FPS" -fps_mode cfr -c:v libx264 -preset slow -crf 19 -maxrate 10M -bufsize 20M -profile:v high -pix_fmt yuv420p \
+  -color_primaries bt709 -color_trc bt709 -colorspace bt709 \
   -af "$AF" -ar 48000 -c:a aac -b:a 256k -shortest -movflags +faststart "$OUT"
 echo "→ $OUT"
 ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,height,r_frame_rate -of compact "$OUT"

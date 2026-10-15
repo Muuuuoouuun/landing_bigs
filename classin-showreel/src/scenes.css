@@ -251,3 +251,6 @@
 .e3 { font: 500 25px Pretendard; color: rgba(255,255,255,0.55); letter-spacing: 0.01em; }
 .e3 i { font-style: normal; color: rgba(255,255,255,0.25); margin: 0 12px; }
 .mask { position: absolute; left: 0; right: 0; overflow: hidden; }
+.seat .tro { position: absolute; left: 50%; top: 42%; width: 56px; height: 56px; opacity: 0; filter: drop-shadow(0 0 10px rgba(245,197,66,0.75)); z-index: 2; }
+.seat .tro svg { width: 100%; height: 100%; display: block; }
+.seat .tro b { position: absolute; right: -26px; top: -6px; font: 900 18px Pretendard; color: #ffe08a; text-shadow: 0 0 10px rgba(245,197,66,0.8); }

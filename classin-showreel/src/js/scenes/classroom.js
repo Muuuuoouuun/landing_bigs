@@ -41,6 +41,7 @@ const WALL = [
   ['전주 효자', '노시윤'], ['강릉 교동', '권도하'], ['포항 양덕', '유나윤'], ['제주 노형', '장하람'],
 ];
 const STUDENTS = ['김도윤', '박지후', '최서아', '정하준', '강민서', '윤지우'];
+const TROPHY = '<svg viewBox="0 0 48 48"><defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9a3"/><stop offset="0.55" stop-color="#f5c542"/><stop offset="1" stop-color="#c98a12"/></linearGradient></defs><path d="M13 7h22v8.5a11 11 0 0 1-22 0z" fill="url(#tg)"/><path d="M13 10H7.5a6 6 0 0 0 6.5 8M35 10h5.5a6 6 0 0 1-6.5 8" stroke="#f5c542" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M21 26h6v7h-6z" fill="#d99a1e"/><rect x="14" y="33" width="20" height="6" rx="2" fill="url(#tg)"/><path d="M18 11l2.5 0" stroke="#fff7d6" stroke-width="2.4" stroke-linecap="round" opacity="0.8"/></svg>';
 
 export default function classScene(ctx) {
   const { W, H, P, T } = ctx;
@@ -55,9 +56,17 @@ export default function classScene(ctx) {
     return { el: r, i, col: i % 4, row: Math.floor(i / 4), l1: q('.l1'), l2: q('.l2'), l3: q('.l3'), cv: q('.graph .cv'), dot: q('.graph circle'), gtx: [...r.querySelectorAll('.graph text')], pen: q('.pen'), clock: q('.clock'), ring: [...r.querySelectorAll('.seat .ring')], ans: q('.seat:nth-child(3) .ans') };
   });
   const hero = rooms[HERO];
-  const notif = h('div', 'notif', `<div class="ic"><img src="assets/logo-132.png" alt=""></div><div class="tx"><div class="r1">ClassIn Enterprise<span>지금</span></div>
+  // ClassIn's trophy reward: the moment a student is recognised
+  const seat = hero.el.querySelector('.seat:nth-child(3)');
+  const tro = h('span', 'tro', `${TROPHY}<b>+1</b>`);
+  seat.appendChild(tro);
+  const av = seat.querySelector('.av');
+  // the same moment reaches HQ and the family
+  const notif = h('div', 'notif', `<div class="ic"><img src="assets/logo-132.png" alt=""></div><div class="tx"><div class="r1">ClassIn Enterprise · 본사<span>지금</span></div>
     <div class="r2">오늘 수업 1,024개 진행 중</div><div class="r3">128개 지점 모두 본사 기준으로 운영되고 있습니다.</div></div>`);
-  el.appendChild(notif);
+  const notif2 = h('div', 'notif', `<div class="ic"><img src="assets/logo-132.png" alt=""></div><div class="tx"><div class="r1">ClassIn · 학부모 알림<span>지금</span></div>
+    <div class="r2">지후가 오늘 수업에서 트로피를 받았어요</div><div class="r3">부산 센텀지점 · 출석 ✓ · 정답 3회 · 수업 리포트 보기</div></div>`);
+  el.append(notif, notif2);
 
   let A = {};
   function layout() {
@@ -66,6 +75,7 @@ export default function classScene(ctx) {
     A.four = boxIn(hero.l3.querySelector('.g'), r);
     A.l1 = boxIn(hero.l1, r); A.l2 = boxIn(hero.l2, r); A.l3 = A.ans;
     A.board = boxIn(r.querySelector('.board'), r);
+    A.seat = boxIn(seat, r);
     hero.cvLen = hero.cv.getTotalLength();
     rooms.forEach(rm => { rm.cv.style.strokeDasharray = `${hero.cvLen}`; });
   }
@@ -78,7 +88,9 @@ export default function classScene(ctx) {
     const keys = [
       { t: 10.45, x: P ? -230 : 0, y: P ? 40 : 0, s: P ? 1.9 : 1.25, rx: 4, ry: -14 },
       { t: T.classIn, x: P ? -230 : 0, y: P ? 40 : 0, s: P ? 1.42 : 0.95, rx: 3, ry: -8, e: E.outCubic },
-      { t: T.wallA, x: P ? -260 : 0, y: P ? 120 : 20, s: P ? 1.32 : 0.98, rx: 2, ry: -4, e: E.inOutSine },
+      { t: T.lift, x: P ? -230 : 0, y: P ? 40 : 0, s: P ? 1.42 : 0.96, rx: 3, ry: -6, e: E.inOutSine },
+      { t: T.trophyB + 0.18, x: P ? -150 : -90, y: P ? -150 : -150, s: P ? 1.75 : 1.22, rx: 2, ry: -3, e: E.inOutCubic },
+      { t: T.wallA, x: P ? -150 : -90, y: P ? -130 : -130, s: P ? 1.7 : 1.18, rx: 2, ry: -2, e: E.inOutSine },
       { t: T.wallB + 0.15, x: gridC[0], y: gridC[1], s: P ? 0.4 : 0.31, rx: 10, ry: 4, e: E.inOutQuint },
       { t: T.gatherA, x: gridC[0], y: gridC[1], s: P ? 0.42 : 0.33, rx: 10, ry: 6, e: E.inOutSine },
       { t: 15.05, x: gridC[0], y: gridC[1], s: P ? 0.5 : 0.4, rx: 6, ry: 2 },
@@ -141,11 +153,22 @@ export default function classScene(ctx) {
     hero.ans.style.opacity = ansOn;
     hero.ans.style.transform = `scale(${0.6 + 0.4 * ansOn})`;
 
+    // trophy lands on the student's tile; the avatar lights up
+    const tk = tw(t, T.trophyB, T.trophyB + 0.28, E.outBack);
+    tro.style.opacity = clamp(prog(t, T.trophyB - 0.02, T.trophyB + 0.08));
+    tro.style.transform = `translate(-50%, -50%) scale(${(0.3 + 0.7 * tk).toFixed(3)}) rotate(${((1 - tk) * -18).toFixed(2)}deg)`;
+    const bounce = t > T.trophyB ? Math.sin(prog(t, T.trophyB, T.trophyB + 0.35) * Math.PI) * 0.16 : 0;
+    av.style.transform = `scale(${1 + bounce})`;
+    av.style.boxShadow = t > T.trophyB ? `0 0 0 ${(3 * tk).toFixed(1)}px rgba(245,197,66,0.55), 0 0 ${(26 * tk).toFixed(1)}px rgba(245,197,66,0.6)` : '';
     // notification banner
     const nIn = tw(t, T.notify, T.notify + 0.32, E.outBack), nOut = tw(t, 14.45, 14.75, E.inCubic);
     notif.style.opacity = clamp(prog(t, T.notify, T.notify + 0.12)) * (1 - nOut);
     notif.style.transform = `translateY(${lerp(-200, P ? 120 : 40, nIn) - nOut * 60}px) scale(${P ? 1.45 : 1.18})`;
     notif.style.transformOrigin = '50% 0';
+    const n2In = tw(t, T.notify2, T.notify2 + 0.34, E.outBack);
+    notif2.style.opacity = clamp(prog(t, T.notify2, T.notify2 + 0.12)) * (1 - nOut);
+    notif2.style.transform = `translateY(${lerp(-200, (P ? 120 : 40) + (P ? 1.45 : 1.18) * 128, n2In) - nOut * 60}px) scale(${P ? 1.45 : 1.18})`;
+    notif2.style.transformOrigin = '50% 0';
 
     cur = { CM };
   }
@@ -160,7 +183,8 @@ export default function classScene(ctx) {
     const u0 = [A.ans.x - 6, A.ans.y + A.ans.h + 14], u1 = [A.four.x + A.four.w + 30, A.ans.y + A.ans.h + 4];
     const ring = roundRect(-14, -14, RW + 28, RH + 28, 38, 7);
     const path = [
-      ...bezier([-420, RH + 520], [-160, RH + 260], [RW * 0.25, RH + 40], [RW / 2, RH + 14], 26),
+      ...bezier([RW * 0.5, RH * 0.48], [RW * 0.18, RH * 0.9], [-260, RH + 120], [RW * 0.06, RH + 30], 30),
+      ...bezier([RW * 0.06, RH + 30], [RW * 0.2, RH + 16], [RW * 0.35, RH + 14], [RW / 2, RH + 14], 12).slice(1),
       ...ring.slice(1),
       ...bezier([RW / 2, RH + 14], [RW * 0.35, RH - 40], [u0[0] - 60, u0[1] + 70], u0, 22).slice(1),
       ...bezier(u0, [lerp(u0[0], u1[0], 0.4), u0[1] + 8], [lerp(u0[0], u1[0], 0.75), u0[1] + 4], [u1[0] - 18, u1[1]], 16).slice(1),
@@ -172,7 +196,7 @@ export default function classScene(ctx) {
     if (t >= T.wrapA && t < 14.9) {
       const k = tw(t, T.wrapA, T.land, E.inOutCubic);
       if (t < T.land) {
-        fx.line(toS(hero.model, slice(path, Math.max(0, k - 0.3), k, L)), { w: 4.6, alpha: a, taper: 1, head: 1, headScale: 1.2 });
+        fx.line(toS(hero.model, slice(path, Math.max(0, k - 0.3), k, L)), { w: 4.6, alpha: Math.max(a, 0.6), taper: 1, head: 1, headScale: 1.2 });
       }
       // landed: the underline cools from light into printed ink
       const cool = tw(t, T.land, T.land + 0.5, E.inOutQuad);
@@ -181,6 +205,16 @@ export default function classScene(ctx) {
         fx.line(toS(hero.model, slice(path, uUnder, 1, L)), { w: 5.5, alpha: a * fade, taper: 0.15, head: 0, cool });
         fx.flare(...toS(hero.model, [u1])[0], 120, 0.7 * (1 - prog(t, T.land, T.land + 0.45)));
       }
+    }
+    // the reward: a spark leaves the answer and flies to the student who solved it
+    if (t >= T.trophyA && t < T.trophyB + 0.6) {
+      const from = [u1[0], u1[1] - 16], to = [A.seat.x + A.seat.w / 2, A.seat.y + A.seat.h * 0.42];
+      const arc = bezier(from, [from[0] + 160, from[1] - 140], [to[0] + 220, to[1] + 260], to, 36);
+      const k = tw(t, T.trophyA, T.trophyB, E.inOutCubic);
+      if (t < T.trophyB) fx.line(toS(hero.model, slice(arc, Math.max(0, k - 0.35), k)), { w: 4, alpha: 1, taper: 1, head: 1, headScale: 1.1 });
+      const ts = toS(hero.model, [to])[0];
+      fx.flare(ts[0], ts[1], 150, 0.85 * (1 - prog(t, T.trophyB, T.trophyB + 0.5)) * (t >= T.trophyB ? 1 : 0), '255,214,110');
+      fx.shards(ts[0], ts[1], t, T.trophyB, { n: 16, seed: 21, speed: 520, life: 0.5, len: 26, w: 1.8, spreadY: 1 });
     }
     // every classroom sends its light back In to the centre (to HQ)
     if (t >= T.gatherA - 0.1 && t < 15.05) {
@@ -192,9 +226,9 @@ export default function classScene(ctx) {
         if (k <= 0) return;
         const from = project(CM, [[x, y, 0]])[0];
         const curve = bezier(from, [lerp(from[0], center[0], 0.3) + (i % 2 ? 60 : -60), lerp(from[1], center[1], 0.3)], [lerp(from[0], center[0], 0.8), lerp(from[1], center[1], 0.8)], center, 20);
-        fx.line(slice(curve, Math.max(0, k - 0.5), k), { w: rm === hero ? 4.5 : 2.8, alpha: 1, taper: 1, head: 1, headScale: 0.8 });
+        fx.line(slice(curve, Math.max(0, k - 0.5), k), { w: rm === hero ? 4.5 : 2.8, alpha: 1 - tw(t, 14.9, 15.03), taper: 1, head: 1, headScale: 0.8 });
       });
-      fx.flare(center[0], center[1], 260, 0.8 * tw(t, 14.75, 15.0, E.inQuad));
+      fx.flare(center[0], center[1], 260, 0.8 * tw(t, 14.75, 14.98, E.inQuad) * (1 - tw(t, 14.98, 15.05)));
     }
   }
 

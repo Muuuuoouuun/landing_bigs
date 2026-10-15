@@ -84,9 +84,9 @@ export default function dashScene(ctx) {
     const CM = camMatrix(cam, W, H);
     const m = planeModel(0, 0, 0, DW, DH);
     place(dash, CM, m);
-    const vis = tw(t, 14.82, 15.12, E.outCubic) * (1 - tw(t, 16.7, 16.95, E.inQuad));
+    const vis = tw(t, 14.82, 15.12, E.outCubic) * (1 - tw(t, 16.55, 16.92, E.inOutSine));
     el.style.opacity = vis;
-    const blur = (1 - tw(t, 14.85, 15.25)) * 10 + tw(t, 16.5, 16.95, E.inQuad) * 14;
+    const blur = (1 - tw(t, 14.85, 15.25)) * 10 + tw(t, 16.35, 16.92, E.inQuad) * 18;
     el.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : '';
 
     const c = tw(t, 15.05, 15.75, E.outCubic);
