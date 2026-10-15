@@ -1,0 +1,54 @@
+@font-face { font-family: 'Pretendard'; font-weight: 300; src: url(assets/fonts/Pretendard-Light.woff2) format('woff2'); }
+@font-face { font-family: 'Pretendard'; font-weight: 400; src: url(assets/fonts/Pretendard-Regular.woff2) format('woff2'); }
+@font-face { font-family: 'Pretendard'; font-weight: 500; src: url(assets/fonts/Pretendard-Medium.woff2) format('woff2'); }
+@font-face { font-family: 'Pretendard'; font-weight: 600; src: url(assets/fonts/Pretendard-SemiBold.woff2) format('woff2'); }
+@font-face { font-family: 'Pretendard'; font-weight: 700; src: url(assets/fonts/Pretendard-Bold.woff2) format('woff2'); }
+@font-face { font-family: 'Pretendard'; font-weight: 800; src: url(assets/fonts/Pretendard-ExtraBold.woff2) format('woff2'); }
+@font-face { font-family: 'Pretendard'; font-weight: 900; src: url(assets/fonts/Pretendard-Black.woff2) format('woff2'); }
+@font-face { font-family: 'Caveat'; font-weight: 600; src: url(assets/fonts/Caveat-SemiBold.woff2) format('woff2'); }
+
+:root {
+  --g: #04BC09;
+  --g-hi: #39FF6A;
+  --g-soft: rgba(4, 188, 9, 0.16);
+  --stage: #050806;
+  --deep: #0b3d2b;
+  --ui-bg: #0D1110;
+  --ui-panel: #121715;
+  --ui-card: #171D1A;
+  --ui-card2: #1D2420;
+  --ui-line: rgba(255, 255, 255, 0.075);
+  --ui-text: #EEF3F0;
+  --ui-sub: #8C9993;
+  --ui-dim: #5D6964;
+  --amber: #E6B800;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #000; overflow: hidden; }
+body { font-family: 'Pretendard', system-ui, sans-serif; color: var(--ui-text); -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 0; }
+
+#viewport { position: fixed; inset: 0; display: grid; place-items: center; }
+#stage { position: relative; overflow: hidden; background: var(--stage); transform-origin: 50% 50%; }
+#shake { position: absolute; inset: 0; }
+.scene { position: absolute; inset: 0; overflow: hidden; display: none; }
+.obj { position: absolute; left: 0; top: 0; transform-origin: 0 0; backface-visibility: hidden; will-change: transform; }
+.abs { position: absolute; }
+.fx { position: absolute; inset: 0; pointer-events: none; }
+.logo img { display: block; user-select: none; }
+
+/* global stage light */
+.bg { position: absolute; inset: 0; pointer-events: none; }
+.bg .blob { position: absolute; left: 0; top: 0; width: 1600px; height: 1600px; margin: -800px 0 0 -800px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(4, 188, 9, 0.20) 0%, rgba(4, 120, 30, 0.08) 32%, rgba(0, 0, 0, 0) 66%); }
+.bg .corner { position: absolute; inset: 0; background: radial-gradient(80% 70% at 0% 0%, rgba(11, 61, 43, 0.55) 0%, rgba(11, 61, 43, 0) 60%); }
+.bg .floor { position: absolute; inset: 0; background: radial-gradient(70% 45% at 50% 108%, rgba(4, 188, 9, 0.10) 0%, rgba(0, 0, 0, 0) 70%); }
+.vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%); }
+.flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(220, 255, 228, 0.9), rgba(57, 255, 106, 0.35) 45%, rgba(0, 0, 0, 0) 80%); mix-blend-mode: screen; }
+
+/* preview controls (hidden when rendering) */
+#ui { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: rgba(0, 0, 0, 0.7); font: 500 13px Pretendard, sans-serif; color: #cfd8d3; z-index: 10; }
+#ui input[type=range] { flex: 1; accent-color: #04BC09; }
+#ui button { background: #04BC09; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; font: 600 13px Pretendard; cursor: pointer; }
+#ui a { color: #8fe6a0; }
+body.render #ui { display: none; }

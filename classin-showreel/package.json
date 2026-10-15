@@ -1,0 +1,17 @@
+{
+  "name": "classin-showreel",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "ClassIn Enterprise motion-graphic showreel (deterministic HTML/SVG renderer → MP4)",
+  "scripts": {
+    "preview": "npx serve src -l 4173",
+    "render": "node render/render.mjs",
+    "audio": "python3 render/audio.py",
+    "encode": "bash render/encode.sh",
+    "build": "npm run render && npm run audio && npm run encode"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}
