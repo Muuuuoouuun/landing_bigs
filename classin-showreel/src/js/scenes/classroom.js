@@ -135,8 +135,8 @@ export default function classScene(ctx) {
     const penAt = writing ? [writing[0].x + writing[0].w * writing[1], writing[0].y + writing[0].h * 0.6 + Math.sin(t * 38) * 7] : null;
 
     // the Responder: submissions tick in on the seats, bars rise, the correct answer lights orange
-    const qIn = tw(t, T.quizA, T.quizA + 0.3, E.outBack), qOut = tw(t, T.stageA - 0.15, T.stageA + 0.15, E.inQuad);
-    quiz.style.opacity = clamp(prog(t, T.quizA, T.quizA + 0.12)) * (1 - qOut);
+    const qIn = tw(t, T.quizA - 0.05, T.quizA + 0.35, E.outCubic), qOut = tw(t, T.stageA - 0.2, T.stageA + 0.15, E.inOutQuad);
+    quiz.style.opacity = tw(t, T.quizA - 0.05, T.quizA + 0.22, E.inOutSine) * (1 - qOut);
     quiz.style.transform = `translateY(${(1 - qIn) * 30 + qOut * -20}px) scale(${0.92 + 0.08 * qIn})`;
     let sub = 0;
     seats.forEach((s, i) => {

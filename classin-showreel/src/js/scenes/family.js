@@ -90,7 +90,7 @@ export default function familyScene(ctx) {
     ln.style.opacity = clamp(prog(t, T.notify, T.notify + 0.1)) * (1 - tw(t, T.open, T.open + 0.2));
     ln.style.transform = `translateY(${(1 - nIn) * -40}px) scale(${t > T.open - 0.08 && t < T.open + 0.05 ? 0.97 : 1})`;
     // open the report: it slides up over the lock screen
-    const op = tw(t, T.open, T.open + 0.38, E.outQuint);
+    const op = tw(t, T.open - 0.02, T.open + 0.5, E.inOutCubic);
     report.style.transform = `translateY(${((1 - op) * PH).toFixed(1)}px)`;
     lock.style.opacity = 1 - op * 0.6;
     phone.scr.querySelector('.sbar').style.color = op > 0.5 ? '#17181B' : '#fff';
