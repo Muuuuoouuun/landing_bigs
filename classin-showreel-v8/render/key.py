@@ -15,7 +15,8 @@ RAW = os.path.join(ROOT, 'src', 'assets', 'gen', 'raw')
 OUT = os.path.join(ROOT, 'src', 'assets', 'gen')
 
 
-def key(path, min_area=0.004):
+def matte(path):
+    """key the flat magenta background → RGBA uint8 array (despilled)"""
     im = Image.open(path).convert('RGB')
     a = np.asarray(im).astype(np.float32)
     H, W, _ = a.shape
@@ -39,7 +40,13 @@ def key(path, min_area=0.004):
     out = a.copy()
     out[..., 0] -= spill
     out[..., 2] -= spill
-    rgba = np.dstack([np.clip(out, 0, 255), alpha * 255]).astype(np.uint8)
+    return np.dstack([np.clip(out, 0, 255), alpha * 255]).astype(np.uint8)
+
+
+def split(rgba, min_area=0.004):
+    """connected objects → [(y0, y1, x0, x1, mask)], reading order"""
+    H, W = rgba.shape[:2]
+    alpha = rgba[..., 3].astype(np.float32) / 255
     # split into connected objects
     lab, n = ndimage.label(ndimage.binary_dilation(alpha > 0.3, iterations=6))
     parts = []
@@ -48,13 +55,20 @@ def key(path, min_area=0.004):
         if len(ys) < min_area * H * W:
             continue
         y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
-        m = (lab[y0:y1, x0:x1] == i)
-        crop = rgba[y0:y1, x0:x1].copy()
-        crop[..., 3] = (crop[..., 3] * m).astype(np.uint8)
-        parts.append(((y0 + y1) / 2, (x0 + x1) / 2, crop))
+        parts.append(((y0 + y1) / 2, (x0 + x1) / 2, (y0, y1, x0, x1, lab[y0:y1, x0:x1] == i)))
     # reading order: rows top→bottom, then left→right
     parts.sort(key=lambda p: (round(p[0] / (H / 3)), p[1]))
     return [p[2] for p in parts]
+
+
+def key(path, min_area=0.004):
+    rgba = matte(path)
+    out = []
+    for y0, y1, x0, x1, m in split(rgba, min_area):
+        crop = rgba[y0:y1, x0:x1].copy()
+        crop[..., 3] = (crop[..., 3] * m).astype(np.uint8)
+        out.append(crop)
+    return out
 
 
 def main():

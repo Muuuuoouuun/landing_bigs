@@ -15,6 +15,8 @@ LOG = os.path.join(ROOT, 'render', 'gen_log.json')
 API = 'https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent'
 PRO, FLASH = 'gemini-3-pro-image', 'gemini-3.1-flash-image'
 COST = {PRO: 0.134, FLASH: 0.039}  # USD per image (list-price estimate)
+SIZE = {}  # id → '4K' for the assets that are seen up close (default 2K on the pro model)
+COST4K = 0.24
 
 LOOK = ('Cinematic 3D render with subtle stylization (premium animated-film realism), soft global illumination, '
         'filmic contrast, fine detail, clean shapes. No text, no letters, no logos, no watermark, no people.')
@@ -95,6 +97,36 @@ ASSETS = {
         'gaps, warm golden light grazing the cloud tops, deep blue shadows, gentle curvature of the earth at the very top. '
         'No land masses, no coastlines. ' + LOOK),
 }
+# ---- v8: closer, richer houses (one 4K sheet each, windows unlit; lit + clay variants are edits) and the class faces ----
+DETAIL = ('Rich, crisp, highly detailed materials: weathered roof tiles, painted stucco and brick with soft grime and rain '
+          'streaks, wooden window frames with curtains behind the glass, gutters and downpipes, small balconies with potted '
+          'plants, an outdoor air-conditioner unit. Every window is unlit: dark glass reflecting the pale dawn sky. ')
+ASSETS.update({
+    'houses8_a': (PRO, '1:1', None,
+        'Four separate small Korean houses arranged in a 2x2 grid with wide spacing: two two-story family houses with dark '
+        'tiled roofs, a small flat-roofed villa and a cozy house with a porch, warm beige and white walls. ' + DETAIL +
+        'Three-quarter front view from slightly above, soft early-dawn light from behind on the right with a gentle rim. '
+        + KEY + ' ' + LOOK),
+    'houses8_b': (PRO, '1:1', None,
+        'Four separate small houses arranged in a 2x2 grid with wide spacing: a modern Korean townhouse with a flat roof and '
+        'balcony, a two-story house with a grey gable roof, a small red-brick villa, and a hanok-inspired house with a curved '
+        'tiled roof. ' + DETAIL + 'Three-quarter front view from slightly above, soft early-dawn light from behind on the '
+        'right with a gentle rim. ' + KEY + ' ' + LOOK),
+    'houses8_c': (PRO, '1:1', None,
+        'Four separate small Korean apartment-style villas (three to four stories, simple boxy shapes, light stucco and brick) '
+        'arranged in a 2x2 grid with wide spacing, rows of windows. ' + DETAIL + 'Three-quarter front view from slightly '
+        'above, soft early-dawn light from behind on the right with a gentle rim. ' + KEY + ' ' + LOOK),
+    'faces8': (PRO, '3:2', None,
+        'A 3x2 grid of six separate video-call webcam portraits, each its own rounded rectangle with small even gaps on a '
+        'plain dark grey background. Top-left: a friendly Korean female teacher in her thirties with round glasses and her '
+        'hair in a bun. The other five: Korean elementary school children about eleven years old - a girl with shoulder-length '
+        'hair, a boy with short hair, a girl with long hair, a boy with neat short hair, a girl with a bun - each smiling at '
+        'the camera, head and shoulders, each in their own cozy room softly out of focus behind them (bookshelf, curtains, '
+        'plants), warm evening lamp light. Premium 3D animated-film style, soft skin, detailed hair, cheerful and clean. '
+        'No text, no logos, no user interface elements.'),
+})
+SIZE.update({'houses8_a': '4K', 'houses8_b': '4K', 'houses8_c': '4K'})
+
 # edits of an existing image (same composition, one change)
 EDITS = {
     'wall_dawn': (PRO, 'wall_night',
@@ -104,12 +136,26 @@ EDITS = {
 }
 
 
-def call(model, parts, aspect=None):
+
+LIT = ('Keep this exact image: same houses, same positions, sizes, camera angle, materials and magenta background. Change only '
+       'the windows: they now glow warm golden-yellow from lamps inside, with soft light spilling onto the sills. Nothing else changes.')
+CLAY = ('Keep this exact image: same houses, same positions, sizes, silhouettes, camera angle and the same flat magenta '
+        'background. Re-render every house as a matte warm-white clay architectural massing model: smooth clay surfaces, no '
+        'textures, no colours, windows and doors only as soft shallow recesses, gentle ambient occlusion in the corners, the '
+        'same soft dawn light from behind on the right. Nothing else changes.')
+for k in ('a', 'b', 'c'):
+    EDITS[f'houses8_{k}_lit'] = (PRO, f'houses8_{k}', LIT, '1:1')
+    EDITS[f'houses8_{k}_clay'] = (PRO, f'houses8_{k}', CLAY, '1:1')
+    SIZE[f'houses8_{k}_lit'] = SIZE[f'houses8_{k}_clay'] = '4K'
+
+
+
+def call(model, parts, aspect=None, size='2K'):
     cfg = {'responseModalities': ['IMAGE']}
     if aspect:
         cfg['imageConfig'] = {'aspectRatio': aspect}
         if model == PRO:
-            cfg['imageConfig']['imageSize'] = '2K'
+            cfg['imageConfig']['imageSize'] = size
     body = json.dumps({'contents': [{'parts': parts}], 'generationConfig': cfg}).encode()
     req = urllib.request.Request(API.format(model), body, {'Content-Type': 'application/json', 'x-goog-api-key': os.environ['GEMINI_API_KEY']})
     for attempt in range(4):
@@ -134,10 +180,11 @@ def save(aid, model, resp):
                 with open(path, 'wb') as f:
                     f.write(base64.b64decode(p['inlineData']['data']))
                 log = json.load(open(LOG)) if os.path.exists(LOG) else []
-                log.append({'id': aid, 'model': model, 'usage': resp.get('usageMetadata', {}), 'usd_est': COST[model], 'time': time.strftime('%Y-%m-%d %H:%M:%S')})
+                cost = COST4K if SIZE.get(aid) == '4K' else COST[model]
+                log.append({'id': aid, 'model': model, 'size': SIZE.get(aid, '2K'), 'usage': resp.get('usageMetadata', {}), 'usd_est': cost, 'time': time.strftime('%Y-%m-%d %H:%M:%S')})
                 json.dump(log, open(LOG, 'w'), indent=1)
                 total = sum(e['usd_est'] for e in log)
-                print(f'  → {os.path.relpath(path, ROOT)}  (~${COST[model]:.3f}, total so far ~${total:.2f})')
+                print(f'  → {os.path.relpath(path, ROOT)}  (~${cost:.3f}, total so far ~${total:.2f})')
                 return path
     print(f'  ✗ {aid}: no image ({json.dumps(resp)[:200]})')  # e.g. IMAGE_RECITATION — not charged; carry on
     return None
@@ -158,8 +205,8 @@ def main():
         if (want and aid not in want) or (not want and existing(aid)):
             continue
         print(f'{aid} [{model}]')
-        save(aid, model, call(model, [{'text': prompt}], aspect))
-    for aid, (model, src, prompt) in EDITS.items():
+        save(aid, model, call(model, [{'text': prompt}], aspect, SIZE.get(aid, '2K')))
+    for aid, (model, src, prompt, *rest) in EDITS.items():
         if (want and aid not in want) or (not want and existing(aid)):
             continue
         sp = existing(src)
@@ -169,7 +216,7 @@ def main():
         print(f'{aid} [{model}, edit of {src}]')
         mime = 'image/png' if sp.endswith('png') else 'image/jpeg'
         data = base64.b64encode(open(sp, 'rb').read()).decode()
-        save(aid, model, call(model, [{'inlineData': {'mimeType': mime, 'data': data}}, {'text': prompt}], '16:9'))
+        save(aid, model, call(model, [{'inlineData': {'mimeType': mime, 'data': data}}, {'text': prompt}], rest[0] if rest else '16:9', SIZE.get(aid, '2K')))
 
 
 if __name__ == '__main__':

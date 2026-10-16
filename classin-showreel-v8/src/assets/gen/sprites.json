@@ -78,5 +78,53 @@
  "props_night_3.png": {
   "w": 692,
   "h": 446
+ },
+ "houses8_a_0.webp": {
+  "w": 1200,
+  "h": 1120
+ },
+ "houses8_a_1.webp": {
+  "w": 1200,
+  "h": 1071
+ },
+ "houses8_a_2.webp": {
+  "w": 1200,
+  "h": 695
+ },
+ "houses8_a_3.webp": {
+  "w": 1200,
+  "h": 895
+ },
+ "houses8_b_0.webp": {
+  "w": 1200,
+  "h": 945
+ },
+ "houses8_b_1.webp": {
+  "w": 1200,
+  "h": 958
+ },
+ "houses8_b_2.webp": {
+  "w": 1200,
+  "h": 730
+ },
+ "houses8_b_3.webp": {
+  "w": 1200,
+  "h": 1015
+ },
+ "houses8_c_0.webp": {
+  "w": 1047,
+  "h": 1200
+ },
+ "houses8_c_1.webp": {
+  "w": 1076,
+  "h": 1200
+ },
+ "houses8_c_2.webp": {
+  "w": 1048,
+  "h": 1200
+ },
+ "houses8_c_3.webp": {
+  "w": 1030,
+  "h": 1200
  }
 }

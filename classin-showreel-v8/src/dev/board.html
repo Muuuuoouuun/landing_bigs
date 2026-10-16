@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: 'NanumPen'; src: url(../assets/fonts/NanumPen-sub.woff2); }
+@font-face { font-family: 'Pretendard'; font-weight: 700; src: url(../assets/fonts/Pretendard-Bold.woff2); }
+html, body { margin: 0; background: #0d0e10; }
+canvas { display: block; }
+</style></head><body><canvas id="c" width="1920" height="1080"></canvas>
+<script type="module">
+// Look test (v8): the board — current neon lines (left) vs premium ink on a matte slate (right).
+import { catmull } from '../js/core.js';
+import { whaleStrokes } from '../js/scenes/whale.js';
+import { inkStroke, slate } from '../js/ink.js';
+
+await document.fonts.load('400 60px NanumPen', '뜨는 힘 > 무게 → 떠오른다!');
+await document.fonts.load('700 26px Pretendard', '현재 개선');
+const k = document.getElementById('c').getContext('2d');
+const img = await new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = 's12.40.jpg'; });
+
+// left: the current board (crop of the v7.1 render)
+const BX = 40, BY = 254, BW = 1390, BH = 786, PW = 930, PH = PW * BH / BW, PY = (1080 - PH) / 2 + 20;
+k.drawImage(img, BX, BY, BW, BH, 20, PY, PW, PH);
+// right: the new slate
+const X0 = 970;
+slate(k, X0, PY, PW, PH, { r: 14 });
+k.font = '700 26px Pretendard'; k.fillStyle = '#9A9C98';
+k.fillText('현재', 24, PY - 18); k.fillText('개선 · 잉크 질감 (펜 압력 · 그림자 · 안료 결 · 하이라이트)', X0 + 4, PY - 18);
+
+const s = PW / BW; // board px → panel px
+const WC = [760, 520], WS = 1.9;
+const at = ([x, y]) => [X0 + (WC[0] + x * WS) * s, PY + (WC[1] + y * WS) * s];
+const ring = (cx, cy, r, n = 40) => Array.from({ length: n + 1 }, (_, i) => { const a = -Math.PI / 2 + (i / n) * Math.PI * 2; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; });
+const cloud = (cx, cy, sz) => { const p = []; for (let i = 0; i <= 80; i++) { const a = Math.PI + (i / 80) * Math.PI * 2; const r = sz * (1 + 0.22 * Math.abs(Math.sin(a * 2.5))); p.push([cx + Math.cos(a) * r * 1.5, cy + Math.sin(a) * r * 0.75]); } return p; };
+const star = (cx, cy, r) => { const p = []; for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.42 : r; p.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); } return p; };
+
+// handwriting: the board text with the same grain
+{
+  const off = document.createElement('canvas'); off.width = PW; off.height = 240;
+  const g = off.getContext('2d');
+  g.font = `${Math.round(72 * s * 1.15)}px NanumPen`; g.fillStyle = '#F4F4EF';
+  g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 6; g.shadowOffsetY = 2;
+  g.fillText('뜨는 힘 > 무게', 120 * s, 110 * s * 1.2);
+  g.fillStyle = '#A6E86A'; g.fillText('→ 떠오른다!', 132 * s, 196 * s * 1.2);
+  k.drawImage(off, X0, PY + 40 * s);
+}
+const chalk = '#F2F2EE';
+let seed = 1;
+for (const st of whaleStrokes()) inkStroke(k, st.pts.map(at), { w: 4.2, color: chalk, seed: seed++, sheen: 0.45, shadow: 0.6, grain: 0.7 });
+// the classmates' pens
+const wings = [catmull([[-30, -66], [-80, -150], [10, -190], [50, -76]], 10), catmull([[-34, -100], [-10, -140]], 5), catmull([[-12, -86], [18, -130]], 5)];
+for (const w of wings) inkStroke(k, w.map(at), { w: 5, color: '#9FD0FF', seed: seed++ });
+for (const [x, y, r] of [[150, -190, 30], [225, -165, 34]]) inkStroke(k, ring(x, y, r).map(at), { w: 5, color: '#F59A23', seed: seed++ });
+inkStroke(k, [[150, -160], [95, -62]].map(at), { w: 2.4, color: '#CFC6B4', seed: seed++, sheen: 0 });
+inkStroke(k, [[225, -131], [110, -50]].map(at), { w: 2.4, color: '#CFC6B4', seed: seed++, sheen: 0 });
+inkStroke(k, cloud(-330, 70, 36).map(at), { w: 5, color: '#F29BB8', seed: seed++ });
+inkStroke(k, cloud(340, 70, 32).map(at), { w: 5, color: '#F29BB8', seed: seed++ });
+inkStroke(k, star(310, -190, 22).map(at), { w: 4.5, color: '#F6C343', seed: seed++ });
+inkStroke(k, star(-300, -60, 15).map(at), { w: 4, color: '#F6C343', seed: seed++ });
+// one star still being drawn: the pen's light at the tip, the ink cooling behind it
+const live = star(390, -120, 15).map(at), u = 0.72;
+inkStroke(k, live, { w: 4, color: '#F6C343', seed: seed++, u });
+{
+  const n = Math.max(1, Math.round((live.length - 1) * u)), tip = live[n];
+  let g = k.createRadialGradient(tip[0], tip[1], 0, tip[0], tip[1], 46);
+  g.addColorStop(0, 'rgba(255,250,220,0.95)'); g.addColorStop(0.18, 'rgba(250,220,120,0.55)'); g.addColorStop(1, 'rgba(250,200,80,0)');
+  k.globalCompositeOperation = 'lighter'; k.fillStyle = g; k.fillRect(tip[0] - 46, tip[1] - 46, 92, 92); k.globalCompositeOperation = 'source-over';
+}
+// buoyancy arrows (lime)
+for (const x of [-280, 240, 380]) {
+  const a = at([x * 0.5, 150 / WS]), b = at([x * 0.5, 260 / WS]);
+  inkStroke(k, [b, a], { w: 4, color: '#A6E86A', seed: seed++, taperOut: 4 });
+  inkStroke(k, [[a[0] - 9, a[1] + 12], a, [a[0] + 9, a[1] + 12]], { w: 4, color: '#A6E86A', seed: seed++, taperIn: 3, taperOut: 3 });
+}
+window.ok = 1;
+</script></body></html>

@@ -1,0 +1,140 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.min.js" } }</script>
+<style>
+@font-face { font-family: 'Pretendard'; font-weight: 400; src: url(../assets/fonts/Pretendard-Regular.woff2); }
+@font-face { font-family: 'Pretendard'; font-weight: 600; src: url(../assets/fonts/Pretendard-SemiBold.woff2); }
+@font-face { font-family: 'Pretendard'; font-weight: 800; src: url(../assets/fonts/Pretendard-ExtraBold.woff2); }
+@font-face { font-family: 'Pretendard'; font-weight: 300; src: url(../assets/fonts/Pretendard-Light.woff2); }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: radial-gradient(60% 70% at 55% 50%, #17251a 0%, #0b0d0e 55%, #060707 100%); }
+canvas { display: block; }
+</style></head><body>
+<script type="module">
+// Look test (v8): premium 3D devices — phone with the class notification, tablet with the class, the pen.
+import * as THREE from 'three';
+import { RoomEnvironment } from '../vendor/three/RoomEnvironment.js';
+import { RoundedBoxGeometry } from '../vendor/three/RoundedBoxGeometry.js';
+
+await Promise.all(['300 20px Pretendard', '400 20px Pretendard', '600 20px Pretendard', '800 20px Pretendard'].map(f => document.fonts.load(f, '가A')));
+const W = 1920, H = 1080;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const camera = new THREE.PerspectiveCamera(26, W / H, 0.1, 100);
+camera.position.set(0.0, 1.0, 7.2);
+camera.lookAt(0.05, -0.05, 0);
+
+const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-4, 6, 5); scene.add(key);
+const rim = new THREE.DirectionalLight(0xc8f7a8, 3.2); rim.position.set(6, 3, -3); scene.add(rim);
+const rim2 = new THREE.DirectionalLight(0xffffff, 1.6); rim2.position.set(-6, -1, -2); scene.add(rim2);
+
+// a rounded-rect plane with 0..1 UVs (screens)
+function screenGeo(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  const g = new THREE.ShapeGeometry(s, 24), p = g.attributes.position, uv = g.attributes.uv;
+  for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) - x) / w, (p.getY(i) - y) / h);
+  return g;
+}
+// a device body: big corner radius in the face, softly rounded edges (extruded rounded rect with a bevel)
+function bodyGeo(w, h, d, r, bev) {
+  const s = new THREE.Shape(), x = -w / 2 + bev, y = -h / 2 + bev, W2 = w - 2 * bev, H2 = h - 2 * bev, R = r - bev;
+  s.moveTo(x + R, y); s.lineTo(x + W2 - R, y); s.absarc(x + W2 - R, y + R, R, -Math.PI / 2, 0); s.lineTo(x + W2, y + H2 - R);
+  s.absarc(x + W2 - R, y + H2 - R, R, 0, Math.PI / 2); s.lineTo(x + R, y + H2); s.absarc(x + R, y + H2 - R, R, Math.PI / 2, Math.PI);
+  s.lineTo(x, y + R); s.absarc(x + R, y + R, R, Math.PI, Math.PI * 1.5);
+  const g = new THREE.ExtrudeGeometry(s, { depth: d - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 8, curveSegments: 48 });
+  g.translate(0, 0, -(d - 2 * bev) / 2);
+  return g;
+}
+const glass = tex => new THREE.MeshPhysicalMaterial({ color: 0x000000, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 1.0, roughness: 0.1, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.06, envMapIntensity: 0.35 });
+const metal = (c, r = 0.3) => new THREE.MeshPhysicalMaterial({ color: c, metalness: 1, roughness: r, clearcoat: 0.4, clearcoatRoughness: 0.2, envMapIntensity: 1.6 });
+
+// ---------- phone: lock screen with the class notification ----------
+function lockScreen() {
+  const c = document.createElement('canvas'); c.width = 720; c.height = 1500;
+  const k = c.getContext('2d');
+  k.fillStyle = '#000'; k.fillRect(0, 0, 720, 1500);
+  const bez = 22, R = 70;
+  k.save(); k.beginPath(); k.roundRect(bez, bez, 720 - 2 * bez, 1500 - 2 * bez, R); k.clip();
+  let g = k.createLinearGradient(0, 0, 400, 1500); g.addColorStop(0, '#1d3b2a'); g.addColorStop(0.5, '#14261f'); g.addColorStop(1, '#0a110e'); k.fillStyle = g; k.fillRect(0, 0, 720, 1500);
+  g = k.createRadialGradient(560, 300, 10, 560, 300, 700); g.addColorStop(0, 'rgba(140,230,90,0.45)'); g.addColorStop(1, 'rgba(140,230,90,0)'); k.fillStyle = g; k.fillRect(0, 0, 720, 1500);
+  k.fillStyle = '#000'; k.beginPath(); k.roundRect(290, 52, 140, 40, 20); k.fill(); // island
+  k.fillStyle = 'rgba(255,255,255,0.9)'; k.textAlign = 'center';
+  k.font = '600 30px Pretendard'; k.fillText('10월 16일 목요일', 360, 200);
+  k.font = '300 190px Pretendard'; k.fillText('19:00', 360, 380);
+  // notification
+  const nx = 52, ny = 470, nw = 616, nh = 290;
+  k.fillStyle = 'rgba(245,246,243,0.93)'; k.beginPath(); k.roundRect(nx, ny, nw, nh, 44); k.fill();
+  k.fillStyle = '#fff'; k.beginPath(); k.roundRect(nx + 32, ny + 32, 72, 72, 18); k.fill();
+  k.strokeStyle = 'rgba(0,0,0,0.08)'; k.lineWidth = 2; k.stroke();
+  k.fillStyle = '#10B415'; k.save(); k.translate(nx + 68, ny + 68); k.transform(1, -0.45, 0, 1, 0, 0); k.fillRect(-9, -20, 18, 42); k.restore();
+  k.textAlign = 'left'; k.fillStyle = '#6a6c6e'; k.font = '600 28px Pretendard'; k.fillText('ClassIn', nx + 124, ny + 64); k.textAlign = 'right'; k.fillText('지금', nx + nw - 34, ny + 64);
+  k.textAlign = 'left'; k.fillStyle = '#141516'; k.font = '800 40px Pretendard'; k.fillText('오늘은 상상 퀴즈 수업!', nx + 34, ny + 152);
+  k.fillStyle = '#4b4d50'; k.font = '400 29px Pretendard'; k.fillText('초5 과학 탐구반 · 한지민 선생님', nx + 34, ny + 196);
+  k.fillStyle = '#E3E5E1'; k.beginPath(); k.roundRect(nx + 34, ny + 222, nw - 68, 46, 23); k.fill();
+  g = k.createLinearGradient(nx + 34, 0, nx + 34 + (nw - 68) * 0.7, 0); g.addColorStop(0, '#11A715'); g.addColorStop(1, '#52D13A');
+  k.fillStyle = g; k.beginPath(); k.roundRect(nx + 34, ny + 222, (nw - 68) * 0.7, 46, 23); k.fill();
+  k.fillStyle = '#fff'; k.font = '800 26px Pretendard'; k.textAlign = 'center'; k.fillText('입장하기', nx + nw / 2, ny + 254);
+  k.restore();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const phone = new THREE.Group();
+phone.add(new THREE.Mesh(bodyGeo(0.76, 1.58, 0.085, 0.115, 0.022), metal(0x2b2e33, 0.26)));
+const ps = new THREE.Mesh(screenGeo(0.735, 1.555, 0.1), glass(lockScreen())); ps.position.z = 0.0428; phone.add(ps);
+phone.position.set(-1.7, 0.02, 0.7); phone.rotation.set(0.05, 0.58, -0.13);
+scene.add(phone);
+
+// ---------- tablet: the class ----------
+const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+const img = await load('s12.40.jpg');
+const faces = await Promise.all([0, 1, 2, 3, 4, 5].map(i => load(`../assets/gen/face_${i}.jpg`)));
+function classScreen() {
+  const c = document.createElement('canvas'); c.width = 1920 + 120; c.height = 1080 + 120;
+  const k = c.getContext('2d'); k.fillStyle = '#050505'; k.fillRect(0, 0, c.width, c.height);
+  k.save(); k.beginPath(); k.roundRect(60, 60, 1920, 1080, 26); k.clip(); k.drawImage(img, 60, 60, 1920, 1080);
+  const T = [[40, 260], [312, 214], [538, 214], [764, 214], [990, 214], [1216, 214]], names = ['한지민 선생님', '서윤', '도윤', '하린', '민준', '지아'];
+  T.forEach(([x, w], i) => {
+    const f = faces[i], fw = f.width, fh = f.height, sw = Math.min(fw, fh * w / 160), sh = sw * 160 / w;
+    k.save(); k.beginPath(); k.roundRect(60 + x, 60 + 80, w, 160, 10); k.clip();
+    k.drawImage(f, (fw - sw) / 2, (fh - sh) * 0.3, sw, sh, 60 + x, 60 + 80, w, 160);
+    const g = k.createLinearGradient(0, 60 + 190, 0, 60 + 240); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)'); k.fillStyle = g; k.fillRect(60 + x, 60 + 190, w, 50);
+    k.restore();
+    k.font = '600 17px Pretendard'; const tw = k.measureText(names[i]).width;
+    k.fillStyle = 'rgba(20,22,24,0.72)'; k.beginPath(); k.roundRect(60 + x + 8, 60 + 208, tw + 16, 26, 6); k.fill();
+    k.fillStyle = '#fff'; k.fillText(names[i], 60 + x + 16, 60 + 227);
+    if (i >= 2 && i <= 4) { k.strokeStyle = '#8BE05A'; k.lineWidth = 3; k.beginPath(); k.roundRect(60 + x + 1.5, 60 + 81.5, w - 3, 157, 10); k.stroke(); }
+  });
+  k.restore();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const tablet = new THREE.Group();
+tablet.add(new THREE.Mesh(bodyGeo(2.62, 1.86, 0.07, 0.13, 0.018), metal(0x8d9196, 0.3)));
+const ts = new THREE.Mesh(screenGeo(2.58, 1.82, 0.1), glass(classScreen())); ts.position.z = 0.0353; ts.material.emissiveIntensity = 0.75; tablet.add(ts);
+tablet.position.set(0.85, -0.06, 0); tablet.rotation.set(-0.42, -0.42, 0.06);
+scene.add(tablet);
+
+// ---------- the pen ----------
+const pen = new THREE.Group();
+const white = new THREE.MeshPhysicalMaterial({ color: 0xf2f2ef, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.15 });
+const body = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 1.25, 64), white); pen.add(body);
+const cap = new THREE.Mesh(new THREE.SphereGeometry(0.036, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), white); cap.position.y = 0.625; pen.add(cap);
+const band = new THREE.Mesh(new THREE.CylinderGeometry(0.0372, 0.0372, 0.07, 64), new THREE.MeshPhysicalMaterial({ color: 0x12b416, metalness: 0.35, roughness: 0.25, clearcoat: 1 })); band.position.y = 0.46; pen.add(band);
+const cone = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.007, 0.13, 64), new THREE.MeshPhysicalMaterial({ color: 0x2a2c30, metalness: 0.6, roughness: 0.3 })); cone.position.y = -0.69; pen.add(cone);
+pen.position.set(1.75, 0.2, 0.75); pen.rotation.set(0.3, 0.2, 0.62);
+scene.add(pen);
+// a little light at the nib (the pen writes with light)
+const nib = new THREE.PointLight(0x9fe07a, 2.5, 1.2); nib.position.set(1.45, -0.33, 0.9); scene.add(nib);
+
+renderer.render(scene, camera);
+window.ok = 1;
+</script></body></html>
