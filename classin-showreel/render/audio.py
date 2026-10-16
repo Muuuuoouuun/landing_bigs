@@ -5,10 +5,10 @@ the renderer) and writes out/audio.wav plus stems (out/stems/music.wav, sfx.wav,
 
   python3 render/audio.py            # music + SFX (+ VO if render/vo/vo_XX.wav exist)
 
-Music: 100 BPM (one bar = 2.4 s), D major. Felt keys, pad and soft sub from frame 0; kick, clap and
-hats from the drop into the classroom (4.80); a lift when the story reaches home (12.00); the drums
-step back while the light writes the tagline (19.20); a breath before the hero (23.40, only a
-reversed swell); a full warm chord and a low hit on 24.00, ringing under the end card.
+Music: 100 BPM (one bar = 2.4 s), D major. Felt keys, pad and soft sub from frame 0 (the book); kick,
+clap and hats from the drop, when the words gather into the brain (4.80); a lift as the imagination
+opens out (12.00); the drums step back while the light writes the tagline (19.20); a breath before the
+hero (23.40, only a reversed swell); a full warm chord and a low hit on 24.00 under the end card.
 """
 import json, math, os, sys, wave
 import numpy as np
@@ -412,6 +412,46 @@ def sfx_voice(c):
             v = soft_tone(f, 0.4, harm=(1, 0.3)) * env_exp(n, 0.06)
             s[j:] += v[: n - j]
         return s * g * 0.4, 0.2, 0.1
+    if ty == 'drop':  # a drop of light onto paper: water-drop pluck + soft low knock
+        n = int(1.2 * SR)
+        f = sine_sweep(0.12, 1500, 520) * env_exp(int(0.12 * SR), 0.03)
+        s = np.zeros(n)
+        s[: f.size] += f * 0.8
+        s += np.sin(2 * np.pi * 110 * tvec(1.2)) * env_exp(n, 0.09) * 0.7
+        s += sum(np.sin(2 * np.pi * midi(m) * tvec(1.2)) * env_exp(n, 0.5) for m in (86, 93)) * 0.12
+        return s * g, 0.0, 0.35
+    if ty == 'page':  # a page turning: a soft swish with paper flutter
+        r = np.random.default_rng(c.get('seed', 0))
+        n = int(dur * SR)
+        flutter = 1 + 0.6 * np.sin(2 * np.pi * np.cumsum(np.linspace(30, 12, n)) / SR)
+        s = band_sweep(dur, 1800, 5200, 0.9, seed=c.get('seed', 0)) * bell_env(n, 0.45, 1.6) * flutter * 0.8
+        s += fft_filter(r.standard_normal(n), lo=300, hi=1600) * bell_env(n, 0.6, 2.4) * 0.25
+        return s * g, c.get('pan', 0.0), 0.12
+    if ty == 'synapse':  # an impulse through the network: bright crackle sweep + glassy tone
+        r = np.random.default_rng(c.get('seed', 0))
+        n = int(0.7 * SR)
+        s = np.zeros(n)
+        for k in range(14):
+            j = int((k / 14) ** 1.3 * 0.45 * SR)
+            m = int(0.03 * SR)
+            v = np.sin(2 * np.pi * (2200 + 2600 * r.random()) * tvec(0.03)) * env_exp(m, 0.006)
+            s[j : j + m] += v[: max(0, min(m, n - j))] * 0.35
+        s += np.sin(2 * np.pi * midi(93) * tvec(0.7)) * env_exp(n, 0.2) * 0.25
+        return s * g, (r.random() - 0.5) * 0.5, 0.35
+    if ty in ('pencil', 'marker'):  # light drawing: graphite / felt tip on paper
+        r = np.random.default_rng(c.get('seed', 0))
+        n = int(dur * SR)
+        lo, hi = (2500, 8000) if ty == 'pencil' else (900, 4200)
+        strokes = np.convolve((r.random(int(dur * 18) + 2) > 0.3).astype(float).repeat(SR // 18)[:n], np.ones(400) / 400, mode='same')
+        if strokes.size < n:
+            strokes = np.pad(strokes, (0, n - strokes.size))
+        s = fft_filter(r.standard_normal(n), lo=lo, hi=hi) * strokes * adsr(n, 0.02, 0.06)
+        return s * g * (0.35 if ty == 'pencil' else 0.5), c.get('pan', 0.0), 0.06
+    if ty == 'ink':  # ink flooding into the mark: soft rising warm swell
+        n = int(dur * SR)
+        s = band_sweep(dur, 300, 1400, 0.8, seed=12) * bell_env(n, 0.35, 1.5) * 0.6
+        s += sum(np.sin(2 * np.pi * midi(m) * tvec(dur)) for m in (74, 78, 81)) * bell_env(n, 0.4, 1.8) * 0.1
+        return s * g, 0.0, 0.3
     return np.zeros(1), 0.0, 0.0
 
 

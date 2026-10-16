@@ -35,8 +35,8 @@ export function avatar(o = {}) {
   return `<svg class="avsvg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
   <defs><radialGradient id="${id}r" cx="50%" cy="35%" r="80%"><stop offset="0" stop-color="${r0}"/><stop offset="1" stop-color="${r1}"/></radialGradient>
   <linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shirt}"/><stop offset="1" stop-color="${shirt}" stop-opacity="0.85"/></linearGradient></defs>
-  <rect width="${w}" height="${h}" fill="url(#${id}r)"/>
-  <rect x="${w * 0.08}" y="${h * 0.12}" width="${w * 0.22}" height="${h * 0.3}" rx="3" fill="#fff" opacity="0.28"/>
+  ${o.bare ? '' : `<rect width="${w}" height="${h}" fill="url(#${id}r)"/>
+  <rect x="${w * 0.08}" y="${h * 0.12}" width="${w * 0.22}" height="${h * 0.3}" rx="3" fill="#fff" opacity="0.28"/>`}
   ${hairBack}
   <path d="M${cx - R * 2.2} ${h} Q${cx - R * 2.0} ${hy + R * 1.55} ${cx} ${hy + R * 1.45} Q${cx + R * 2.0} ${hy + R * 1.55} ${cx + R * 2.2} ${h} Z" fill="url(#${id}s)"/>
   <rect x="${cx - R * 0.32}" y="${hy + R * 0.7}" width="${R * 0.64}" height="${R * 0.75}" rx="${R * 0.2}" fill="${skin}" style="filter:brightness(0.92)"/>

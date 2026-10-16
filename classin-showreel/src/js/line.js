@@ -2,11 +2,14 @@
 // everywhere and can be handed from scene to scene without a seam.
 import { clamp, lerp, measure, rng } from './core.js';
 
+// v5 — light on ivory paper: a 연두 (yellow-green) filament with a pale hot centre and a soft
+// lime haze, defined by a faint deeper-green edge so it reads on a bright background.
 export const C = {
-  green: '#04BC09',
-  hi: '#4BE27A',
-  core: '#F6FFF8',
-  ink: '#1FD13A',
+  green: '#A6DE5C',
+  edge: '#4E9A1A',
+  hi: '#86D23A',
+  core: '#F7FFE6',
+  ink: '#34322C',
 };
 
 export class LineFX {
@@ -23,13 +26,18 @@ export class LineFX {
     this.c = this.coreC.getContext('2d');
     for (const k of [this.g, this.c]) { k.lineCap = 'round'; k.lineJoin = 'round'; }
     this.inks = [];
+    this.dots = [];
   }
+
+  // a printed dot (no glow): neurons, seeds, map points
+  dot(x, y, r, color = C.ink, a = 1) { if (a > 0.003 && r > 0.05) this.dots.push([x, y, r, color, a]); }
 
   begin() {
     this.ctx.clearRect(0, 0, this.W, this.H);
     this.g.clearRect(0, 0, this.W, this.H);
     this.c.clearRect(0, 0, this.W, this.H);
     this.inks.length = 0;
+    this.dots.length = 0;
     this.used = false;
   }
 
@@ -68,11 +76,12 @@ export class LineFX {
       const a = alpha * lerp(1 - taper, 1, f ** 1.4);
       const ww = w * lerp(1 - taper * 0.6, 1, f);
       if (cool < 1) {
-        this.stroke(this.g, seg, ww * 2.4, C.green, a * (1 - cool) * 0.75);
-        this.stroke(this.c, seg, ww * 1.15, C.hi, a * (1 - cool) * 0.95);
-        this.stroke(this.c, seg, ww * 0.5, C.core, a * (1 - cool));
+        this.stroke(this.g, seg, ww * 2.6, C.green, a * (1 - cool) * 0.8);
+        this.stroke(this.c, seg, ww * 1.45, C.edge, a * (1 - cool) * 0.22);
+        this.stroke(this.c, seg, ww * 1.1, C.hi, a * (1 - cool) * 0.95);
+        this.stroke(this.c, seg, ww * 0.42, C.core, a * (1 - cool));
       }
-      if (cool > 0) this.inks.push({ seg, w: ww * 0.9, a: a * cool });
+      if (cool > 0) this.inks.push({ seg, w: ww * (o.inkW ?? 0.9), a: a * cool, color: o.ink || C.ink });
     }
     if (o.head) {
       const p = pts[pts.length - 1];
@@ -97,23 +106,23 @@ export class LineFX {
     this.used = true;
     const r = w * 4.2;
     let gr = this.c.createRadialGradient(x, y, 0, x, y, r);
-    gr.addColorStop(0, `rgba(255,255,255,${0.95 * a})`);
-    gr.addColorStop(0.25, `rgba(190,255,200,${0.75 * a})`);
-    gr.addColorStop(1, 'rgba(57,255,106,0)');
+    gr.addColorStop(0, `rgba(255,255,246,${a})`);
+    gr.addColorStop(0.3, `rgba(206,242,140,${0.85 * a})`);
+    gr.addColorStop(1, 'rgba(150,214,70,0)');
     this.c.globalAlpha = 1;
     this.c.fillStyle = gr;
     this.c.fillRect(x - r, y - r, r * 2, r * 2);
     const R = w * 11;
     gr = this.g.createRadialGradient(x, y, 0, x, y, R);
-    gr.addColorStop(0, `rgba(57,255,106,${0.55 * a})`);
-    gr.addColorStop(1, 'rgba(4,188,9,0)');
+    gr.addColorStop(0, `rgba(170,226,90,${0.6 * a})`);
+    gr.addColorStop(1, 'rgba(170,226,90,0)');
     this.g.globalAlpha = 1;
     this.g.fillStyle = gr;
     this.g.fillRect(x - R, y - R, R * 2, R * 2);
   }
 
   // soft bloom (impacts, flares)
-  flare(x, y, r, a = 1, tint = '57,255,106') {
+  flare(x, y, r, a = 1, tint = '176,228,96') {
     if (a <= 0.003) return;
     this.used = true;
     const gr = this.g.createRadialGradient(x, y, 0, x, y, r);
@@ -129,7 +138,7 @@ export class LineFX {
   shape(poly, a = 1, glow = 1) {
     if (a <= 0.003) return;
     this.used = true;
-    for (const [k, col, al] of [[this.g, C.hi, 0.8 * glow], [this.c, C.core, 1]]) {
+    for (const [k, col, al] of [[this.g, C.green, 0.8 * glow], [this.c, C.hi, 1]]) {
       k.globalAlpha = clamp(a * al);
       k.fillStyle = col;
       k.beginPath();
@@ -161,7 +170,7 @@ export class LineFX {
     k.globalCompositeOperation = 'source-over';
     for (const ink of this.inks) {
       k.globalAlpha = clamp(ink.a);
-      k.strokeStyle = C.ink;
+      k.strokeStyle = ink.color;
       k.lineWidth = ink.w;
       k.lineCap = 'round';
       k.lineJoin = 'round';
@@ -170,18 +179,26 @@ export class LineFX {
       for (let i = 1; i < ink.seg.length; i++) k.lineTo(ink.seg[i][0], ink.seg[i][1]);
       k.stroke();
     }
+    for (const [x, y, r, col, a] of this.dots) {
+      k.globalAlpha = clamp(a);
+      k.fillStyle = col;
+      k.beginPath();
+      k.arc(x, y, r, 0, Math.PI * 2);
+      k.fill();
+    }
     if (!this.used) return;
     k.globalAlpha = 1;
-    k.globalCompositeOperation = 'lighter';
     k.filter = 'blur(22px)';
+    k.globalAlpha = 0.75;
     k.drawImage(this.glowC, 0, 0);
     k.filter = 'blur(6px)';
-    k.globalAlpha = 0.9;
+    k.globalAlpha = 0.6;
     k.drawImage(this.glowC, 0, 0);
-    k.filter = 'blur(1.2px)';
-    k.globalAlpha = 1;
+    k.filter = 'blur(1px)';
+    k.globalAlpha = 0.8;
     k.drawImage(this.coreC, 0, 0);
     k.filter = 'none';
+    k.globalAlpha = 1;
     k.drawImage(this.coreC, 0, 0);
     k.globalCompositeOperation = 'source-over';
   }

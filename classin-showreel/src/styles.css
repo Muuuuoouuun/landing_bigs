@@ -8,46 +8,33 @@
 @font-face { font-family: 'Caveat'; font-weight: 600; src: url(assets/fonts/Caveat-SemiBold.woff2) format('woff2'); }
 
 :root {
-  /* green is the point colour only — the stage and UI are neutral (ClassIn's own UI language) */
-  --g: #04BC09;
-  --g-hi: #3EDC6B;
-  --g-soft: rgba(4, 188, 9, 0.14);
-  --stage: #0A0A0B;
-  --deep: #16181D;
-  --orange: #F59A23;
-  --blue: #3B82F6;
-  --yellow: #F6C343;
-  --gold: #F5C542;
-  /* ClassIn classroom (dark, neutral charcoal) */
-  --cr-bg: #1B1B1D;
-  --cr-board: #2A2A2D;
-  --cr-seat: #323236;
-  --cr-line: rgba(255, 255, 255, 0.07);
-  --cr-text: #EDEDEF;
-  --cr-sub: #9C9CA3;
-  /* ClassIn apps (light) */
-  --ap-bg: #F5F6F8;
-  --ap-card: #FFFFFF;
-  --ap-text: #17181B;
-  --ap-sub: #7B808A;
-  --ap-line: #E7E9EE;
-  --ui-bg: #111113;
-  --ui-panel: #161618;
-  --ui-card: #1C1C1F;
-  --ui-card2: #232327;
-  --ui-line: rgba(255, 255, 255, 0.075);
-  --ui-text: #EFEFF1;
-  --ui-sub: #8E8E95;
-  --ui-dim: #5F5F66;
-  --amber: #E6B800;
+  /* v5 — ivory paper stage; 연두 (yellow-green) is the point colour, the brand green lives in the logo */
+  --paper: #F6F1E6;
+  --paper2: #EEE6D5;
+  --paper3: #E4D9C3;
+  --ink: #2A2824;
+  --ink2: #5F584C;
+  --mute: #A39A89;
+  --rule: rgba(60, 50, 30, 0.12);
+  --lime: #8DD63F;
+  --lime-hi: #BDEB7A;
+  --lime-deep: #5AAE1E;
+  --lime-soft: rgba(141, 214, 63, 0.18);
+  --brand: #04BC09;
+  --sky: #CFE2F0;
+  --peach: #F4D3BE;
+  --butter: #F2E2A6;
+  --lilac: #DCD3EE;
+  --sage: #DCE7CC;
+  --warm: #FFE3A3;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { background: #000; overflow: hidden; }
-body { font-family: 'Pretendard', system-ui, sans-serif; color: var(--ui-text); -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 0; }
+body { font-family: 'Pretendard', system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; font-feature-settings: 'tnum' 0; }
 
 #viewport { position: fixed; inset: 0; display: grid; place-items: center; }
-#stage { position: relative; overflow: hidden; background: var(--stage); transform-origin: 50% 50%; }
+#stage { position: relative; overflow: hidden; background: var(--paper); transform-origin: 50% 50%; }
 #shake { position: absolute; inset: 0; }
 .scene { position: absolute; inset: 0; overflow: hidden; display: none; }
 .obj { position: absolute; left: 0; top: 0; transform-origin: 0 0; backface-visibility: hidden; will-change: transform; }
@@ -55,13 +42,13 @@ body { font-family: 'Pretendard', system-ui, sans-serif; color: var(--ui-text); 
 .fx { position: absolute; inset: 0; pointer-events: none; }
 .logo img { display: block; user-select: none; }
 
-/* global stage light */
-.bg { position: absolute; inset: 0; pointer-events: none; }
-.bg .blob { position: absolute; left: 0; top: 0; width: 1600px; height: 1600px; margin: -800px 0 0 -800px; border-radius: 50%; }
-.bg .corner { position: absolute; inset: 0; background: radial-gradient(80% 70% at 0% 0%, rgba(34, 38, 48, 0.6) 0%, rgba(34, 38, 48, 0) 60%); }
-.bg .floor { position: absolute; inset: 0; background: radial-gradient(70% 45% at 50% 108%, rgba(255, 255, 255, 0.045) 0%, rgba(0, 0, 0, 0) 70%); }
-.vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%); }
-.flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(255, 255, 255, 0.92), rgba(232, 240, 236, 0.35) 45%, rgba(0, 0, 0, 0) 80%); mix-blend-mode: screen; }
+/* global stage light: warm paper, a soft key light, fibre texture */
+.bg { position: absolute; inset: 0; pointer-events: none; background: var(--paper); }
+.bg .tex { position: absolute; inset: 0; opacity: 0.55; mix-blend-mode: multiply; }
+.bg .blob { position: absolute; left: 0; top: 0; width: 1800px; height: 1800px; margin: -900px 0 0 -900px; border-radius: 50%; }
+.vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 50% 45%, rgba(120, 96, 60, 0) 55%, rgba(120, 96, 60, 0.16) 100%); }
+.flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(255, 255, 248, 0.95), rgba(244, 252, 226, 0.4) 45%, rgba(255, 255, 255, 0) 80%); }
+.mark canvas { display: block; }
 
 /* preview controls (hidden when rendering) */
 #ui { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: rgba(0, 0, 0, 0.7); font: 500 13px Pretendard, sans-serif; color: #cfd8d3; z-index: 10; }
