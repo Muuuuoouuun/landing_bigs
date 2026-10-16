@@ -162,8 +162,9 @@ export default function bookScene(ctx) {
     // the desk fades away under the brain, and is there again when we come back out of the tablet
     const back = t > T.tabletOn ? tw(t, T.exitA, T.exitA + 0.4, E.inOutSine) : 0;
     const away = tw(t, T.liftA + 0.4, T.gatherB, E.inOutSine);
-    el.style.visibility = t > T.gatherB + 0.2 && back <= 0 ? 'hidden' : 'visible';
-    el.style.opacity = (t > T.tabletOn ? back : (1 - away * 0.85) * tw(t, T.logoUp - 0.05, T.land + 0.1, E.inOutSine)).toFixed(3);
+    const gone = tw(t, T.gatherB, T.whaleB + 0.5, E.inOutSine); // the last of it fades out under the whale (no cut)
+    el.style.visibility = t > T.whaleB + 0.5 && back <= 0 ? 'hidden' : 'visible';
+    el.style.opacity = (t > T.tabletOn ? back : (1 - away * 0.85) * (1 - gone) * tw(t, T.logoUp - 0.05, T.land + 0.1, E.inOutSine)).toFixed(3);
     el.style.filter = t > T.liftA + 0.4 && t < T.tabletOn ? `blur(${(away * 8).toFixed(2)}px)` : '';
     place(wall, CM, planeModel(300, -880, 1012, 3600, 2025, { rx: -90 }));
     wallDawn.style.opacity = tw(t, T.exitA + 0.2, T.window + 0.2, E.inOutSine).toFixed(3);
