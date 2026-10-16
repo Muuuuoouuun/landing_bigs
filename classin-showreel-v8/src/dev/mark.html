@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#F6F1E6;display:flex;flex-wrap:wrap;gap:0;width:1920px}
+.cell{position:relative;width:960px;height:360px;display:grid;place-items:center;overflow:hidden}
+.cell span{position:absolute;left:16px;top:12px;font:600 14px sans-serif;color:#8a8070}
+.mark{position:relative!important}
+</style></head><body>
+<script type="module">
+import { createMark } from '../js/brandmark.js';
+const states = [
+  ['rest', {fill:1,trace:1,dot:0.3,lift:1,sheen:-1}],
+  ['sheen 0.45', {fill:1,dot:0.6,lift:1,sheen:0.45}],
+  ['dot lit', {fill:1,dot:1,lift:1,sheen:-1}],
+  ['trace 0.5', {fill:0,trace:0.5,dot:1}],
+  ['fill 0.35', {fill:0.35,trace:1,dot:1}],
+  ['flat lift 0.2', {fill:1,dot:0.2,lift:0.2}],
+];
+for (const [n,s] of states){ const c=document.createElement('div');c.className='cell';const m=createMark(700);m.draw(s);c.append(m.el);c.insertAdjacentHTML('beforeend',`<span>${n}</span>`);document.body.append(c);}
+const big=document.createElement('div');big.className='cell';big.style.width='1920px';big.style.height='600px';const m=createMark(1500);m.draw({fill:1,dot:0.8,lift:1,sheen:0.3});big.append(m.el);document.body.append(big);
+window.ok=1;
+</script></body></html>

@@ -1,0 +1,384 @@
+[
+ {
+  "id": "houses_a",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 155,
+   "candidatesTokenCount": 1334,
+   "totalTokenCount": 1716,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 155
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 227,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:39:27"
+ },
+ {
+  "id": "desk_wood",
+  "model": "gemini-3.1-flash-image",
+  "usage": {
+   "promptTokenCount": 51,
+   "candidatesTokenCount": 1441,
+   "totalTokenCount": 1492,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 51
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.039,
+  "time": "2026-10-16 09:40:36"
+ },
+ {
+  "id": "paper_cream",
+  "model": "gemini-3.1-flash-image",
+  "usage": {
+   "promptTokenCount": 40,
+   "candidatesTokenCount": 1495,
+   "totalTokenCount": 1535,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 40
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.039,
+  "time": "2026-10-16 09:41:59"
+ },
+ {
+  "id": "note_page",
+  "model": "gemini-3.1-flash-image",
+  "usage": {
+   "promptTokenCount": 65,
+   "candidatesTokenCount": 1465,
+   "totalTokenCount": 1530,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 65
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.039,
+  "time": "2026-10-16 09:42:08"
+ },
+ {
+  "id": "wall_night",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 136,
+   "candidatesTokenCount": 1308,
+   "totalTokenCount": 1668,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 136
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 224,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:42:37"
+ },
+ {
+  "id": "props_night",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 164,
+   "candidatesTokenCount": 1317,
+   "totalTokenCount": 1749,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 164
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 268,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:42:56"
+ },
+ {
+  "id": "sky_dawn",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 97,
+   "candidatesTokenCount": 1295,
+   "totalTokenCount": 1536,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 97
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 144,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:43:15"
+ },
+ {
+  "id": "town_far",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 107,
+   "candidatesTokenCount": 1298,
+   "totalTokenCount": 1595,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 107
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 190,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:43:37"
+ },
+ {
+  "id": "houses_b",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 171,
+   "candidatesTokenCount": 1365,
+   "totalTokenCount": 1840,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 171
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 304,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:44:01"
+ },
+ {
+  "id": "houses_c",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 161,
+   "candidatesTokenCount": 1354,
+   "totalTokenCount": 1728,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 161
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 213,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:44:22"
+ },
+ {
+  "id": "trees",
+  "model": "gemini-3.1-flash-image",
+  "usage": {
+   "promptTokenCount": 134,
+   "candidatesTokenCount": 1489,
+   "totalTokenCount": 1623,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 134
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.039,
+  "time": "2026-10-16 09:44:31"
+ },
+ {
+  "id": "aerial",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 98,
+   "candidatesTokenCount": 1272,
+   "totalTokenCount": 1643,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 98
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 273,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:44:52"
+ },
+ {
+  "id": "wall_dawn",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 314,
+   "candidatesTokenCount": 1252,
+   "totalTokenCount": 1718,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 56
+    },
+    {
+     "modality": "IMAGE",
+     "tokenCount": 258
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 152,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 09:45:11"
+ },
+ {
+  "id": "town_glide",
+  "model": "veo-3.1-fast-generate-preview",
+  "seconds": 8,
+  "usd_est": 1.2,
+  "time": "2026-10-16 10:11:09"
+ },
+ {
+  "id": "whale_3d",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 184,
+   "candidatesTokenCount": 1297,
+   "totalTokenCount": 1718,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 184
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 237,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 10:21:43"
+ },
+ {
+  "id": "whale_glow",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 111,
+   "candidatesTokenCount": 1269,
+   "totalTokenCount": 1607,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 111
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 227,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 10:22:05"
+ }
+]

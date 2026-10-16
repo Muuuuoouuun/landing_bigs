@@ -1,0 +1,9 @@
+node_modules/
+out/frames_*/
+out/stems/
+out/cues.json
+out/beats.json
+out/audio.wav
+src/assets/gen/raw/
+__pycache__/
+node_modules
