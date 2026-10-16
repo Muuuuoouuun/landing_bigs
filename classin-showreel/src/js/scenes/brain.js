@@ -133,11 +133,12 @@ export default function brainScene(ctx) {
   let cur = null;
   function update(t) {
     const CM = ctx.CM, cam = ctx.cam;
-    const show = t >= T.settle && t < T.scatter + 0.3;
-    const fade = 1 - tw(t, T.seed, T.scatter + 0.2, E.inOutSine);
+    const show = t >= T.liftA && t < T.lift + 0.2;
+    // dims when the imagination stalls, gone as the camera dives into the tablet
+    const fade = (1 - 0.55 * tw(t, T.stall, T.stall + 0.4) * (1 - tw(t, T.lift - 0.25, T.lift))) * (1 - tw(t, T.lift - 0.15, T.lift + 0.15, E.inOutSine));
     // wash
     const wk = tw(t, T.outlineA + 0.3, T.outlineB + 0.4) * fade;
-    wash.style.opacity = (wk * (0.55 + 0.25 * tw(t, T.spark - 0.1, T.spark + 0.3) * (1 - tw(t, T.spark + 0.3, T.lift)))).toFixed(3);
+    wash.style.opacity = (wk * (0.16 + 0.22 * tw(t, T.spark - 0.1, T.spark + 0.3) * (1 - tw(t, T.spark + 0.3, T.whaleB)))).toFixed(3);
     place(wash, CM, M4.T(-SX / 2 - 40, -SY / 2 - 40, ZB - 2));
     for (const k of toks) {
       k.el.style.display = show ? 'block' : 'none';
@@ -156,7 +157,8 @@ export default function brainScene(ctx) {
       if (ctx.readWords && ctx.readWords.includes(k) && t < T.liftA + 0.6) lit = Math.max(lit, 0.6 * (ctx.readK > 0 ? 1 : 0) * (1 - prog(t, T.liftA, T.liftA + 0.6)));
       const base = g > 0.98 ? 0.15 * fade : 0;
       const L = Math.max(lit, base);
-      k.el.style.color = L > 0.02 ? `rgb(${lerp(58, 86, L) | 0},${lerp(54, 168, L) | 0},${lerp(46, 30, L) | 0})` : '';
+      k.el.style.color = `rgb(${lerp(226, 176, L) | 0},${lerp(230, 242, L) | 0},${lerp(222, 120, L) | 0})`;
+      k.el.style.textShadow = L > 0.02 ? `0 0 ${(14 * L).toFixed(1)}px rgba(140,230,80,${(0.9 * L).toFixed(3)})` : 'none';
       k.el.style.opacity = fade.toFixed(3);
     }
     cur = { CM };
@@ -165,7 +167,7 @@ export default function brainScene(ctx) {
   function draw(fx, t) {
     if (!cur || !ready || t < T.drop - 0.5) return;
     const CM = cur.CM;
-    const fade = 1 - tw(t, T.seed, T.scatter + 0.2, E.inOutSine);
+    const fade = (1 - 0.55 * tw(t, T.stall, T.stall + 0.4) * (1 - tw(t, T.lift - 0.25, T.lift))) * (1 - tw(t, T.lift - 0.15, T.lift + 0.15, E.inOutSine));
     if (fade <= 0) return;
     const W3 = pts => project(CM, pts.map(p => [p[0], p[1], ZB]));
     // neuron dots appear as the words arrive
@@ -173,7 +175,7 @@ export default function brainScene(ctx) {
     for (const [x, y, rr, s] of dots) {
       if (s > dk) continue;
       const q = W3([[x, y]])[0];
-      fx.dot(q[0], q[1], rr * cur.CM[0] * 0.9 + 0.4, '#9C927F', 0.55 * fade);
+      fx.dot(q[0], q[1], rr * cur.CM[0] * 0.9 + 0.4, '#7E8C72', 0.7 * fade);
     }
     // the folds traced by the light, then left as fine 연두 ink
     const ok = tw(t, T.outlineA, T.outlineB, E.inOutSine);
@@ -183,7 +185,7 @@ export default function brainScene(ctx) {
         const k0 = clamp(ok * 1.3 - i * 0.04);
         if (k0 <= 0) return;
         const pts = W3(c);
-        fx.line(slice(pts, 0, k0), { w: i > 2 ? 2 : 3, alpha: fade, taper: 0, cool: 1, ink: i > 2 ? '#7BC23A' : '#5AAE1E', inkW: 1 });
+        fx.line(slice(pts, 0, k0), { w: i > 2 ? 2 : 3, alpha: fade * (i > 2 ? 0.7 : 1), taper: 0, cool: 0.5, ink: i > 2 ? '#5E9E33' : '#7BC23A', inkW: 1 });
         if (k0 < 1) fx.line(slice(pts, Math.max(0, k0 - 0.25), k0), { w: i ? 3 : 4.5, alpha: 1, taper: 1, head: 1 });
       });
     }
@@ -193,7 +195,7 @@ export default function brainScene(ctx) {
       for (const [i, j] of edges) {
         const a = toks[i].target, b = toks[j].target;
         const seg = W3([a, b]);
-        fx.line(seg, { w: 1.2, alpha: 0.4 * nk * fade, taper: 0, cool: 1, ink: '#8DD63F', inkW: 1 });
+        fx.line(seg, { w: 1.2, alpha: 0.35 * nk * fade, taper: 0, cool: 1, ink: '#6FA84A', inkW: 1 });
         for (const ft of [T.fire1, T.fire2, T.spark]) {
           const at = ft + Math.min(toks[i].dist, toks[j].dist) / 1400;
           const k = prog(t, at, at + 0.22);

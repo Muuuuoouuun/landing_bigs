@@ -1,12 +1,13 @@
 // Film assembly: stage, global look, scene scheduling and the deterministic render(t) entry point
 // used by both the live preview and the frame renderer (render/render.mjs).
 import { LineFX } from './line.js';
-import { clamp, drift, keyed, camMatrix, rng, h } from './core.js';
+import { clamp, drift, keyed, camMatrix, rng, tw, E, h } from './core.js';
 import { worldCam } from './world.js';
 import bookScene from './scenes/book.js';
 import brainScene from './scenes/brain.js';
-import imagineScene from './scenes/imagine.js';
-import homesScene from './scenes/homes.js';
+import whaleScene from './scenes/whale.js';
+import lessonScene from './scenes/lesson.js';
+import dawnScene from './scenes/dawn.js';
 import tagScene from './scenes/tagline.js';
 import heroScene from './scenes/hero.js';
 import { buildCues } from './cues.js';
@@ -45,38 +46,48 @@ tex.width = W; tex.height = H; tex.className = 'tex';
 bg.append(tex, blob, blob2);
 const shakeEl = h('div');
 shakeEl.id = 'shake';
-const vignette = h('div', 'vignette');
+const vignette = h('div', 'vignette'), vigNight = h('div', 'vignette night');
 const flash = h('div', 'flash');
-stage.append(bg, shakeEl, vignette, flash);
+stage.append(bg, shakeEl, vignette, vigNight, flash);
 
 const fx = new LineFX(W, H, shakeEl);
 fx.canvas.style.zIndex = 50;
 const tokLayer = h('div', 'toklayer');
 
 const ctx = { W, H, P, T: TL.beats, S: TL.scenes, copy: TL.copy, root: shakeEl, fx, tokLayer, shake: [0, 0], flash: 0, CM: null };
-const scenes = [bookScene, brainScene, imagineScene, homesScene, tagScene, heroScene].map(make => make(ctx));
+const scenes = [bookScene, brainScene, whaleScene, lessonScene, dawnScene, tagScene, heroScene].map(make => make(ctx));
 shakeEl.appendChild(tokLayer);
 
-// the warm key light drifting over the paper: position (fraction of frame), intensity, tint
+// night → day: 0 = the dark room, 1 = ivory paper (the dawn scene paints its own sky in between)
+const dayK = t => tw(t, 17.6, 19.05, E.inOutSine);
+const NIGHT = [11, 12, 14], DAY = [246, 241, 230];
+// the key light drifting over the stage: position (fraction of frame), intensity, tint
 const BG = [
-  { t: 0, x: 0.55, y: 0.4, a: 0.7, r: 255, g: 246, b: 222 }, { t: 4.8, x: 0.5, y: 0.45, a: 0.9, r: 246, g: 252, b: 226 },
-  { t: 9.6, x: 0.5, y: 0.5, a: 1, r: 240, g: 252, b: 214 }, { t: 12.0, x: 0.45, y: 0.45, a: 0.9, r: 255, g: 244, b: 226 },
-  { t: 14.4, x: 0.5, y: 0.3, a: 0.9, r: 255, g: 238, b: 206 }, { t: 17.0, x: 0.5, y: 0.5, a: 1, r: 255, g: 234, b: 196 },
-  { t: 19.2, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 }, { t: 23.6, x: 0.5, y: 0.5, a: 0.5, r: 250, g: 248, b: 232 },
-  { t: 24.0, x: 0.5, y: 0.48, a: 1, r: 238, g: 252, b: 212 }, { t: 26.4, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 },
-  { t: 28.8, x: 0.5, y: 0.5, a: 0.6, r: 250, g: 248, b: 232 },
+  { t: 0, x: 0.42, y: 0.5, a: 0.5, r: 190, g: 214, b: 240 }, { t: 2.4, x: 0.55, y: 0.5, a: 0.8, r: 200, g: 230, b: 210 },
+  { t: 4.8, x: 0.5, y: 0.5, a: 0.9, r: 190, g: 236, b: 200 }, { t: 9.6, x: 0.45, y: 0.48, a: 1, r: 200, g: 240, b: 190 },
+  { t: 11.2, x: 0.5, y: 0.5, a: 0.35, r: 200, g: 214, b: 230 }, { t: 12.2, x: 0.5, y: 0.55, a: 1, r: 255, g: 214, b: 160 },
+  { t: 16.0, x: 0.5, y: 0.5, a: 1, r: 255, g: 220, b: 170 }, { t: 19.2, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 },
+  { t: 23.6, x: 0.5, y: 0.5, a: 0.5, r: 250, g: 248, b: 232 }, { t: 24.0, x: 0.5, y: 0.48, a: 1, r: 238, g: 252, b: 212 },
+  { t: 26.4, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 }, { t: 28.8, x: 0.5, y: 0.5, a: 0.6, r: 250, g: 248, b: 232 },
 ];
-const glow = (b, k) => `radial-gradient(circle, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(0.85 * k).toFixed(3)}) 0%, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(0.35 * k).toFixed(3)}) 34%, rgba(255,255,255,0) 68%)`;
+const glow = (b, k, L) => { const a0 = 0.16 + 0.69 * L, a1 = 0.06 + 0.29 * L; return `radial-gradient(circle, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(a0 * k).toFixed(3)}) 0%, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(a1 * k).toFixed(3)}) 34%, rgba(0,0,0,0) 68%)`; };
 
 function render(t) {
   ctx.shake = [0, 0];
   ctx.flash = 0;
+  const L = dayK(t);
+  ctx.day = L;
+  fx.light = L;
+  bg.style.background = `rgb(${NIGHT.map((v, i) => Math.round(v + (DAY[i] - v) * L)).join(',')})`;
+  tex.style.opacity = (0.55 * L).toFixed(3);
+  vignette.style.opacity = L.toFixed(3);
+  vigNight.style.opacity = (1 - L).toFixed(3);
   const b = keyed(t, BG);
   const bx = (b.x + drift(t, 1.3, 0.05) * 0.06) * W, by = (b.y + drift(t, 4.1, 0.045) * 0.05) * H;
   blob.style.transform = `translate(${bx}px, ${by}px) scale(${(P ? 1.25 : 1) * (1 + 0.06 * drift(t, 2, 0.08))})`;
-  blob.style.background = glow(b, 1);
+  blob.style.background = glow(b, 1, L);
   blob.style.opacity = clamp(b.a * (0.9 + 0.1 * drift(t, 7, 0.21)));
-  blob2.style.background = glow(b, 0.7);
+  blob2.style.background = glow(b, 0.7, L);
   blob2.style.transform = `translate(${W - bx * 0.6}px, ${H * 0.95}px) scale(0.8)`;
   blob2.style.opacity = clamp(b.a * 0.35);
 
@@ -99,6 +110,7 @@ function render(t) {
 await document.fonts.load('800 40px Pretendard');
 await Promise.all(['300', '400', '500', '600', '700', '900'].map(w => document.fonts.load(`${w} 20px Pretendard`)));
 await document.fonts.load('600 40px Caveat');
+await document.fonts.load("400 40px NanumPen", '만약에 고래가');
 await document.fonts.ready;
 await Promise.all([...document.images].map(img => img.decode().catch(() => {})));
 // measure layout anchors while every scene is displayed (hidden scenes report zero boxes)

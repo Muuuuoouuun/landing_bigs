@@ -5,6 +5,7 @@
 @font-face { font-family: 'Pretendard'; font-weight: 700; src: url(assets/fonts/Pretendard-Bold.woff2) format('woff2'); }
 @font-face { font-family: 'Pretendard'; font-weight: 800; src: url(assets/fonts/Pretendard-ExtraBold.woff2) format('woff2'); }
 @font-face { font-family: 'Pretendard'; font-weight: 900; src: url(assets/fonts/Pretendard-Black.woff2) format('woff2'); }
+@font-face { font-family: 'NanumPen'; font-weight: 400; src: url(assets/fonts/NanumPen-sub.woff2) format('woff2'); }
 @font-face { font-family: 'Caveat'; font-weight: 600; src: url(assets/fonts/Caveat-SemiBold.woff2) format('woff2'); }
 
 :root {
@@ -27,6 +28,16 @@
   --lilac: #DCD3EE;
   --sage: #DCE7CC;
   --warm: #FFE3A3;
+  /* night (v4 craft): ClassIn classroom charcoal */
+  --g: #6CCB2E;
+  --g-hi: #A6E86A;
+  --yellow: #F6C343;
+  --orange: #F59A23;
+  --cr-bg: #1B1B1D;
+  --cr-seat: #323236;
+  --cr-line: rgba(255, 255, 255, 0.07);
+  --cr-text: #EDEDEF;
+  --cr-sub: #9C9CA3;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -47,6 +58,7 @@ body { font-family: 'Pretendard', system-ui, sans-serif; color: var(--ink); -web
 .bg .tex { position: absolute; inset: 0; opacity: 0.55; mix-blend-mode: multiply; }
 .bg .blob { position: absolute; left: 0; top: 0; width: 1800px; height: 1800px; margin: -900px 0 0 -900px; border-radius: 50%; }
 .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 50% 45%, rgba(120, 96, 60, 0) 55%, rgba(120, 96, 60, 0.16) 100%); }
+.vignette.night { background: radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.6) 100%); }
 .flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(60% 60% at 50% 50%, rgba(255, 255, 248, 0.95), rgba(244, 252, 226, 0.4) 45%, rgba(255, 255, 255, 0) 80%); }
 .mark canvas { display: block; }
 

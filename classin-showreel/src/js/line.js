@@ -2,8 +2,9 @@
 // everywhere and can be handed from scene to scene without a seam.
 import { clamp, lerp, measure, rng } from './core.js';
 
-// v5 — light on ivory paper: a 연두 (yellow-green) filament with a pale hot centre and a soft
-// lime haze, defined by a faint deeper-green edge so it reads on a bright background.
+// v6 — the film goes from night to day, so the light has two looks blended by `fx.light` (0..1):
+// in the dark it is additive, a glowing 연두 filament with a white-hot core; on ivory paper it is a
+// 연두 line with a pale centre, a soft lime haze and a faint deeper-green edge so it still reads.
 export const C = {
   green: '#A6DE5C',
   edge: '#4E9A1A',
@@ -11,6 +12,9 @@ export const C = {
   core: '#F7FFE6',
   ink: '#34322C',
 };
+const DARK = { green: [70, 200, 40], hi: [150, 232, 90] };
+const LIGHT = { green: [166, 222, 92], hi: [134, 210, 58] };
+const mixc = (a, b, k) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`;
 
 export class LineFX {
   constructor(W, H, mount) {
@@ -27,6 +31,7 @@ export class LineFX {
     for (const k of [this.g, this.c]) { k.lineCap = 'round'; k.lineJoin = 'round'; }
     this.inks = [];
     this.dots = [];
+    this.light = 0;
   }
 
   // a printed dot (no glow): neurons, seeds, map points
@@ -76,9 +81,10 @@ export class LineFX {
       const a = alpha * lerp(1 - taper, 1, f ** 1.4);
       const ww = w * lerp(1 - taper * 0.6, 1, f);
       if (cool < 1) {
-        this.stroke(this.g, seg, ww * 2.6, C.green, a * (1 - cool) * 0.8);
-        this.stroke(this.c, seg, ww * 1.45, C.edge, a * (1 - cool) * 0.22);
-        this.stroke(this.c, seg, ww * 1.1, C.hi, a * (1 - cool) * 0.95);
+        const L = this.light;
+        this.stroke(this.g, seg, ww * 2.6, mixc(DARK.green, LIGHT.green, L), a * (1 - cool) * 0.8);
+        if (L > 0) this.stroke(this.c, seg, ww * 1.45, C.edge, a * (1 - cool) * 0.22 * L);
+        this.stroke(this.c, seg, ww * 1.1, mixc(DARK.hi, LIGHT.hi, L), a * (1 - cool) * 0.95);
         this.stroke(this.c, seg, ww * 0.42, C.core, a * (1 - cool));
       }
       if (cool > 0) this.inks.push({ seg, w: ww * (o.inkW ?? 0.9), a: a * cool, color: o.ink || C.ink });
@@ -122,9 +128,10 @@ export class LineFX {
   }
 
   // soft bloom (impacts, flares)
-  flare(x, y, r, a = 1, tint = '176,228,96') {
+  flare(x, y, r, a = 1, tint = null) {
     if (a <= 0.003) return;
     this.used = true;
+    if (!tint) { const L = this.light; tint = [Math.round(90 + 86 * L), Math.round(226 + 2 * L), Math.round(60 + 36 * L)].join(','); }
     const gr = this.g.createRadialGradient(x, y, 0, x, y, r);
     gr.addColorStop(0, `rgba(${tint},${0.9 * a})`);
     gr.addColorStop(0.35, `rgba(${tint},${0.35 * a})`);
@@ -187,19 +194,22 @@ export class LineFX {
       k.fill();
     }
     if (!this.used) return;
+    const L = this.light;
+    if (L < 1) { // night: additive glow
+      k.globalCompositeOperation = 'lighter';
+      k.filter = 'blur(22px)'; k.globalAlpha = 1 - L; k.drawImage(this.glowC, 0, 0);
+      k.filter = 'blur(6px)'; k.globalAlpha = 0.9 * (1 - L); k.drawImage(this.glowC, 0, 0);
+      k.filter = 'blur(1.2px)'; k.globalAlpha = 1 - L; k.drawImage(this.coreC, 0, 0);
+      k.filter = 'none'; k.drawImage(this.coreC, 0, 0);
+    }
+    if (L > 0) { // day: on paper
+      k.globalCompositeOperation = 'source-over';
+      k.filter = 'blur(22px)'; k.globalAlpha = 0.75 * L; k.drawImage(this.glowC, 0, 0);
+      k.filter = 'blur(6px)'; k.globalAlpha = 0.6 * L; k.drawImage(this.glowC, 0, 0);
+      k.filter = 'blur(1px)'; k.globalAlpha = 0.8 * L; k.drawImage(this.coreC, 0, 0);
+      k.filter = 'none'; k.globalAlpha = L; k.drawImage(this.coreC, 0, 0);
+    }
     k.globalAlpha = 1;
-    k.filter = 'blur(22px)';
-    k.globalAlpha = 0.75;
-    k.drawImage(this.glowC, 0, 0);
-    k.filter = 'blur(6px)';
-    k.globalAlpha = 0.6;
-    k.drawImage(this.glowC, 0, 0);
-    k.filter = 'blur(1px)';
-    k.globalAlpha = 0.8;
-    k.drawImage(this.coreC, 0, 0);
-    k.filter = 'none';
-    k.globalAlpha = 1;
-    k.drawImage(this.coreC, 0, 0);
     k.globalCompositeOperation = 'source-over';
   }
 }

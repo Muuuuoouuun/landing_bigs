@@ -447,6 +447,17 @@ def sfx_voice(c):
             strokes = np.pad(strokes, (0, n - strokes.size))
         s = fft_filter(r.standard_normal(n), lo=lo, hi=hi) * strokes * adsr(n, 0.02, 0.06)
         return s * g * (0.35 if ty == 'pencil' else 0.5), c.get('pan', 0.0), 0.06
+    if ty == 'stall':  # the line flickers and comes apart: a falling, detuning tone + crumbling sparkle
+        n = int(1.0 * SR)
+        f = 880 * 2 ** (-np.linspace(0, 1.2, n) ** 1.5)
+        s = np.sin(2 * np.pi * np.cumsum(f) / SR) * env_exp(n, 0.35) * 0.4
+        s *= 1 - 0.7 * (np.sin(2 * np.pi * 11 * tvec(1.0)) > 0.3)
+        r = np.random.default_rng(5)
+        for _ in range(16):
+            j = int(r.random() * n * 0.7); m = int(0.03 * SR)
+            v = np.sin(2 * np.pi * (1800 + 2500 * r.random()) * tvec(0.03)) * env_exp(m, 0.008) * 0.25
+            s[j:j + m] += v[:max(0, min(m, n - j))]
+        return s * g, 0.2, 0.4
     if ty == 'ink':  # ink flooding into the mark: soft rising warm swell
         n = int(dur * SR)
         s = band_sweep(dur, 300, 1400, 0.8, seed=12) * bell_env(n, 0.35, 1.5) * 0.6
@@ -499,6 +510,14 @@ def main():
     music, stems = build_music()
     sfx, sfx_wet = build_sfx()
     vo, has_vo = build_vo()
+    # the stall: the imagination comes apart — the band drops to a whisper until the tablet wakes
+    if 'stall' in B:
+        a0, a1 = int((B['stall'] + 0.02) * SR), int((B['lift'] - 0.02) * SR)
+        env = np.ones(a1 - a0) * 0.22
+        k = int(0.06 * SR)
+        env[:k] = np.linspace(1, 0.22, k)
+        env[-k:] = np.linspace(0.22, 1, k)
+        music[:, a0:a1] *= env
     # breath: music fully out between the breath and the hit
     i0, i1 = int(BREATH * SR), int(HERO * SR)
     fade = int(0.05 * SR)
