@@ -9,7 +9,7 @@ import { project } from '../line.js';
 import { avatar } from '../avatar.js';
 import { createMark } from '../brandmark.js';
 import { TABLET } from './book.js';
-import { whaleStrokes } from './whale.js';
+import { whaleStrokes, WHALE_EYE } from './whale.js';
 
 
 const HAND = '<svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V13c0 4-2.5 7-6.5 7S5 17.5 4.5 15l-1-3.2a1.5 1.5 0 0 1 2.7-1.2L8 13" fill="#fff" stroke="#3A2A00" stroke-width="1.2" stroke-linejoin="round"/></svg>';
@@ -76,7 +76,7 @@ export default function lessonScene(ctx) {
   // board drawings (screen px of the 1920×1080 class)
   const onBoard = ([x, y]) => [WC[0] + x * WS, WC[1] + y * WS];
   const whale = whaleStrokes().map(s => ({ ...s, pts: s.pts.map(onBoard) }));
-  const arrows = [-150, -10, 130].map(x => [[WC[0] + x * WS * 0.5, WC[1] + 260], [WC[0] + x * WS * 0.5, WC[1] + 150]]);
+  const arrows = [-280, 240, 380].map(x => [[WC[0] + x * WS * 0.5, WC[1] + 260], [WC[0] + x * WS * 0.5, WC[1] + 150]]);
   const doodles = [
     { who: '도윤', t0: T.friendsA, strokes: [catmull([[-30, -66], [-80, -150], [10, -190], [50, -76]].map(onBoard), 8), catmull([[-34, -100], [-10, -140]].map(onBoard), 4), catmull([[-12, -86], [18, -130]].map(onBoard), 4)] },
     { who: '하린', t0: T.friendsA + 0.18, strokes: [ring(...onBoard([150, -190]), 30), [onBoard([150, -160]), onBoard([95, -62])], ring(...onBoard([225, -165]), 34), [onBoard([225, -131]), onBoard([110, -50])]] },
@@ -216,7 +216,7 @@ export default function lessonScene(ctx) {
       // everything gathers into one light and comes back to 서윤
       if (t > T.returnA && t < T.returnB + 0.4) {
         const k = tw(t, T.returnA + 0.1, T.returnB, E.inOutCubic);
-        const from = onBoard([-112, -14]), to = sC;
+        const from = onBoard(WHALE_EYE), to = sC;
         const path = catmull([from, [lerp(from[0], to[0], 0.5) - 120, lerp(from[1], to[1], 0.5)], to], 16);
         fx.line(slice(path, Math.max(0, k - 0.5), k).map(X), { w: 5, alpha: vis * (1 - prog(t, T.returnB, T.returnB + 0.35)), taper: 1, head: k < 1 ? 1.2 : 0 });
         const p = X(from); fx.flare(p[0], p[1], 200, 0.6 * vis * (1 - k));

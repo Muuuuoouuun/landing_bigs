@@ -4,3 +4,4 @@ out/stems/
 out/cues.json
 out/audio.wav
 src/assets/gen/raw/
+__pycache__/

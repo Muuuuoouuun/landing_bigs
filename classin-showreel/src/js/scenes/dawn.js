@@ -3,9 +3,10 @@
 // trees stand in front in real 3D. Every home the whale passes lights up — the classmates' homes first (연두),
 // then the neighbours' — and a glass tracker card counts the class through: 질문 → 함께 그리기 → 답 → 리포트.
 // Then the whale climbs towards the sun and the camera rises after it (the nation scene takes over).
-import { E, tw, prog, clamp, lerp, rng, drift, keyed, camMatrix, place, planeModel, xf, catmull, h } from '../core.js';
+import { E, tw, prog, clamp, lerp, rng, drift, keyed, camMatrix, place, planeModel, xf, catmull, M4, h } from '../core.js';
 import { project } from '../line.js';
-import { whaleStrokes } from './whale.js';
+import { swimDy } from './whale.js';
+import { whalePic } from '../whalepic.js';
 import SPRITES from '../../assets/gen/sprites.js';
 
 const HOUSES = Object.keys(SPRITES).filter(k => k.startsWith('houses_'));
@@ -19,7 +20,9 @@ export default function dawnScene(ctx) {
   const town = h('div', 'plate town', '<img src="assets/gen/town_far.jpg" alt="">');
   const world = h('div', 'hworld');
   const haze = h('div', 'haze');
-  el.append(sky, town, world, haze);
+  // the whale itself (generated 3D picture): the class's imagination, real now, flying over the town
+  const pic = whalePic('solid');
+  el.append(sky, town, world, pic.el, haze);
 
   // the tracker card (ClassIn class status), top left — the original's "Arriving today"
   const st = copy.tracker.steps;
@@ -65,8 +68,14 @@ export default function dawnScene(ctx) {
     it.cls = best < 700;
     it.litAt = it.cls ? bt + 0.05 : clamp(bt + 0.2 + best / 3000 + it.seed * 0.3, T.landA, T.rise);
   }
-  const wings = [catmull([[-30, -66], [-80, -150], [10, -190], [50, -76]], 8), catmull([[-34, -100], [-10, -140]], 4), catmull([[-12, -86], [18, -130]], 4)];
-  const body = whaleStrokes();
+  // 도윤's wings, still drawn in light, rooted on its back (local units of the picture) — they beat as it flies
+  const wings = [catmull([[-30, -58], [-80, -142], [10, -182], [50, -68]], 8), catmull([[-34, -92], [-10, -132]], 4), catmull([[-12, -78], [18, -122]], 4)];
+  const flap = t => { const k = Math.sin(t * 10); return ([x, y]) => [x + (x - 10) * 0.08 * k, -62 + (y + 62) * (1 + 0.32 * k)]; };
+  // where the whale is along its flight and how it is turned (shared by the picture and the light)
+  function pose(t) {
+    const u = flyK(t), p = at(u), pa = at(u - 0.004), pb = at(u + 0.004);
+    return { u, p, dir: Math.atan2(pb[1] - pa[1], pb[0] - pa[0]), sc: 1.35 };
+  }
 
   function camAt(t) {
     const c = keyed(t, [
@@ -110,6 +119,15 @@ export default function dawnScene(ctx) {
     const stepT = [T.cardA + 0.1, T.cardA + 0.45, T.cardA + 0.8, T.cardA + 1.25];
     dots.forEach((d, i) => d.classList.toggle('on', t > stepT[i]));
     bars.forEach((b, i) => b.style.setProperty('--k', tw(t, stepT[i], stepT[i + 1]).toFixed(3)));
+    // the whale: mirrored to face its way, turned along the path, swimming
+    const w = pose(t);
+    const wa = tw(t, T.townIn - 0.25, T.townIn + 0.05) * (1 - tw(t, T.mapIn - 0.1, T.mapIn + 0.3));
+    pic.el.style.visibility = wa > 0 ? 'visible' : 'hidden';
+    if (wa > 0) {
+      place(pic.el, CM, pic.model(M4.chain(M4.T(w.p[0], w.p[1], w.p[2]), M4.RZ((w.dir * 180) / Math.PI), M4.S(-w.sc, w.sc, 1))));
+      pic.draw({ wave: swimDy(t, 1.3), alpha: wa });
+      pic.el.style.filter = `brightness(${lerp(0.85, 1.12, day).toFixed(3)}) saturate(${lerp(0.9, 1.08, day).toFixed(3)}) sepia(${(0.12 * day).toFixed(3)})`;
+    } else pic.clear();
     cur = { CM, cam };
   }
 
@@ -128,18 +146,20 @@ export default function dawnScene(ctx) {
       const sz = (it.w * cur.cam.s) / Math.max(0.3, CM[3] * it.x + CM[11] * it.z + CM[15]);
       fx.flare(q[0], q[1], Math.min(110, sz * 0.22) * pop, (it.cls ? 0.5 : 0.3) * fade * (1 - 0.5 * k), it.cls ? '150,230,80' : '255,190,100');
     }
-    // the whale and its trail of light
-    const u = flyK(t);
-    const p = at(u), pa = at(u - 0.004), pb = at(u + 0.004);
-    const dir = Math.atan2(pb[1] - pa[1], pb[0] - pa[0]);
-    const sc = 1.35, swim = Math.sin(t * 6) * 0.08;
-    const orient = ([x, y]) => { const lx = -x * sc, ly = y * sc * (1 + swim * (x / 200)); return [p[0] + lx * Math.cos(dir) - ly * Math.sin(dir), p[1] + lx * Math.sin(dir) + ly * Math.cos(dir), p[2]]; };
-    for (const s of [...body, ...wings.map(w => ({ pts: w }))]) fx.line(project(CM, s.pts.map(orient)), { w: 3.8, alpha: fade, taper: 0, head: 0, cool: 0.2, ink: s.accent ? '#A6E86A' : '#F4F6EE', inkW: 0.8 });
+    // the whale's wings of light and its trail; a flash where it comes through the window and turns real
+    const { u, p, dir, sc } = pose(t);
+    const wave = swimDy(t, 1.3), fl = flap(t);
+    const orient = ([x, y]) => { const lx = -x * sc, ly = (y + wave(x)) * sc; return [p[0] + lx * Math.cos(dir) - ly * Math.sin(dir), p[1] + lx * Math.sin(dir) + ly * Math.cos(dir), p[2]]; };
+    for (const w of wings) fx.line(project(CM, w.map(fl).map(orient)), { w: 3.6, alpha: fade, taper: 0, head: 0 });
+    const pop = prog(t, T.townIn - 0.25, T.townIn + 0.25);
+    if (pop > 0 && pop < 1) { const q = project(CM, [p])[0]; fx.flare(q[0], q[1], 520 * (0.4 + pop), 0.7 * (1 - pop)); }
+    // the light streams off the flukes along the way it came
+    const tail = orient([236, 4]);
     const trail = [];
-    for (let i = 26; i >= 0; i--) trail.push(at(Math.max(0, u - i * 0.006)));
-    fx.line(project(CM, trail), { w: 5, alpha: fade, taper: 1, head: 1 });
-    const e = project(CM, [p])[0];
-    fx.flare(e[0], e[1], 240, 0.3 * fade);
+    for (let i = 34; i >= 0; i--) { const q = at(Math.max(0, u - i * 0.007)); trail.push([q[0] + tail[0] - p[0], q[1] + tail[1] - p[1], q[2]]); }
+    fx.line(project(CM, trail), { w: 4.6, alpha: fade, taper: 1, head: 0.3 });
+    const e = project(CM, [tail])[0];
+    fx.flare(e[0], e[1], 160, 0.3 * fade);
   }
 
   return { el, range: ctx.S.dawn, update, draw };

@@ -1,7 +1,7 @@
 // Film assembly: stage, global look, scene scheduling and the deterministic render(t) entry point
 // used by both the live preview and the frame renderer (render/render.mjs).
 import { LineFX } from './line.js';
-import { clamp, drift, keyed, camMatrix, rng, tw, E, h } from './core.js';
+import { clamp, drift, keyed, camMatrix, rng, tw, E, h, pchip } from './core.js';
 import { worldCam } from './world.js';
 import introScene from './scenes/intro.js';
 import bookScene from './scenes/book.js';
@@ -22,7 +22,13 @@ if (params.has('render')) document.body.classList.add('render');
 if (P) document.body.classList.add('portrait');
 
 const TL = await fetch('timeline.json').then(r => r.json());
-const DUR = TL.meta.duration;
+// story time (what the scenes and beats are written in) plays through a smooth warp (v7.1: 28.8 s → 21.0 s, the
+// moves 1.45–1.6× faster, the reading moments 1.2×). render(u) takes film time u; cues and beats are mapped out.
+const WK = TL.meta.warp || [[0, 0], [TL.meta.duration, TL.meta.duration]];
+const story = pchip(WK.map(k => k[1]), WK.map(k => k[0]));
+const DUR = WK[WK.length - 1][1];
+const film = s => { let a = -1, b = DUR + 4; for (let i = 0; i < 48; i++) { const m = (a + b) / 2; if (story(m) < s) a = m; else b = m; } return (a + b) / 2; };
+const mapCue = c => { const o = { ...c, t: +film(c.t).toFixed(4) }; if (c.dur != null) o.dur = +(film(c.t + c.dur) - o.t).toFixed(4); return o; };
 
 const stage = document.getElementById('stage');
 stage.style.width = `${W}px`;
@@ -77,7 +83,8 @@ const BG = [
 ];
 const glow = (b, k, L) => { const a0 = 0.16 + 0.69 * L, a1 = 0.06 + 0.29 * L; return `radial-gradient(circle, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(a0 * k).toFixed(3)}) 0%, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(a1 * k).toFixed(3)}) 34%, rgba(0,0,0,0) 68%)`; };
 
-function render(t) {
+function render(u) {
+  const t = story(u);
   ctx.shake = [0, 0];
   ctx.flash = 0;
   const L = dayK(t);
@@ -124,7 +131,13 @@ ctx.CM = camMatrix(worldCam(0, ctx.T, P), W, H);
 for (const s of scenes) s.layout?.();
 for (const s of scenes) if (s.el) s.el.style.display = 'none';
 
-window.__film = { render, duration: DUR, fps: TL.meta.fps, W, H, ready: true, scenes, cues: buildCues(TL.beats, TL.copy) };
+const beatsOut = Object.fromEntries(Object.entries(TL.beats).map(([k, v]) => [k, +film(v).toFixed(4)]));
+const barsOut = Array.from({ length: Math.ceil(TL.meta.duration / TL.meta.bar) + 1 }, (_, k) => +film(k * TL.meta.bar).toFixed(4));
+window.__film = {
+  render, duration: DUR, fps: TL.meta.fps, W, H, ready: true, scenes, story, film,
+  cues: buildCues(TL.beats, TL.copy).map(mapCue),
+  music: { duration: DUR, bpm: TL.meta.music?.bpm || TL.meta.bpm, beats: beatsOut, bars: barsOut },
+};
 
 /* ---------- live preview ---------- */
 if (!params.has('render')) {

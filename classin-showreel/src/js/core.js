@@ -220,3 +220,26 @@ export function catmull(pts, n = 8, closed = false) {
   out.push(closed ? out[0].slice() : pts[N - 1].slice());
   return out;
 }
+
+/* ---------- time warp ---------- */
+// monotone cubic (PCHIP) through knots (xs ascending): smooth, never overshoots, continuous speed.
+// The film plays its story time through one of these (timeline meta.warp), so every move can be made faster
+// without re-timing each scene by hand.
+export function pchip(xs, ys) {
+  const n = xs.length, hs = [], d = [], m = new Array(n);
+  for (let i = 0; i < n - 1; i++) { hs[i] = xs[i + 1] - xs[i]; d[i] = (ys[i + 1] - ys[i]) / hs[i]; }
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    if (d[i - 1] * d[i] <= 0) { m[i] = 0; continue; }
+    const w1 = 2 * hs[i] + hs[i - 1], w2 = hs[i] + 2 * hs[i - 1];
+    m[i] = (w1 + w2) / (w1 / d[i - 1] + w2 / d[i]);
+  }
+  return x => {
+    if (x <= xs[0]) return ys[0] + m[0] * (x - xs[0]);
+    if (x >= xs[n - 1]) return ys[n - 1] + m[n - 1] * (x - xs[n - 1]);
+    let i = 0;
+    while (x > xs[i + 1]) i++;
+    const u = (x - xs[i]) / hs[i], u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * ys[i] + (u3 - 2 * u2 + u) * hs[i] * m[i] + (-2 * u3 + 3 * u2) * ys[i + 1] + (u3 - u2) * hs[i] * m[i + 1];
+  };
+}

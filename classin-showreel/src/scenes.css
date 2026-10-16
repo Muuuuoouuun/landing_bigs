@@ -215,3 +215,6 @@ body.portrait .tl { font-size: 92px; }
 .notif .r1 b { color: #1A1A1C; font-weight: 700; }
 .notif .r2 { margin-top: 4px; font: 800 23px Pretendard; letter-spacing: -0.02em; }
 .notif .r3 { margin-top: 3px; font: 500 19px Pretendard; color: #3A3A3C; }
+.whalepic { backface-visibility: visible; }
+.whalepic img { display: none; }
+.whalepic canvas { display: block; }

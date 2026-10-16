@@ -75,7 +75,7 @@ export default function wordsScene(ctx) {
       const L = clamp(Math.max(0.55 * (1 - g), trace * (1 - tw(t, T.whaleB + 0.2, T.stall)) * 0.9 + 0.25 * g));
       k.el.style.color = `rgb(${lerp(226, 176, L) | 0},${lerp(230, 242, L) | 0},${lerp(222, 120, L) | 0})`;
       k.el.style.textShadow = L > 0.02 ? `0 0 ${(14 * L).toFixed(1)}px rgba(140,230,80,${(0.9 * L).toFixed(3)})` : 'none';
-      k.el.style.opacity = ((1 - f) * (t < T.stall ? 1 : 1 - 0.3 * tw(t, T.stall, T.stall + 0.3))).toFixed(3);
+      k.el.style.opacity = ((1 - f) * (1 - 0.55 * tw(t, T.whaleB - 0.15, T.whaleB + 0.3)) * (t < T.stall ? 1 : 1 - 0.3 * tw(t, T.stall, T.stall + 0.3))).toFixed(3);
     }
   }
 

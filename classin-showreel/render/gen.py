@@ -75,6 +75,20 @@ ASSETS = {
         'Four separate objects arranged in a 2x2 grid with wide spacing: two round leafy deciduous trees, one slim evergreen '
         'tree and one street lamp post with a warm glowing lamp, front view, soft early-dawn light from behind on the right. '
         + KEY + ' ' + LOOK),
+    # ---- the whale (v7.1: the code outline is traced from this, so line and image agree) ----
+    'whale_3d': (PRO, '16:9', None,
+        'A single majestic humpback whale in full side profile facing left, gliding horizontally as if flying: knobbly '
+        'tubercles on the head, long white pectoral flipper sweeping down and back, pleated throat grooves along the pale '
+        'belly, small dorsal fin, broad tail flukes tilted slightly so their shape is visible. Deep slate-blue skin with '
+        'natural pale mottling and a few barnacle patches, soft cool rim light along the back, gentle warm fill from below. '
+        'The whole whale visible with generous margin. ' + KEY + ' ' + LOOK),
+    'whale_glow': (PRO, '16:9', None,
+        'A single majestic humpback whale in full side profile facing left, gliding horizontally: knobbly head, long '
+        'pectoral flipper sweeping down and back, throat grooves, small dorsal fin, broad tail flukes. The whale is made '
+        'entirely of soft glowing light, translucent and luminous like a bioluminescent hologram: a bright mint-white '
+        'glowing rim, delicate inner light streaks following the throat grooves and body contours, fine sparkling particles '
+        'inside. Isolated on a pure black background, the whole whale visible with generous margin. No text, no water, no '
+        'other objects.'),
     # ---- nationwide (bar 8) ----
     'aerial': (PRO, '16:9', None,
         'View from very high altitude looking down over a sea of soft clouds at sunrise, dark blue ocean visible through '

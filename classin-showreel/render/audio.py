@@ -5,7 +5,7 @@ the renderer) and writes out/audio.wav plus stems (out/stems/music.wav, sfx.wav,
 
   python3 render/audio.py            # music + SFX (+ VO if render/vo/vo_XX.wav exist)
 
-Music: 100 BPM (one bar = 2.4 s), D major. Felt keys, pad and soft sub from frame 0 (the book); kick,
+Music: 120 BPM in film time (v7.1; the story's bars land on the nearest beat), D major. Felt keys, pad and soft sub from frame 0 (the book); kick,
 clap and hats from the drop, when the words gather into the brain (4.80); a lift as the imagination
 opens out (12.00); the drums step back while the light writes the tagline (19.20); a breath before the
 hero (23.40, only a reversed swell); a full warm chord and a low hit on 24.00 under the end card.
@@ -17,9 +17,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SR = 48000
 TL = json.load(open(os.path.join(ROOT, 'src', 'timeline.json'), encoding='utf-8'))
 CUES = json.load(open(os.path.join(ROOT, 'out', 'cues.json'), encoding='utf-8'))
-B = TL['beats']
-DUR = TL['meta']['duration']
-BAR = TL['meta']['bar']
+# the film plays its story through a time warp (timeline meta.warp); the renderer exports the beats in film time
+BT = json.load(open(os.path.join(ROOT, 'out', 'beats.json'), encoding='utf-8'))
+B = BT['beats']
+DUR = BT['duration']
+BAR = 240.0 / BT['bpm']
 BEAT = BAR / 4
 N = int(DUR * SR) + SR  # one second of tail room, trimmed at the end
 rng = np.random.default_rng(7)
@@ -147,7 +149,12 @@ ROOTS = {'Dadd9': 38, 'Bm7': 35, 'Gmaj7': 43, 'D': 38, 'A': 45, 'Em7': 40, 'Asus
 PROG = ['Dadd9', 'Bm7', 'Gmaj7', 'A', 'Bm7', 'Gmaj7', 'D', 'A', 'Em7', 'Asus4', 'Dadd9', 'Dadd9']
 DROP, LIFT, BREATH, HERO = B['drop'], B['lift'], B['breath'], B['hero']
 CALM = B['sweepA']  # drums step back while the light writes the tagline
-BB, HB = int(BREATH // BAR), int(HERO // BAR)  # breath bar, hero bar
+# one chord per story bar; in film time the bars have different lengths, so each starts on the nearest beat
+q = lambda x: round(x / BEAT) * BEAT
+SEG = [(q(BT['bars'][k]), q(BT['bars'][k + 1])) for k in range(len(BT['bars']) - 1)]
+SB = TL['meta']['bar']
+DB, HB = round(TL['beats']['drop'] / SB), round(TL['beats']['hero'] / SB)  # drop bar, hero bar
+BB = HB - 1  # breath bar
 
 
 def soft_tone(f, dur, harm=(1, 0.32, 0.12, 0.05), detune=0.0):
@@ -162,16 +169,16 @@ def build_music():
     pad, keys, sub, drums, pl = (np.zeros((2, N)) for _ in range(5))
     # pad: one voice per chord tone, three detuned copies, slow swell per bar
     for b, ch in enumerate(PROG):
-        t0 = b * BAR
+        t0, t1 = SEG[b] if b < len(SEG) else (DUR, DUR)
         if t0 >= DUR:
             break
-        L = BAR + 0.9 if b < HB + 1 else DUR - t0 + 1.0
+        L = t1 - t0 + 0.9 if b < HB + 1 else DUR - t0 + 1.0
         if b == BB:
             L = BREATH - t0 + 0.05  # the breath: the pad cuts out on beat 4
         for m in CHORDS[ch][1:]:
             for d, pan in ((-0.004, -0.5), (0.0, 0.0), (0.004, 0.5)):
                 s = soft_tone(midi(m), L, harm=(1, 0.45, 0.22, 0.12, 0.06), detune=d)
-                e = adsr(len(s), a=0.6 if b not in (int(DROP // BAR), HB) else 0.02, r=0.8 if b != BB else 0.04)
+                e = adsr(len(s), a=0.6 if b not in (DB, HB) else 0.02, r=0.8 if b != BB else 0.04)
                 place(pad, s * e * 0.022, t0, pan=pan)
     pad[0] = fft_filter(pad[0], hi=2600, lo=90)
     pad[1] = fft_filter(pad[1], hi=2600, lo=90)
@@ -179,12 +186,12 @@ def build_music():
     # felt keys: 8th-note arpeggio, felt-soft, from frame 0 (rests in the breath)
     pattern = [0, 2, 3, 1, 4, 2, 3, 5]
     for b, ch in enumerate(PROG[:BB + 1]):
-        for k in range(8):
-            t = b * BAR + k * BEAT / 2
+        for k in range(int(round((SEG[b][1] - SEG[b][0]) / (BEAT / 2)))):
+            t = SEG[b][0] + k * BEAT / 2
             if BREATH - 0.05 <= t < HERO:
                 continue
-            m = CHORDS[ch][1 + pattern[k] % 5] + 12
-            vel = (0.9 if k % 2 == 0 else 0.6) * (0.95 if b < int(DROP // BAR) else 1.0)
+            m = CHORDS[ch][1 + pattern[k % 8] % 5] + 12
+            vel = (0.9 if k % 2 == 0 else 0.6) * (0.95 if b < DB else 1.0)
             s = soft_tone(midi(m), 1.4, harm=(1, 0.25, 0.08)) * env_exp(int(1.4 * SR), 0.45) * adsr(int(1.4 * SR), 0.004, 0.2)
             place(keys, s * 0.05 * vel, t, pan=0.25 * math.sin(k * 1.3))
     keys[0] = fft_filter(keys[0], hi=3200)
@@ -202,14 +209,14 @@ def build_music():
 
     # sub: root per bar, ducked by the kick after the drop
     for b, ch in enumerate(PROG):
-        t0 = b * BAR
+        t0, t1 = SEG[b] if b < len(SEG) else (DUR, DUR)
         if t0 >= DUR:
             break
-        L = BAR if b < HB else DUR - t0 + 0.5
+        L = t1 - t0 if b < HB else DUR - t0 + 0.5
         if b == BB:
             L = BREATH - t0
         s = np.sin(2 * np.pi * midi(ROOTS[ch]) * tvec(L)) + 0.15 * np.sin(4 * np.pi * midi(ROOTS[ch]) * tvec(L))
-        e = adsr(len(s), 0.08 if b != HB else 0.005, 0.15 if b != BB else 0.03) * (0.5 if b < int(DROP // BAR) else 1.0)
+        e = adsr(len(s), 0.08 if b != HB else 0.005, 0.15 if b != BB else 0.03) * (0.5 if b < DB else 1.0)
         if b >= HB:
             e *= env_exp(len(s), 2.8)
         place(sub, s * e * 0.16, t0)
@@ -229,11 +236,11 @@ def build_music():
         duck = 1 - 0.45 * np.exp(-np.arange(i1 - i0) / (0.09 * SR))
         sub[:, i0:i1] *= duck
         pad[:, i0:i1] *= 1 - 0.25 * np.exp(-np.arange(i1 - i0) / (0.12 * SR))
-    for b in range(int(DROP // BAR), BB + 1):
-        for beat in (1, 3):
-            t = b * BAR + beat * BEAT
-            if t >= CALM:
-                continue
+    for j in range(1, int((CALM - DROP) / BEAT) + 1, 2):  # the backbeat, counted from the drop
+        t = DROP + j * BEAT
+        if t >= CALM:
+            continue
+        if True:
             c = np.zeros(int(0.25 * SR))
             for off in (0, 0.011, 0.023):
                 j = int(off * SR)

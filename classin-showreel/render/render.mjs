@@ -24,7 +24,7 @@ const outDir = path.resolve(ROOT, args.out || `out/frames_${fmt}`);
 const prefix = args.prefix || '';
 const exe = process.env.CHROMIUM_PATH || (fs.existsSync('/opt/pw-browsers/chromium-1194/chrome-linux/chrome') ? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' : undefined);
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2', '.jpg': 'image/jpeg' };
+const MIME = { '.webp': 'image/webp', '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.woff2': 'font/woff2', '.jpg': 'image/jpeg' };
 const server = http.createServer((req, res) => {
   const p = path.join(SRC, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!p.startsWith(SRC) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end(); }
@@ -63,6 +63,7 @@ const t0 = Date.now();
   const cues = await page.evaluate(() => window.__film.cues);
   fs.mkdirSync(path.join(ROOT, 'out'), { recursive: true });
   fs.writeFileSync(path.join(ROOT, 'out', 'cues.json'), JSON.stringify(cues, null, 1));
+  fs.writeFileSync(path.join(ROOT, 'out', 'beats.json'), JSON.stringify(await page.evaluate(() => window.__film.music), null, 1));
   await page.close();
 }
 if (stills) {

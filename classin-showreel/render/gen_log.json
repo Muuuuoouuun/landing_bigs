@@ -330,5 +330,55 @@
   "seconds": 8,
   "usd_est": 1.2,
   "time": "2026-10-16 10:11:09"
+ },
+ {
+  "id": "whale_3d",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 184,
+   "candidatesTokenCount": 1297,
+   "totalTokenCount": 1718,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 184
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 237,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 10:21:43"
+ },
+ {
+  "id": "whale_glow",
+  "model": "gemini-3-pro-image",
+  "usage": {
+   "promptTokenCount": 111,
+   "candidatesTokenCount": 1269,
+   "totalTokenCount": 1607,
+   "promptTokensDetails": [
+    {
+     "modality": "TEXT",
+     "tokenCount": 111
+    }
+   ],
+   "candidatesTokensDetails": [
+    {
+     "modality": "IMAGE",
+     "tokenCount": 1120
+    }
+   ],
+   "thoughtsTokenCount": 227,
+   "serviceTier": "standard"
+  },
+  "usd_est": 0.134,
+  "time": "2026-10-16 10:22:05"
  }
 ]
