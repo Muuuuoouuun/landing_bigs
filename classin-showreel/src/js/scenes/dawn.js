@@ -20,8 +20,8 @@ export default function dawnScene(ctx) {
   const world = h('div', 'hworld');
   el.append(skyEl, sun, world);
   const ground = h('div', 'obj hground6');
-  ground.style.width = '12000px'; ground.style.height = '9000px';
-  world.appendChild(ground);
+  ground.style.width = '12000px'; ground.style.height = '8700px';
+  // (no ground plane: it would cross the lens on the climb — the sky gradient carries the land below the horizon)
 
   const r = rng(21);
   const houses = [];
@@ -96,12 +96,14 @@ export default function dawnScene(ctx) {
     // the town comes out of the dark
     const b = lerp(0.3, 1, tw(t, 16.4, 18.9, E.inOutSine));
     world.style.filter = `brightness(${b.toFixed(3)}) saturate(${lerp(0.6, 1, b).toFixed(3)})`;
-    place(ground, CM, planeModel(0, 0, -3600, 12000, 9000, { rx: 90 }));
-    ground.style.background = `radial-gradient(60% 55% at 50% 40%, ${rgb(mixc([200, 186, 160], [239, 230, 210], d2))} 0%, ${rgb(mixc([170, 150, 130], [241, 233, 216], d2))} 50%, rgba(0,0,0,0) 78%)`;
+    void ground;
     for (const hs of houses) {
       // anything at or behind the lens is hidden (a plane crossing the camera would smear across the frame)
       const wq = CM[3] * hs.x + CM[7] * (-hs.hh / 2) + CM[11] * hs.z + CM[15];
-      hs.el.style.visibility = wq > 0.35 ? 'visible' : 'hidden';
+      const sw = (hs.w * cam.s) / Math.max(wq, 0.01); // on-screen width; fade out anything that looms at the lens
+      const near = wq > 0.2 ? clamp((700 - sw) / 300) : 0;
+      hs.el.style.visibility = near > 0 ? 'visible' : 'hidden';
+      hs.el.style.opacity = near.toFixed(3);
       place(hs.el, CM, hs.m);
       const k = tw(t, hs.litAt, hs.litAt + 0.3, E.outCubic);
       for (const wn of hs.wins) wn.lit.style.opacity = k.toFixed(3);

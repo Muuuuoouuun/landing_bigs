@@ -133,7 +133,7 @@ export default function bookScene(ctx) {
     return { local: [x, y], world: xf(MN, x, y, 0), line: s < w0 ? 0 : 1, u };
   }
   const qWorld = () => xf(MN, NL.q.x, NL.q.y, 0);
-  const JUMP_TO = [190, -60, 0];
+  const JUMP_TO = xf(MR, PW * 0.9, PH * 0.16, 0); // the light waits at the right page's corner while the pages turn
 
   // reading path: left page first line → over the gutter → the handwritten "뜨는 힘 > 무게"
   let read = null;
@@ -160,14 +160,9 @@ export default function bookScene(ctx) {
     if (t < T.writeB) return penAt(t).world;
     if (t < T.jump) return qWorld();
     if (t < T.flip1 - 0.06) { const k = E.inOutCubic(prog(t, T.jump, T.flip1 - 0.06)); const q = qWorld(); return [lerp(q[0], JUMP_TO[0], k), lerp(q[1], JUMP_TO[1], k), Math.sin(k * Math.PI) * 220]; }
-    if (t < T.settle) {
-      let fi = 0;
-      for (let i = 0; i < 3; i++) if (t >= flipT[i][0]) fi = i;
-      const a = E.inOutCubic(prog(t, flipT[fi][0], flipT[fi][1]));
-      return xf(flipModel(a), PW * 0.92, PH * 0.12, 0);
-    }
-    if (t < T.readA) return xf(ML, 60, 200, 0);
     const { pts } = readLines();
+    if (t < T.settle - 0.25) return [JUMP_TO[0], JUMP_TO[1] + Math.sin(t * 9) * 6, 10];
+    if (t < T.readA) { const k = E.inOutCubic(prog(t, T.settle - 0.25, T.readA)); return [lerp(JUMP_TO[0], pts[0][0], k), lerp(JUMP_TO[1], pts[0][1], k), Math.sin(k * Math.PI) * 120]; }
     const k = tw(t, T.readA, T.readB, E.inOutSine);
     const s = slice(pts, 0, Math.max(0.001, k));
     return s[s.length - 1];
@@ -236,7 +231,9 @@ export default function bookScene(ctx) {
     finalR.classList.toggle('tkoff', live);
 
     // the night: only what the light touches is lit; a faint moonlight keeps the desk readable
-    const focus = t > T.lift ? [TABLET.x, TABLET.y, 0] : lightAt(t);
+    // the pool follows the light with a little lag, so it glides when the pen lifts to the next line
+    let focus = [TABLET.x, TABLET.y, 0];
+    if (t <= T.lift) { focus = [0, 0, 0]; for (let i = 0; i < 6; i++) { const p = lightAt(Math.max(0, t - i * 0.05)); focus = focus.map((v, j) => v + p[j] / 6); } }
     const Lp = project(CM, [focus])[0];
     const R = (t > T.lift ? 1100 : 520) * CM[0] + 160;
     const dark = t > T.lift ? 0.72 * (1 - tw(t, T.exitA + 0.3, T.window + 0.3)) : 0.86 * (1 - tw(t, T.liftA, T.liftB + 0.4));
