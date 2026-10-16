@@ -9,7 +9,8 @@ import { project } from '../line.js';
 import { avatar } from '../avatar.js';
 import { createMark } from '../brandmark.js';
 import { TABLET } from './book.js';
-import { whaleStrokes, WHALE_EYE } from './whale.js';
+import { whaleStrokes, WHALE_EYE, swimDy } from './whale.js';
+import { whalePic } from '../whalepic.js';
 
 
 const HAND = '<svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V13c0 4-2.5 7-6.5 7S5 17.5 4.5 15l-1-3.2a1.5 1.5 0 0 1 2.7-1.2L8 13" fill="#fff" stroke="#3A2A00" stroke-width="1.2" stroke-linejoin="round"/></svg>';
@@ -64,6 +65,9 @@ export default function lessonScene(ctx) {
       <div class="msg m4"><b>지아</b><p>별까지 날아가게 ⭐</p></div>
     </div>`;
   el.appendChild(cls);
+  // the whale that swims off the board becomes the light-whale again in the room (generated picture)
+  const pic = whalePic('glow');
+  el.appendChild(pic.el);
   const clsMark = createMark(150, { pad: 6 });
   clsMark.draw({ fill: 1, dot: 0.7, lift: 0.4 });
   cls.querySelector('.clogo').appendChild(clsMark.el);
@@ -97,6 +101,16 @@ export default function lessonScene(ctx) {
 
   // tablet model + its screen corners in the world
   const MT = planeModel(TABLET.x, TABLET.y, 2, TABLET.w, TABLET.h, { rz: TABLET.rz });
+  // in the room: the whale flies from the tablet across the desk to the window — facing its way, nose up
+  function flight(t) {
+    const u = tw(t, T.exitA + 0.05, T.window + 0.35, E.inOutSine);
+    const P0 = [TABLET.x, TABLET.y - 120, 260], P1 = [1150, -420, 760], P2 = [1308, -872, 1050]; // → the window on the wall
+    const a = P0.map((v, i) => (1 - u) * (1 - u) * v + 2 * u * (1 - u) * P1[i] + u * u * P2[i]);
+    const sc = lerp(0.62, 0.32, u) * WS;
+    const al = tw(t, T.exitA + 0.05, T.exitA + 0.3) * (1 - tw(t, T.window + 0.2, T.window + 0.45));
+    return { a, al, M: M4.chain(M4.T(a[0], a[1], a[2]), M4.RX(-17.2), M4.RZ(-22), M4.S(-sc, sc, 1)) };
+  }
+
   let cur = null;
   function update(t) {
     const CM = ctx.CM;
@@ -154,6 +168,9 @@ export default function lessonScene(ctx) {
       const p = penPos(d, k);
       tag.style.transform = `translate(${(p[0] - BOARD.x + 14).toFixed(1)}px, ${(p[1] - BOARD.y + 12).toFixed(1)}px)`;
     }
+    const fl = t > T.exitA ? flight(t) : null;
+    pic.el.style.visibility = fl && fl.al > 0 ? 'visible' : 'hidden';
+    if (fl && fl.al > 0) { place(pic.el, CM, pic.model(fl.M)); pic.draw({ wave: swimDy(t, 1.2), alpha: fl.al }); } else pic.clear();
     cur = { CM, X: p => [x0 + p[0] * sx, y0 + p[1] * sy], vis, M };
   }
 
@@ -231,19 +248,15 @@ export default function lessonScene(ctx) {
         const off = [k * 260, -k * 900];
         for (const s of parts) fx.line(s.pts.map(p => X([p[0] + off[0], p[1] + off[1]])), { w: 4, alpha: vis, taper: 0, cool: 0.4 * (1 - k), ink: s.accent ? '#A6E86A' : '#F2F2EE', inkW: 0.9 });
       }
-      // in the room: the whale flies from the tablet across the desk to the window
+      // in the room: the light-whale (picture, placed in update) keeps 도윤's wings of light, beating
       if (t > T.exitA + 0.05) {
-        const fk = tw(t, T.exitA + 0.05, T.window + 0.35, E.inOutSine);
-        const P0 = [TABLET.x, TABLET.y - 120, 260], P1 = [1150, -420, 760], P2 = [1308, -872, 1050]; // → the window on the wall
-        const u = fk, a = [(1 - u) * (1 - u) * P0[0] + 2 * u * (1 - u) * P1[0] + u * u * P2[0], (1 - u) * (1 - u) * P0[1] + 2 * u * (1 - u) * P1[1] + u * u * P2[1], (1 - u) * (1 - u) * P0[2] + 2 * u * (1 - u) * P1[2] + u * u * P2[2]];
-        const sc = lerp(0.62, 0.32, fk), swim = Math.sin(t * 7) * 0.06;
-        const al = tw(t, T.exitA + 0.05, T.exitA + 0.3) * (1 - tw(t, T.window + 0.2, T.window + 0.45));
-        for (const s of parts) {
-          const pts = s.pts.map(([x, y]) => { const lx = (x - WC[0]) * sc, ly = (y - WC[1]) * sc; return [a[0] + lx, a[1] + ly * Math.cos(0.3), a[2] - ly * Math.sin(0.3) + lx * swim]; });
-          fx.line(project(cur.CM, pts), { w: 3.6, alpha: al, taper: 0, head: 0 });
+        const { a, al, M } = flight(t), wave = swimDy(t, 1.2), k = Math.sin(t * 10);
+        for (const w of doodles[0].strokes) {
+          const pts = w.map(([x, y]) => { const lx = (x - WC[0]) / WS, ly = (y - WC[1]) / WS; const x2 = lx + (lx - 10) * 0.08 * k, y2 = -62 + (ly + 62) * (1 + 0.32 * k) + wave(lx); return [M[0] * x2 + M[4] * y2 + M[12], M[1] * x2 + M[5] * y2 + M[13], M[2] * x2 + M[6] * y2 + M[14]]; });
+          fx.line(project(cur.CM, pts), { w: 3.4, alpha: al, taper: 0, head: 0 });
         }
         const e = project(cur.CM, [a])[0];
-        fx.flare(e[0], e[1], 160, 0.35 * al);
+        fx.flare(e[0], e[1], 160, 0.25 * al);
       }
     }
   }
