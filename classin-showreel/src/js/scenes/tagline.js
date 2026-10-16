@@ -37,7 +37,7 @@ export default function tagScene(ctx) {
   });
 
   function update(t) {
-    el.style.opacity = tw(t, 19.05, 19.3) * (1 - tw(t, T.breath - 0.2, T.hero - 0.05, E.inQuad));
+    el.style.opacity = tw(t, T.sweepA - 0.2, T.sweepA + 0.05) * (1 - tw(t, T.breath - 0.2, T.hero - 0.05, E.inQuad));
     lines.forEach((d, i) => {
       const k = tw(t, win[i][0], win[i][1], E.inOutSine);
       const g = G[i];
@@ -72,6 +72,15 @@ export default function tagScene(ctx) {
       const y = g.base - 6;
       fx.line([[g.ax + k * g.aw * 0.7, y], [g.ax + k * g.aw, y]], { w: 4, alpha: 1 - prog(t, b, b + 0.2), taper: 1, head: 1 });
     });
+    // the payoff: the light under 함께 runs on and curls up into a point — the i-dot of the logo to come
+    if (t > T.underB - 0.05 && t < T.hero) {
+      const g = G[1], D = markRest(W, H, P).dot;
+      const s0 = [g.ax + g.aw, g.base - 6];
+      const path = bezier(s0, [s0[0] + 160, s0[1] + 10], [D[0] + 120, D[1] + 160], D, 30);
+      const k = tw(t, T.underB - 0.05, T.breath, E.inOutCubic);
+      if (k < 1) fx.line(slice(path, Math.max(0, k - 0.4), k), { w: 3.6, alpha: 1, taper: 1, head: 1 });
+      else { fx.head(D[0], D[1], 5, 0.9); fx.flare(D[0], D[1], 90, 0.4); }
+    }
     // the threads from every home converge on the i-dot
     if (t > T.conv - 0.2) {
       const D = markRest(W, H, P).dot;

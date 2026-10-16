@@ -204,3 +204,19 @@ export function h(tag, cls, html) {
   if (html != null) el.innerHTML = html;
   return el;
 }
+
+// closed / open Catmull-Rom through 2D points
+export function catmull(pts, n = 8, closed = false) {
+  const out = [], N = pts.length;
+  const P = i => (closed ? pts[(i + N) % N] : pts[Math.max(0, Math.min(N - 1, i))]);
+  const segs = closed ? N : N - 1;
+  for (let i = 0; i < segs; i++) {
+    const p0 = P(i - 1), p1 = P(i), p2 = P(i + 1), p3 = P(i + 2);
+    for (let j = 0; j < n; j++) {
+      const t = j / n, t2 = t * t, t3 = t2 * t;
+      out.push([0, 1].map(k => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)));
+    }
+  }
+  out.push(closed ? out[0].slice() : pts[N - 1].slice());
+  return out;
+}

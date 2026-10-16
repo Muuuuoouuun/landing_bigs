@@ -512,7 +512,7 @@ def main():
     vo, has_vo = build_vo()
     # the stall: the imagination comes apart — the band drops to a whisper until the tablet wakes
     if 'stall' in B:
-        a0, a1 = int((B['stall'] + 0.02) * SR), int((B['lift'] - 0.02) * SR)
+        a0, a1 = int((B['stall'] + 0.02) * SR), int((B.get('tabletOn', B['lift']) - 0.02) * SR)
         env = np.ones(a1 - a0) * 0.22
         k = int(0.06 * SR)
         env[:k] = np.linspace(1, 0.22, k)

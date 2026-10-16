@@ -3,3 +3,4 @@ out/frames_*/
 out/stems/
 out/cues.json
 out/audio.wav
+src/assets/gen/raw/

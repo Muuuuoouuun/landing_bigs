@@ -3,11 +3,14 @@
 import { LineFX } from './line.js';
 import { clamp, drift, keyed, camMatrix, rng, tw, E, h } from './core.js';
 import { worldCam } from './world.js';
+import introScene from './scenes/intro.js';
 import bookScene from './scenes/book.js';
-import brainScene from './scenes/brain.js';
+import wordsScene from './scenes/words.js';
 import whaleScene from './scenes/whale.js';
 import lessonScene from './scenes/lesson.js';
 import dawnScene from './scenes/dawn.js';
+import nationScene from './scenes/nation.js';
+import morningScene from './scenes/morning.js';
 import tagScene from './scenes/tagline.js';
 import heroScene from './scenes/hero.js';
 import { buildCues } from './cues.js';
@@ -55,20 +58,22 @@ fx.canvas.style.zIndex = 50;
 const tokLayer = h('div', 'toklayer');
 
 const ctx = { W, H, P, T: TL.beats, S: TL.scenes, copy: TL.copy, root: shakeEl, fx, tokLayer, shake: [0, 0], flash: 0, CM: null };
-const scenes = [bookScene, brainScene, whaleScene, lessonScene, dawnScene, tagScene, heroScene].map(make => make(ctx));
+const scenes = [bookScene, introScene, wordsScene, whaleScene, lessonScene, dawnScene, nationScene, morningScene, tagScene, heroScene].map(make => make(ctx));
 shakeEl.appendChild(tokLayer);
 
 // night → day: 0 = the dark room, 1 = ivory paper (the dawn scene paints its own sky in between)
-const dayK = t => tw(t, 17.6, 19.05, E.inOutSine);
+const dayK = t => tw(t, 17.6, 19.25, E.inOutSine);
 const NIGHT = [11, 12, 14], DAY = [246, 241, 230];
 // the key light drifting over the stage: position (fraction of frame), intensity, tint
 const BG = [
-  { t: 0, x: 0.42, y: 0.5, a: 0.5, r: 190, g: 214, b: 240 }, { t: 2.4, x: 0.55, y: 0.5, a: 0.8, r: 200, g: 230, b: 210 },
-  { t: 4.8, x: 0.5, y: 0.5, a: 0.9, r: 190, g: 236, b: 200 }, { t: 9.6, x: 0.45, y: 0.48, a: 1, r: 200, g: 240, b: 190 },
-  { t: 11.2, x: 0.5, y: 0.5, a: 0.35, r: 200, g: 214, b: 230 }, { t: 12.2, x: 0.5, y: 0.55, a: 1, r: 255, g: 214, b: 160 },
-  { t: 16.0, x: 0.5, y: 0.5, a: 1, r: 255, g: 220, b: 170 }, { t: 19.2, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 },
-  { t: 23.6, x: 0.5, y: 0.5, a: 0.5, r: 250, g: 248, b: 232 }, { t: 24.0, x: 0.5, y: 0.48, a: 1, r: 238, g: 252, b: 212 },
-  { t: 26.4, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 }, { t: 28.8, x: 0.5, y: 0.5, a: 0.6, r: 250, g: 248, b: 232 },
+  { t: 0, x: 0.5, y: 0.45, a: 0.6, r: 190, g: 236, b: 200 }, { t: 1.5, x: 0.5, y: 0.45, a: 0.5, r: 200, g: 230, b: 210 },
+  { t: 2.4, x: 0.42, y: 0.5, a: 0.5, r: 190, g: 214, b: 240 }, { t: 4.8, x: 0.5, y: 0.5, a: 0.8, r: 200, g: 230, b: 210 },
+  { t: 7.2, x: 0.5, y: 0.45, a: 1, r: 200, g: 240, b: 190 }, { t: 8.4, x: 0.5, y: 0.5, a: 0.35, r: 200, g: 214, b: 230 },
+  { t: 9.6, x: 0.5, y: 0.55, a: 1, r: 255, g: 214, b: 160 }, { t: 14.2, x: 0.5, y: 0.5, a: 1, r: 255, g: 220, b: 170 },
+  { t: 17.2, x: 0.5, y: 0.4, a: 0.8, r: 255, g: 226, b: 180 }, { t: 19.2, x: 0.6, y: 0.4, a: 0.9, r: 255, g: 240, b: 210 },
+  { t: 21.0, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 }, { t: 23.6, x: 0.5, y: 0.5, a: 0.5, r: 250, g: 248, b: 232 },
+  { t: 24.0, x: 0.5, y: 0.48, a: 1, r: 238, g: 252, b: 212 }, { t: 26.4, x: 0.5, y: 0.5, a: 0.7, r: 250, g: 248, b: 232 },
+  { t: 28.8, x: 0.5, y: 0.5, a: 0.6, r: 250, g: 248, b: 232 },
 ];
 const glow = (b, k, L) => { const a0 = 0.16 + 0.69 * L, a1 = 0.06 + 0.29 * L; return `radial-gradient(circle, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(a0 * k).toFixed(3)}) 0%, rgba(${b.r | 0},${b.g | 0},${b.b | 0},${(a1 * k).toFixed(3)}) 34%, rgba(0,0,0,0) 68%)`; };
 

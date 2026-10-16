@@ -4,13 +4,13 @@
 // classmates, given the pen, add wings, balloons, clouds and stars in their own colours. All of it
 // gathers into one light that comes back to Seo-yun. The finished whale swims off the board, the
 // camera pulls back out of the tablet into the dawn-lit room, and the whale flies to the window.
-import { E, tw, prog, clamp, lerp, M4, place, planeModel, measure, slice, h } from '../core.js';
+import { E, tw, prog, clamp, lerp, M4, place, planeModel, measure, slice, catmull, h } from '../core.js';
 import { project } from '../line.js';
 import { avatar } from '../avatar.js';
 import { createMark } from '../brandmark.js';
 import { TABLET } from './book.js';
 import { whaleStrokes } from './whale.js';
-import { catmull } from './brain.js';
+
 
 const HAND = '<svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V13c0 4-2.5 7-6.5 7S5 17.5 4.5 15l-1-3.2a1.5 1.5 0 0 1 2.7-1.2L8 13" fill="#fff" stroke="#3A2A00" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 const CUP = '<svg viewBox="0 0 48 48"><defs><linearGradient id="lcup" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9A3"/><stop offset="0.55" stop-color="#F5C542"/><stop offset="1" stop-color="#C98A12"/></linearGradient></defs><path d="M13 7h22v8.5a11 11 0 0 1-22 0z" fill="url(#lcup)"/><path d="M13 10H7.5a6 6 0 0 0 6.5 8M35 10h5.5a6 6 0 0 1-6.5 8" stroke="#F5C542" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M21 26h6v7h-6z" fill="#D99A1E"/><rect x="14" y="33" width="20" height="6" rx="2" fill="url(#lcup)"/></svg>';
@@ -32,16 +32,13 @@ export default function lessonScene(ctx) {
 
   // ---------- the room: tablet on the desk, its glow, the far wall with the window ----------
   const glowD = h('div', 'obj tglow'); glowD.style.width = '2200px'; glowD.style.height = '1500px';
-  const wall = h('div', 'obj wall', '<div class="win"><div class="sky"></div><div class="roofs"></div><i class="mull v"></i><i class="mull h"></i></div>');
-  wall.style.width = '3600px'; wall.style.height = '1900px';
   const tab = h('div', 'obj tablet6', '<div class="tglass"><div class="tsplash"></div></div>');
   tab.style.width = `${TABLET.w}px`; tab.style.height = `${TABLET.h}px`;
-  el.append(wall, glowD, tab);
+  el.append(glowD, tab);
   const splash = tab.querySelector('.tsplash'), glass = tab.querySelector('.tglass');
   const splashMark = createMark(300, { pad: 20 });
   splashMark.draw({ fill: 1, dot: 1, lift: 0.3 });
   splash.appendChild(splashMark.el);
-  const sky = wall.querySelector('.sky');
 
   // ---------- the class (a 1920×1080 screen mapped onto the tablet) ----------
   const cls = h('div', 'cls');
@@ -104,19 +101,14 @@ export default function lessonScene(ctx) {
   function update(t) {
     const CM = ctx.CM;
     const inRoom = t < T.enter + 0.05 || t > T.exitA - 0.05;
-    for (const e of [wall, glowD, tab]) e.style.visibility = inRoom ? 'visible' : 'hidden';
+    for (const e of [glowD, tab]) e.style.visibility = inRoom ? 'visible' : 'hidden';
     place(tab, CM, MT);
     place(glowD, CM, planeModel(TABLET.x, TABLET.y + 60, 1, 2200, 1500, { rz: TABLET.rz }));
-    place(wall, CM, planeModel(300, -820, 950, 3600, 1900, { rx: -90 }));
     const on = tw(t, T.tabletOn - 0.1, T.tabletOn + 0.25, E.outCubic);
     const warm = Math.max(on * 0.9, tw(t, T.exitA, T.window, E.inOutSine));
     glowD.style.opacity = warm.toFixed(3);
     glass.style.background = `rgba(${lerp(8, 24, on) | 0},${lerp(9, 26, on) | 0},${lerp(11, 30, on) | 0},1)`;
     splash.style.opacity = (on * (1 - tw(t, T.enter - 0.2, T.enter))).toFixed(3);
-    // the far wall: barely visible at night, warmed by the tablet; the window's sky begins to pale
-    const dawn = tw(t, T.exitA - 0.3, T.window + 0.3, E.inOutSine);
-    wall.style.filter = `brightness(${(0.35 + 0.65 * warm).toFixed(3)})`;
-    sky.style.opacity = (0.35 + 0.65 * dawn).toFixed(3);
 
     // the class screen mapped onto the tablet glass, filling the frame once we're inside
     const s0 = [TABLET.bez, TABLET.bez], s1 = [TABLET.w - TABLET.bez, TABLET.h - TABLET.bez];
@@ -242,7 +234,7 @@ export default function lessonScene(ctx) {
       // in the room: the whale flies from the tablet across the desk to the window
       if (t > T.exitA + 0.05) {
         const fk = tw(t, T.exitA + 0.05, T.window + 0.35, E.inOutSine);
-        const P0 = [TABLET.x, TABLET.y - 120, 260], P1 = [700, -300, 700], P2 = [300, -820, 980];
+        const P0 = [TABLET.x, TABLET.y - 120, 260], P1 = [1150, -420, 760], P2 = [1308, -872, 1050]; // → the window on the wall
         const u = fk, a = [(1 - u) * (1 - u) * P0[0] + 2 * u * (1 - u) * P1[0] + u * u * P2[0], (1 - u) * (1 - u) * P0[1] + 2 * u * (1 - u) * P1[1] + u * u * P2[1], (1 - u) * (1 - u) * P0[2] + 2 * u * (1 - u) * P1[2] + u * u * P2[2]];
         const sc = lerp(0.62, 0.32, fk), swim = Math.sin(t * 7) * 0.06;
         const al = tw(t, T.exitA + 0.05, T.exitA + 0.3) * (1 - tw(t, T.window + 0.2, T.window + 0.45));

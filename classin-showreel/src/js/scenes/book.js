@@ -1,9 +1,11 @@
-// S1 · 질문과 책 (0.00–4.80): night, a dark desk. A spark of 연두 light writes a question in Seo-yun's
-// notebook — "만약에 고래가 하늘을 난다면?" — and the question mark glows. The light jumps to the open
-// science book beside it, turns its pages, reads about whales and buoyancy, and the words begin to lift
-// off the page (the knowledge module takes the tokens from there). Only what the light touches is lit.
+// S1–S3 · 질문과 책 (1.45–5.55, and again 13.65–14.90): night, Seo-yun's desk — generated walnut, paper and
+// bookcloth textures, props and the bedroom wall as 2.5D cards. The i-dot's light lands as a pen tip and writes
+// the question in her notebook — "만약에 고래가 하늘을 난다면?" — the question mark glows, the light leaps into
+// the science book, riffles its pages and the words lift off (the words scene takes the tokens from there).
+// Only what the light touches is lit. After the class, the camera pulls back out of the tablet to this desk.
 import { E, tw, prog, clamp, lerp, M4, xf, place, planeModel, bezier, slice, h } from '../core.js';
 import { project } from '../line.js';
+import SPRITES from '../../assets/gen/sprites.js';
 
 export const PW = 500, PH = 680, TILT = 4;
 export const NOTE = { x: -860, y: 110, w: 470, h: 600, rz: -6 };
@@ -56,6 +58,14 @@ export default function bookScene(ctx) {
 
   const plane = (cls, w, hh, html) => { const d = h('div', `obj ${cls}`, html); d.style.width = `${w}px`; d.style.height = `${hh}px`; el.appendChild(d); return d; };
   const desk = plane('desk', 5200, 3200);
+  // the bedroom wall behind the desk (night plate; the dawn version fades in through the window later)
+  const wall = plane('wall7', 3600, 2025, '<img class="wn" src="assets/gen/wall_night.jpg" alt=""><img class="wd" src="assets/gen/wall_dawn.jpg" alt="">');
+  const wallDawn = wall.querySelector('.wd');
+  // props standing on the desk (cut-out generated sprites): lamp, plant, pencil cup, book stack
+  const PROPS = [
+    { src: 'props_night_0', x: -1330, y: -330, h: 640 }, { src: 'props_night_1', x: 760, y: -470, h: 380 },
+    { src: 'props_night_2', x: -470, y: 330, h: 300 }, { src: 'props_night_3', x: -1220, y: 420, h: 220 },
+  ].map(p => { const m = SPRITES[`${p.src}.png`] || { w: 400, h: 400 }; const w = p.h * (m.w / m.h); const d = plane('prop', w, p.h, `<img src="assets/gen/${p.src}.png" alt="">`); return { ...p, w, el: d }; });
   const shadow = plane('bshadow', 1500, 1060);
   const nShadow = plane('bshadow', NOTE.w + 260, NOTE.h + 220);
   const note = plane('note', NOTE.w, NOTE.h, `<i class="rings"></i><div class="nd">10월 16일 (목)</div>
@@ -120,7 +130,7 @@ export default function bookScene(ctx) {
     note.style.transform = keep;
   }
   ctx.tokens = tokens;
-  ctx.book = { ML, MR, PW, PH };
+  ctx.book = { ML, MR, PW, PH, pen0: () => (NL ? penAt(T.writeA).world : [NOTE.x, NOTE.y, 0]) };
 
   // the pen tip while writing: line 1 then line 2, with a little handwriting wobble
   const writeK = t => tw(t, T.writeA, T.writeB, E.linear);
@@ -135,48 +145,29 @@ export default function bookScene(ctx) {
   const qWorld = () => xf(MN, NL.q.x, NL.q.y, 0);
   const JUMP_TO = xf(MR, PW * 0.9, PH * 0.16, 0); // the light waits at the right page's corner while the pages turn
 
-  // reading path: left page first line → over the gutter → the handwritten "뜨는 힘 > 무게"
-  let read = null;
-  function readLines() {
-    if (read) return read;
-    const at = (tk, end) => { const p = xf(tk.M, tk.x + (end ? tk.w : 0), tk.y + tk.h + 4, 0); return [p[0], p[1], 0]; };
-    const L = tokens.filter(k => k.page === 'L' && k.src.closest('p.big'));
-    const R = tokens.filter(k => k.page === 'R' && k.src.closest('.hand'));
-    const firstLine = L.filter(k => Math.abs(k.y - L[0].y) < 4);
-    const a = [at(firstLine[0], false), at(firstLine[firstLine.length - 1], true)];
-    const b = [at(R[0], false), at(R[R.length - 1], true)];
-    const pts = [
-      ...bezier(a[0], [lerp(a[0][0], a[1][0], 0.33), a[0][1], 0], [lerp(a[0][0], a[1][0], 0.66), a[1][1], 0], a[1], 16),
-      ...bezier(a[1], [a[1][0] + 80, a[1][1] - 160, 60], [b[0][0] - 120, b[0][1] - 140, 60], b[0], 24).slice(1),
-      ...bezier(b[0], [lerp(b[0][0], b[1][0], 0.33), b[0][1] + 2, 0], [lerp(b[0][0], b[1][0], 0.66), b[1][1] - 2, 0], b[1], 16).slice(1),
-    ];
-    read = { pts, words: [...firstLine, ...R] };
-    return read;
-  }
-
   // where the light is (world) — the night pool follows it
   function lightAt(t) {
     if (!NL) return [0, 0, 0];
     if (t < T.writeB) return penAt(t).world;
     if (t < T.jump) return qWorld();
     if (t < T.flip1 - 0.06) { const k = E.inOutCubic(prog(t, T.jump, T.flip1 - 0.06)); const q = qWorld(); return [lerp(q[0], JUMP_TO[0], k), lerp(q[1], JUMP_TO[1], k), Math.sin(k * Math.PI) * 220]; }
-    const { pts } = readLines();
-    if (t < T.settle - 0.25) return [JUMP_TO[0], JUMP_TO[1] + Math.sin(t * 9) * 6, 10];
-    if (t < T.readA) { const k = E.inOutCubic(prog(t, T.settle - 0.25, T.readA)); return [lerp(JUMP_TO[0], pts[0][0], k), lerp(JUMP_TO[1], pts[0][1], k), Math.sin(k * Math.PI) * 120]; }
-    const k = tw(t, T.readA, T.readB, E.inOutSine);
-    const s = slice(pts, 0, Math.max(0.001, k));
-    return s[s.length - 1];
+    if (t < T.settle - 0.1) return [JUMP_TO[0], JUMP_TO[1] + Math.sin(t * 9) * 6, 10];
+    const k = E.inOutCubic(prog(t, T.settle - 0.1, T.gatherA + 0.3));
+    return [lerp(JUMP_TO[0], 0, k), lerp(JUMP_TO[1], -40, k), lerp(10, 380, k)];
   }
 
   let cur = null;
   function update(t) {
     const CM = ctx.CM;
     // the desk fades away under the brain, and is there again when we come back out of the tablet
-    const back = t > T.lift ? tw(t, T.exitA, T.exitA + 0.4, E.inOutSine) : 0;
-    const away = tw(t, T.liftB - 0.2, T.arriveB, E.inOutSine);
-    el.style.visibility = t > T.arriveB + 0.2 && back <= 0 ? 'hidden' : 'visible';
-    el.style.opacity = (t > T.lift ? back : 1 - away * 0.8).toFixed(3);
-    el.style.filter = t > T.liftB && t < T.lift ? `blur(${(away * 7).toFixed(2)}px)` : '';
+    const back = t > T.tabletOn ? tw(t, T.exitA, T.exitA + 0.4, E.inOutSine) : 0;
+    const away = tw(t, T.liftA + 0.4, T.gatherB, E.inOutSine);
+    el.style.visibility = t > T.gatherB + 0.2 && back <= 0 ? 'hidden' : 'visible';
+    el.style.opacity = (t > T.tabletOn ? back : (1 - away * 0.85) * tw(t, T.logoUp - 0.05, T.land + 0.1, E.inOutSine)).toFixed(3);
+    el.style.filter = t > T.liftA + 0.4 && t < T.tabletOn ? `blur(${(away * 8).toFixed(2)}px)` : '';
+    place(wall, CM, planeModel(300, -880, 1012, 3600, 2025, { rx: -90 }));
+    wallDawn.style.opacity = tw(t, T.exitA + 0.2, T.window + 0.2, E.inOutSine).toFixed(3);
+    for (const p of PROPS) place(p.el, CM, planeModel(p.x, p.y, p.h / 2, p.w, p.h, { rx: -90 }));
     place(desk, CM, M4.T(-2600, -1500, -14));
     place(shadow, CM, M4.chain(M4.T(14, 26, -12), M4.T(-750, -530, 0)));
     place(nShadow, CM, planeModel(NOTE.x + 16, NOTE.y + 24, -12, NOTE.w + 260, NOTE.h + 220, { rz: NOTE.rz }));
@@ -226,17 +217,17 @@ export default function bookScene(ctx) {
     } else shadeR.style.background = 'none';
 
     // static tokens hand over to the world tokens the moment they start to lift (and light up)
-    const live = t >= T.liftA && t < T.exitA;
+    const live = t >= T.liftA && t < T.exitA;  // after the class the words are back on their page
     finalL.classList.toggle('tkoff', live);
     finalR.classList.toggle('tkoff', live);
 
     // the night: only what the light touches is lit; a faint moonlight keeps the desk readable
     // the pool follows the light with a little lag, so it glides when the pen lifts to the next line
     let focus = [TABLET.x, TABLET.y, 0];
-    if (t <= T.lift) { focus = [0, 0, 0]; for (let i = 0; i < 6; i++) { const p = lightAt(Math.max(0, t - i * 0.05)); focus = focus.map((v, j) => v + p[j] / 6); } }
+    if (t <= T.tabletOn) { focus = [0, 0, 0]; for (let i = 0; i < 6; i++) { const p = lightAt(Math.max(0, t - i * 0.05)); focus = focus.map((v, j) => v + p[j] / 6); } }
     const Lp = project(CM, [focus])[0];
-    const R = (t > T.lift ? 1100 : 520) * CM[0] + 160;
-    const dark = t > T.lift ? 0.72 * (1 - tw(t, T.exitA + 0.3, T.window + 0.3)) : 0.86 * (1 - tw(t, T.liftA, T.liftB + 0.4));
+    const R = (t > T.tabletOn ? 1300 : 560) * CM[0] + 180;
+    const dark = t > T.tabletOn ? 0.66 * (1 - tw(t, T.exitA + 0.3, T.window + 0.3)) : 0.86 * (1 - tw(t, T.liftA, T.gatherA + 0.6));
     night.style.background = `radial-gradient(circle at ${Lp[0].toFixed(1)}px ${Lp[1].toFixed(1)}px, rgba(9,10,13,${(dark * 0.05).toFixed(3)}) 0px, rgba(9,10,13,${(dark * 0.35).toFixed(3)}) ${(R * 0.42).toFixed(0)}px, rgba(9,10,13,${dark.toFixed(3)}) ${R.toFixed(0)}px)`;
     cur = { CM };
   }
@@ -245,9 +236,9 @@ export default function bookScene(ctx) {
     if (!cur || !NL) return;
     const P3 = pts => project(cur.CM, pts);
     // 1 · the spark appears and writes the question
-    if (t < T.writeB + 0.15) {
+    if (t > T.land - 0.05 && t < T.writeB + 0.15) {
       const p = penAt(t);
-      const born = tw(t, 0, T.drip + 0.1, E.outCubic);
+      const born = tw(t, T.land - 0.05, T.land + 0.12, E.outCubic);
       const trail = [];
       for (let i = 10; i >= 0; i--) trail.push(penAt(Math.max(T.writeA, t - i * 0.012)).world);
       if (t > T.writeA) fx.line(P3(trail), { w: 3.4, alpha: 1, taper: 1, head: 0 });
@@ -269,20 +260,10 @@ export default function bookScene(ctx) {
       }
     }
     // 3 · the light turns the pages (riding the corner of each turning page)
-    if (t > T.flip1 - 0.1 && t < T.readA + 0.1) {
+    if (t > T.flip1 - 0.1 && t < T.gatherA + 0.4) {
       const q = P3([lightAt(t)])[0];
       fx.head(q[0], q[1], 4, 0.9);
       fx.flare(q[0], q[1], 70, 0.35);
-    }
-    // 4 · the light reads
-    if (t > T.readA - 0.1 && t < T.liftA + 0.4 && tokens.length) {
-      const { pts, words } = readLines();
-      const k = tw(t, T.readA, T.readB, E.inOutSine);
-      const fade = 1 - tw(t, T.readB, T.liftA + 0.35);
-      fx.line(P3(slice(pts, Math.max(0, k - 0.22), k)), { w: 3.6, alpha: fade, taper: 1, head: 1 });
-      fx.line(P3(slice(pts, 0, k)), { w: 2.4, alpha: 0.7 * fade, taper: 0 });
-      ctx.readK = k;
-      ctx.readWords = words;
     }
   }
 

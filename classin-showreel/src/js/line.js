@@ -31,8 +31,12 @@ export class LineFX {
     for (const k of [this.g, this.c]) { k.lineCap = 'round'; k.lineJoin = 'round'; }
     this.inks = [];
     this.dots = [];
+    this.polys = [];
     this.light = 0;
   }
+
+  // a printed filled shape (no glow)
+  inkPoly(poly, color, a = 1) { if (a > 0.003 && poly.length > 2) this.polys.push([poly, color, a]); }
 
   // a printed dot (no glow): neurons, seeds, map points
   dot(x, y, r, color = C.ink, a = 1) { if (a > 0.003 && r > 0.05) this.dots.push([x, y, r, color, a]); }
@@ -43,6 +47,7 @@ export class LineFX {
     this.c.clearRect(0, 0, this.W, this.H);
     this.inks.length = 0;
     this.dots.length = 0;
+    this.polys.length = 0;
     this.used = false;
   }
 
@@ -185,6 +190,14 @@ export class LineFX {
       k.moveTo(ink.seg[0][0], ink.seg[0][1]);
       for (let i = 1; i < ink.seg.length; i++) k.lineTo(ink.seg[i][0], ink.seg[i][1]);
       k.stroke();
+    }
+    for (const [poly, col, a] of this.polys) {
+      k.globalAlpha = clamp(a);
+      k.fillStyle = col;
+      k.beginPath();
+      poly.forEach((p, i) => (i ? k.lineTo(p[0], p[1]) : k.moveTo(p[0], p[1])));
+      k.closePath();
+      k.fill();
     }
     for (const [x, y, r, col, a] of this.dots) {
       k.globalAlpha = clamp(a);
