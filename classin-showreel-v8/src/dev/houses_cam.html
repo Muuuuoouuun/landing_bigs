@@ -1,0 +1,105 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #1a1d24; }
+#stage { position: absolute; inset: 0; overflow: hidden; }
+.plate { position: absolute; left: -10%; top: -10%; width: 120%; height: 120%; background-size: cover; background-position: center; will-change: transform; }
+.sky { background-image: url(../assets/gen/sky_dawn.jpg); }
+.town { background-image: url(../assets/gen/town_far.jpg); -webkit-mask-image: linear-gradient(to bottom, transparent 32%, #000 58%); }
+.haze { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,214,170,0) 35%, rgba(255,214,170,0.14) 70%, rgba(30,32,48,0.28) 100%); pointer-events: none; }
+.hs img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hs img.glow { mix-blend-mode: screen; }
+.hs .edge { position: absolute; top: -2%; width: 3px; height: 104%; margin-left: -1.5px; background: #F4FFE4; border-radius: 2px;
+  box-shadow: 0 0 10px 3px rgba(170,240,100,0.95), 0 0 36px 12px rgba(140,230,80,0.5); }
+.shd { background: radial-gradient(closest-side, rgba(8,10,18,0.55), rgba(8,10,18,0)); }
+.column { background: linear-gradient(to right, rgba(160,240,100,0) 0%, rgba(190,250,140,0.35) 35%, rgba(240,255,220,0.85) 50%, rgba(190,250,140,0.35) 65%, rgba(160,240,100,0) 100%); mix-blend-mode: screen; filter: blur(6px);
+  -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%, #000 70%, transparent 100%); }
+.curtain { background: linear-gradient(to top, rgba(170,240,110,0) 0%, rgba(190,250,140,0.55) 18%, rgba(230,255,200,0.75) 50%, rgba(190,250,140,0.4) 85%, rgba(170,240,110,0) 100%);
+  mix-blend-mode: screen; filter: blur(2px); }
+</style></head><body><div id="stage"><div class="plate sky"></div><div class="plate town"></div><div id="world"></div><div class="haze"></div></div>
+<script type="module">
+// Look test (v8, houses only): the clay town stands still; the camera glides over it while a plane of light sweeps
+// across and paints each house with its texture; a whip to a low street angle, and the windows light one by one.
+import { E, tw, prog, clamp, lerp, rng, keyed, camMatrix, place, planeModel } from '../js/core.js';
+import SPRITES from '../assets/gen/sprites.js';
+
+const W = 1920, H = 1080;
+const IDS = Object.keys(SPRITES).filter(k => /^houses8_[abc]_\d\.webp$/.test(k)).map(k => k.replace('.webp', ''));
+const world = document.getElementById('world');
+const sky = document.querySelector('.sky'), town = document.querySelector('.town');
+const r = rng(21);
+const houses = [];
+const rows = [-3400, -2950, -2500, -2080, -1660, -1260];
+rows.forEach((z, ri) => {
+  for (let x = -2900 + (ri % 2) * 260; x <= 3300; x += 540 + r() * 60) {
+    const id = IDS[Math.floor(r() * IDS.length)], m = SPRITES[`${id}.webp`];
+    const h = (id.startsWith('houses8_c') ? 520 : 400) * (0.9 + r() * 0.2), w = h * (m.w / m.h);
+    houses.push({ id, x: x + (r() - 0.5) * 120, z: z + (r() - 0.5) * 90, w, h });
+  }
+});
+houses.sort((a, b) => a.z - b.z);
+for (const o of houses) {
+  const shd = document.createElement('div'); shd.className = 'obj shd';
+  shd.style.width = `${o.w * 1.25}px`; shd.style.height = `${o.w * 0.55}px`;
+  const el = document.createElement('div'); el.className = 'obj hs';
+  el.style.width = `${o.w}px`; el.style.height = `${o.h}px`;
+  el.innerHTML = `<img src="../assets/gen/${o.id}_clay.webp"><img class="b" src="../assets/gen/${o.id}.webp"><img class="l" src="../assets/gen/${o.id}_lit.webp"><img class="glow" src="../assets/gen/${o.id}_glow.webp"><div class="edge"></div>`;
+  world.append(shd, el);
+  Object.assign(o, { el, shd, b: el.querySelector('.b'), l: el.querySelector('.l'), g: el.querySelector('.glow'), edge: el.querySelector('.edge'),
+    M: planeModel(o.x, -o.h / 2, o.z, o.w, o.h), MS: planeModel(o.x, -2, o.z + o.w * 0.12, o.w * 1.25, o.w * 0.55, { rx: 90 }) });
+}
+// the plane of light: a tall sheet standing across the depth of the town, moving along x
+const cur = document.createElement('div'); cur.className = 'obj curtain'; cur.style.width = '3200px'; cur.style.height = '1100px';
+world.appendChild(cur);
+const col = document.createElement('div'); col.className = 'obj column'; col.style.width = '240px'; col.style.height = '1500px';
+world.appendChild(col);
+
+// shot A: high and wide, gliding · whip · shot B: low on the street, pushing in
+const CAM = [
+  { t: 0.0, x: -700, y: -820, z: -1500, s: 0.6, rx: -24, ry: 9, rz: -1 },
+  { t: 0.5, x: 100, y: -760, z: -1900, s: 0.66, rx: -21, ry: 3, rz: 0, e: E.inOutSine },
+  { t: 0.585, x: 1250, y: -400, z: -2750, s: 0.9, rx: -8, ry: -24, rz: 2, e: E.inOutExpo },
+  { t: 1.0, x: 1420, y: -380, z: -2900, s: 0.97, rx: -7, ry: -28, rz: 1, e: E.outSine },
+];
+const sweepX = k => lerp(-3600, 3900, tw(k, 0.04, 0.47, E.inOutSine));
+// the windows light along the street seen in shot B (nearest the camera's path first)
+const B = keyed(1, CAM);
+houses.forEach(o => { o.order = Math.hypot(o.x - B.x, (o.z - B.z) * 0.7); });
+const ord = [...houses].sort((a, b) => a.order - b.order);
+ord.forEach((o, i) => { o.litAt = 0.62 + 0.3 * (i / ord.length) ** 0.8; });
+
+window.render = k => {
+  const cam = keyed(k, CAM);
+  cam.d = 1700;
+  const CM = camMatrix(cam, W, H);
+  sky.style.transform = `translate(${(-cam.ry * 9 - cam.x * 0.02).toFixed(1)}px, ${(cam.rx * 6 + 60).toFixed(1)}px)`;
+  town.style.transform = `translate(${(-cam.ry * 16 - cam.x * 0.06).toFixed(1)}px, ${(cam.rx * 9 + 170 + (cam.s - 0.6) * 140).toFixed(1)}px) scale(${(1 + (cam.s - 0.6) * 0.35).toFixed(3)})`;
+  const sx = sweepX(k);
+  for (const o of houses) {
+    const wq = CM[3] * o.x + CM[7] * (-o.h / 2) + CM[11] * o.z + CM[15], sw = (o.w * cam.s) / Math.max(wq, 0.01);
+    const near = wq > 0.2 ? clamp((1000 - sw) / 120) : 0;
+    o.el.style.opacity = o.shd.style.opacity = near.toFixed(3);
+    o.el.style.visibility = o.shd.style.visibility = near > 0 ? 'visible' : 'hidden';
+    if (near <= 0) continue;
+    place(o.el, CM, o.M);
+    place(o.shd, CM, o.MS);
+    const paint = clamp((sx - (o.x - o.w / 2)) / o.w);
+    o.b.style.clipPath = `inset(0 ${((1 - paint) * 100).toFixed(2)}% 0 0)`;
+    o.edge.style.left = `${(paint * 100).toFixed(2)}%`;
+    o.edge.style.opacity = paint > 0 && paint < 1 ? '1' : '0';
+    const on = prog(k, o.litAt, o.litAt + 0.05);
+    o.l.style.opacity = on.toFixed(3);
+    o.g.style.opacity = (0.6 * on).toFixed(3);
+  }
+  const ca = tw(k, 0.03, 0.08) * (1 - tw(k, 0.44, 0.49));
+  cur.style.opacity = ca.toFixed(3);
+  place(cur, CM, planeModel(sx, -540, -2300, 3200, 1100, { ry: 90 }));
+  col.style.opacity = (0.9 * ca).toFixed(3);
+  place(col, CM, planeModel(sx, -600, -2300, 240, 1500));
+};
+await Promise.all([...document.images].map(i => i.decode().catch(() => {})));
+await Promise.all(houses.flatMap(o => [...o.el.querySelectorAll('img')].map(i => i.decode().catch(() => {}))));
+window.render(0.3);
+window.ok = 1;
+</script></body></html>
