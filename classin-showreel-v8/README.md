@@ -1,14 +1,13 @@
 # ClassIn — 「수업이 즐거우면, 생각이 날아오른다.」 모션그래픽 쇼릴 — v8 작업본
 
-> 이 폴더는 v8 작업본이다. 완성된 v7.1은 `../classin-showreel/`. 기획: [`docs/06_v8_plan.md`](docs/06_v8_plan.md)
+> **v8** — 수업을 더 즐겁게 (24초, 16:9, 사람 장면 없음). v7.1은 `../classin-showreel/`. 기획: [`docs/06_v8_plan.md`](docs/06_v8_plan.md) · 기록: [`docs/04_revision_log.md`](docs/04_revision_log.md)
 
 Instagram 레퍼런스(“Amazon · From A to Z”, riki.bosso)와 제작자 공개 프롬프트를 분석해 **ClassIn** 버전으로 다시 설계한 21초 모션그래픽.
 v7은 원본과 같은 레이어 구조로 만든다 — **생성 이미지(배경·질감·오브젝트)** 를 같은 2.5D 카메라 공간에 배치하고, **빛 한 줄·로고·ClassIn UI·글자는 코드**로 얹는다. AI 영상 생성은 쓰지 않는다.
 
 | 결과물 | |
 |---|---|
-| `out/classin_showreel_16x9.mp4` | 1920×1080 · 60fps · 21.0s · 오리지널 음악 + SFX (−14 LUFS) — **v7.1** (생성 이미지 고래 + 시간 워프로 1.2–1.6배 빠르게) |
-| `out/classin_showreel_9x16.mp4` | 1080×1920 — 아직 v4 (v7 세로판은 16:9 확정 후) |
+| `out/classin_showreel_16x9.mp4` | 1920×1080 · 60fps · 24.0s · 오리지널 음악 + SFX (−14 LUFS) · 필름 그레이딩 — **v8** (3D 폰·태블릿·펜, 교실 놀이 도구, 빛 고래, 클레이 → 집, 아침 리포트) |
 | `docs/storyboard/` | 레퍼런스 보드, 스토리보드 시트, 수정 전/후 비교, 모션 분석 그래프 |
 
 ## 문서 (작업 순서)

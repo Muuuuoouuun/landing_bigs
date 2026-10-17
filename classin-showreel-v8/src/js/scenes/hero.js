@@ -1,9 +1,11 @@
-// S6 · 히어로 (24.00–26.40) + S7 · 엔드카드 (26.40–28.80): the converged light lands as the i-dot.
-// From the dot the light traces the wordmark C → n, and the ink floods out after it — the code-built
-// mark settles onto the paper with its satin bevel, grain and shadow; a slow sheen crosses it. Then the
-// i-dot's light becomes a single point, stretches into a line, and the end card opens out of it.
+// S13 (v8) · 히어로 (19.55–22.2) + 엔드카드 (22.2–24.0): the pen (real 3D) spins up out of the frame and stands
+// where the logo's i will be — its nib is the i's slanted foot, its light the i-dot. On the hit the light traces
+// the wordmark C → n and the ink floods out after it: the code-built mark settles onto the paper with its satin
+// bevel, grain and shadow; a slow sheen crosses it. Then the i-dot's light becomes a single point, stretches into a
+// line, and the end card opens out of it.
 import { E, tw, prog, clamp, lerp, shake, h } from '../core.js';
 import { createMark } from '../brandmark.js';
+import { makePen } from '../gl.js';
 
 // where the mark rests (shared with the tagline's convergence point)
 export function markRest(W, H, P) {
@@ -36,6 +38,21 @@ export default function heroScene(ctx) {
   el.append(top, bot);
   small.draw({ fill: 1, dot: 0.7, lift: 0.6 });
 
+  // the pen that becomes the i (three.js): stands from the i's foot to the i-dot
+  const { gl } = ctx, THREE = gl.THREE;
+  const pscene = new THREE.Scene();
+  pscene.environment = gl.env;
+  const pcam = new THREE.PerspectiveCamera(14, W / H, 0.1, 100);
+  pcam.position.set(0, 0, 10); pcam.lookAt(0, 0, 0);
+  const key = new THREE.DirectionalLight(0xffffff, 2.4); key.position.set(-3, 4, 6); pscene.add(key);
+  const rimL = new THREE.DirectionalLight(0xc8f7a8, 2.2); rimL.position.set(4, 1, -2); pscene.add(rimL);
+  const pen = makePen();
+  pscene.add(pen);
+  const U = (2 * 10 * Math.tan(THREE.MathUtils.degToRad(7))) / H; // world units per px on the z = 0 plane
+  const kk = R.w / 2714;
+  const foot = [R.lx + ((2105 + 2222.5) / 2 - 2) * kk, R.ly + (700 - 4) * kk]; // the i's slanted foot
+  const toW = ([x, y]) => [(x - W / 2) * U, (H / 2 - y) * U];
+
   function layout() {
     top.style.top = '0px'; top.style.height = `${CY}px`;
     bot.style.top = `${CY}px`; bot.style.height = `${H - CY}px`;
@@ -45,7 +62,7 @@ export default function heroScene(ctx) {
   }
 
   function update(t) {
-    el.style.opacity = clamp(prog(t, T.hero - 0.1, T.hero)) * (1 - tw(t, T.fadeA, 28.8, E.inOutSine));
+    el.style.opacity = clamp(prog(t, T.hero - 0.1, T.hero)) * (1 - tw(t, T.fadeA, 24.0, E.inOutSine));
     const trace = tw(t, T.hero, T.traceB, E.inOutSine);
     const fill = tw(t, T.hero + 0.06, T.fillB, E.inOutCubic);
     const lift = lerp(0.25, 1, tw(t, T.traceB, T.fillB + 0.3, E.outCubic));
@@ -76,6 +93,26 @@ export default function heroScene(ctx) {
   }
 
   function draw(fx, t) {
+    if (t >= T.penUp && t < T.hero) {
+      // the pen: up from below the frame, spinning on its axis, tilting upright, landing on the i
+      const k = E.inOutCubic(prog(t, T.penUp, T.hero - 0.02));
+      const top = [R.dot[0], R.dot[1]];
+      const len = (foot[1] - top[1]) * U; // world length from the i's foot to the dot
+      const sy = lerp(0.9, len / 1.416, k), sx = lerp(0.9, 1.15, k);
+      pen.scale.set(sx, sy, sx);
+      pen.rotation.set(0, (1 - k) * Math.PI * 6, lerp(-1.1, 0, k));
+      const fw = toW(foot), from = [fw[0] + 1.2, fw[1] - 1.6];
+      pen.position.set(lerp(from[0], fw[0], k), lerp(from[1], fw[1], k), 0);
+      pen.updateMatrixWorld(true);
+      // keep the nib on the path: offset so the tip sits at the interpolated foot point
+      const tip = new THREE.Vector3(0, pen.userData.tipY, 0).applyMatrix4(pen.matrixWorld);
+      pen.position.x += lerp(from[0], fw[0], k) - tip.x; pen.position.y += lerp(from[1], fw[1], k) - tip.y;
+      gl.draw(pscene, pcam);
+      // the light gathering at the pen's top — where the i-dot will be
+      pen.updateMatrixWorld(true);
+      const cap = new THREE.Vector3(0, 0.66, 0).applyMatrix4(pen.matrixWorld).project(pcam);
+      fx.head((cap.x + 1) / 2 * W, (1 - cap.y) / 2 * H, 3 + 2 * k, tw(t, T.hero - 0.25, T.hero - 0.02));
+    }
     if (t < T.hero) return;
     const D = R.dot;
     // impact at the dot

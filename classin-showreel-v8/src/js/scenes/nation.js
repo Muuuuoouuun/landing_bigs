@@ -32,10 +32,10 @@ export default function nationScene(ctx) {
 
   function camAt(t) {
     const c = keyed(t, [
-      { t: 16.5, x: 0, y: 260, z: 0, s: 0.34, rx: 48, ry: 0, rz: -6 },
+      { t: 13.95, x: 0, y: 260, z: 0, s: 0.34, rx: 48, ry: 0, rz: -6 },
       { t: T.spreadA, x: 0, y: 60, z: 0, s: 0.6, rx: 34, ry: 0, rz: -3, e: E.outCubic },
       { t: T.spreadB, x: 20, y: 40, z: 0, s: 0.68, rx: 26, ry: 0, rz: 0, e: E.inOutSine },
-      { t: 19.6, x: 20, y: 60, z: 0, s: 0.72, rx: 20, ry: 0, rz: 1, e: E.inOutSine },
+      { t: 16.05, x: 20, y: 60, z: 0, s: 0.72, rx: 20, ry: 0, rz: 1, e: E.inOutSine },
     ]);
     c.ry += 2 * drift(t, 0.9, 0.1);
     c.d = 1700;
@@ -45,8 +45,8 @@ export default function nationScene(ctx) {
   let cur = null;
   function update(t) {
     const CM = camMatrix(camAt(t), W, H);
-    el.style.opacity = tw(t, T.mapIn - 0.3, T.mapIn + 0.25, E.inOutSine) * (1 - tw(t, T.liftOff + 0.05, 19.45, E.inOutSine));
-    const k = tw(t, 16.5, 19.6);
+    el.style.opacity = tw(t, T.mapIn - 0.3, T.mapIn + 0.25, E.inOutSine) * (1 - tw(t, T.liftOff + 0.05, 15.95, E.inOutSine));
+    const k = tw(t, 13.95, 16.05);
     plate.style.transform = `scale(${lerp(1.22, 1.08, k).toFixed(4)}) translateY(${lerp(30, -10, k).toFixed(1)}px)`;
     shade.style.opacity = lerp(0.72, 0.35, tw(t, T.spreadA, T.liftOff)).toFixed(3);
     for (const { n, e } of lab) {
@@ -64,7 +64,7 @@ export default function nationScene(ctx) {
   function draw(fx, t) {
     if (!cur) return;
     const { CM } = cur;
-    const fade = tw(t, T.mapIn - 0.2, T.mapIn + 0.3) * (1 - tw(t, T.liftOff + 0.05, 19.4));
+    const fade = tw(t, T.mapIn - 0.2, T.mapIn + 0.3) * (1 - tw(t, T.liftOff + 0.05, 15.9));
     if (fade <= 0) return;
     // the map: every dot is a neighbourhood; dim until the light reaches it, then warm, some 연두
     for (const d of dots) {
@@ -104,7 +104,7 @@ export default function nationScene(ctx) {
     fx.flare(oq[0], oq[1], 160, 0.6 * fade * tw(t, T.mapIn, T.spreadA));
     // lift-off: every light rises towards the frame top (into the morning)
     if (t > T.liftOff - 0.3) {
-      const lk = tw(t, T.liftOff - 0.3, 19.4, E.inCubic);
+      const lk = tw(t, T.liftOff - 0.3, 15.9, E.inCubic);
       for (const n of nodes.filter(n => n.tier <= 1)) {
         const b = project(CM, [[n.X, n.Y, 200]])[0];
         fx.line([b, [lerp(b[0], W / 2, lk * 0.6), lerp(b[1], -100, lk)]], { w: 3, alpha: fade, taper: 1, head: 1 });

@@ -218,3 +218,21 @@ body.portrait .tl { font-size: 92px; }
 .whalepic { backface-visibility: visible; }
 .whalepic img { display: none; }
 .whalepic canvas { display: block; }
+/* v8 · the tablet and phone on the desk (premium: brushed metal edge, black glass, a soft sheen) */
+.tablet8 { border-radius: 30px; background: linear-gradient(135deg, #5C6066 0%, #2E3136 22%, #1B1D21 50%, #34373D 78%, #6A6E74 100%); box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 34px 70px rgba(0,0,0,0.6), 0 6px 14px rgba(0,0,0,0.45); padding: 0; }
+.tablet8 .glass { position: absolute; inset: 4px; border-radius: 26px; background: #040405; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+.classcv { image-rendering: auto; }
+.phone8 { border-radius: 26px; background: linear-gradient(135deg, #5A5E64, #24262A 30%, #17181B 60%, #3A3D42); box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset, 0 20px 40px rgba(0,0,0,0.55); }
+.phone8 i { position: absolute; inset: 5px; border-radius: 22px; background: linear-gradient(160deg, #11161A, #050607 60%, #0B0E10); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05); }
+.gl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+/* v8 · the dawn town: clay → texture → lit */
+.plate8 { position: absolute; left: -10%; top: -10%; width: 120%; height: 120%; background-size: cover; background-position: center; will-change: transform; }
+.sky8 { background-image: url(assets/gen/sky_dawn.jpg); }
+.town8 { background-image: url(assets/gen/town_far.jpg); -webkit-mask-image: linear-gradient(to bottom, transparent 32%, #000 58%); }
+.haze8 { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,214,170,0) 35%, rgba(255,214,170,0.14) 70%, rgba(30,32,48,0.28) 100%); pointer-events: none; }
+.hs8 img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.hs8 img.g { mix-blend-mode: screen; }
+.hs8 .edge { position: absolute; top: -2%; width: 3px; height: 104%; margin-left: -1.5px; background: #F4FFE4; border-radius: 2px; box-shadow: 0 0 10px 3px rgba(170,240,100,0.95), 0 0 36px 12px rgba(140,230,80,0.5); }
+.shd8 { background: radial-gradient(closest-side, rgba(8,10,18,0.55), rgba(8,10,18,0)); }
+.curtain8 { background: linear-gradient(to top, rgba(170,240,110,0) 0%, rgba(190,250,140,0.55) 18%, rgba(230,255,200,0.75) 50%, rgba(190,250,140,0.4) 85%, rgba(170,240,110,0) 100%); mix-blend-mode: screen; filter: blur(2px); }
+.column8 { background: linear-gradient(to right, rgba(160,240,100,0) 0%, rgba(190,250,140,0.35) 35%, rgba(240,255,220,0.85) 50%, rgba(190,250,140,0.35) 65%, rgba(160,240,100,0) 100%); mix-blend-mode: screen; filter: blur(6px); -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%, #000 70%, transparent 100%); }

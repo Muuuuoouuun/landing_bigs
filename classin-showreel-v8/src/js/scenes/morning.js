@@ -1,124 +1,103 @@
-// S7 · 다음 날 아침 (19.20–21.00): morning sun on the same desk. Under last night's question, the light draws
-// Seo-yun's answer — the whale with its wings and balloons — and then lands on the question mark: its dot becomes
-// the slanted ClassIn i-dot, a stamp that cools into ink (the original's smile landing on the box). A parent
-// notification slides in: 오늘의 수업 리포트가 도착했어요.
-import { E, tw, prog, clamp, lerp, drift, keyed, camMatrix, place, planeModel, xf, measure, slice, catmull, h } from '../core.js';
-import { project } from '../line.js';
-import { NOTE } from './book.js';
-import { whaleStrokes } from './whale.js';
-import { createMark } from '../brandmark.js';
-import SPRITES from '../../assets/gen/sprites.js';
+// S11 (v8) · 15.9–17.6 · the next morning (real 3D): the phone lies on the walnut desk in low sunlight, its shadow
+// long across the grain. The same notification sound as the opening — the parent's report slides down the lock
+// screen: 오늘의 수업 리포트가 도착했어요 · 퀴즈 3개 정답, 트로피 2개를 받았어요 🏆. The film opened on this phone; it
+// closes on it.
+import { E, tw, prog, clamp, lerp } from '../core.js';
+import { bodyGeo, roundRectGeo, metal, screenMat, glareTex } from '../gl.js';
 
 export default function morningScene(ctx) {
-  const { W, H, T, copy } = ctx;
-  const el = h('section', 'scene morning');
-  ctx.root.appendChild(el);
-  const plane = (cls, w, hh, html) => { const d = h('div', `obj ${cls}`, html); d.style.width = `${w}px`; d.style.height = `${hh}px`; el.appendChild(d); return d; };
-  const desk = plane('desk', 4200, 2600);
-  const nShadow = plane('bshadow', NOTE.w + 260, NOTE.h + 220);
-  const note = plane('note', NOTE.w, NOTE.h, `<div class="nd">10월 17일 (금)</div>
-    <div class="nl l1"><span>${copy.question[0]}</span></div><div class="nl l2"><span>${copy.question[1].slice(0, -1)}<em class="qm">?</em></span></div>`);
-  const props = []
-    .map(p => { const m = SPRITES[`${p.src}.png`]; const w = p.h * (m.w / m.h); return { ...p, w, el: plane('prop', w, p.h, `<img src="assets/gen/${p.src}.png" alt="">`) }; });
-  const sun = h('div', 'sunlight');
-  el.appendChild(sun);
-  const notif = h('div', 'notif', `<div class="ic"></div><div class="tx"><div class="r1"><b>${copy.notify.app}</b><span>지금</span></div><div class="r2">${copy.notify.title}</div><div class="r3">${copy.notify.body}</div></div>`);
-  el.appendChild(notif);
-  const icon = createMark(84, { pad: 4 });
-  icon.draw({ fill: 1, dot: 0.8, lift: 0.3 });
-  notif.querySelector('.ic').appendChild(icon.el);
-  const qm = note.querySelector('.qm');
-  const MN = planeModel(NOTE.x, NOTE.y, 0, NOTE.w, NOTE.h, { rz: NOTE.rz });
-  // the answer, drawn under the question (notebook-local px)
-  const C = [215, 455], S = 0.62;
-  const loc = ([x, y]) => [C[0] - x * S, C[1] + y * S]; // mirrored: the whale swims to the right, upwards
-  const wings = [catmull([[-30, -66], [-80, -150], [10, -190], [50, -76]], 8), catmull([[-34, -100], [-10, -140]], 4)];
-  const balloons = [[150, -190, 30], [225, -165, 34]].map(([x, y, rr]) => Array.from({ length: 29 }, (_, i) => { const a = (i / 28) * Math.PI * 2; return [x + Math.cos(a) * rr, y + Math.sin(a) * rr]; }));
-  const strings = [[[150, -160], [95, -62]], [[225, -131], [110, -50]]];
-  const draws = [
-    ...whaleStrokes().map(s => ({ pts: s.pts.map(loc), ink: s.accent ? '#6DBB2C' : '#4A4A4E' })),
-    ...wings.map(p => ({ pts: p.map(loc), ink: '#5B9BD5' })),
-    ...balloons.map(p => ({ pts: p.map(loc), ink: '#F08A24' })), ...strings.map(p => ({ pts: p.map(loc), ink: '#B0A89A' })),
-  ];
-  const lens = draws.map(d => { const L = measure(d.pts); return L[L.length - 1]; }), total = lens.reduce((a, b) => a + b, 0);
-  let Q = null;
-  function layout() {
-    const keep = note.style.transform; note.style.transform = 'none';
-    const N0 = note.getBoundingClientRect(), sc = N0.width / note.offsetWidth, q = qm.getBoundingClientRect();
-    // the question mark's dot: bottom centre of the glyph
-    Q = [(q.left - N0.left) / sc + (q.width / sc) * 0.46, (q.top - N0.top) / sc + (q.height / sc) * 0.8];
-    note.style.transform = keep;
-  }
-  // the ClassIn i-dot (slanted parallelogram), in notebook px around the question mark's dot
-  const dotShape = s => [[-0.5, -0.62], [0.5, -0.25], [0.5, 0.62], [-0.5, 0.25]].map(([x, y]) => [Q[0] + x * 20 * s, Q[1] + y * 20 * s]);
+  const { T, copy, gl, W, H } = ctx;
+  const THREE = gl.THREE;
+  const scene = new THREE.Scene();
+  scene.environment = gl.env;
+  const camera = new THREE.PerspectiveCamera(28, W / H, 0.05, 100);
+  const sun = new THREE.DirectionalLight(0xffe2b8, 3.2);
+  sun.position.set(-4, 3.2, 2.2);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -3; sun.shadow.camera.right = 3; sun.shadow.camera.top = 3; sun.shadow.camera.bottom = -3;
+  sun.shadow.radius = 6; sun.shadow.bias = -0.0005;
+  scene.add(sun);
+  scene.add(new THREE.HemisphereLight(0xfff4e6, 0x3a2a1c, 0.5));
 
-  function camAt(t) {
-    const c = keyed(t, [
-      { t: 19.0, x: NOTE.x + 120, y: NOTE.y - 40, z: 0, s: 1.3, rx: 22, ry: 0, rz: -2 },
-      { t: T.stamp, x: NOTE.x + 60, y: NOTE.y - 10, z: 0, s: 1.55, rx: 18, ry: 0, rz: -3, e: E.inOutSine },
-      { t: 21.3, x: NOTE.x + 40, y: NOTE.y, z: 0, s: 1.62, rx: 16, ry: 0, rz: -3, e: E.inOutSine },
-    ]);
-    c.ry += drift(t, 2.1, 0.1);
-    c.d = 1700;
-    return c;
-  }
+  // the desk (generated walnut texture)
+  const img = new Image();
+  img.src = 'assets/gen/desk_wood.jpg';
+  const deskTex = new THREE.Texture(img);
+  deskTex.colorSpace = THREE.SRGBColorSpace;
+  deskTex.wrapS = deskTex.wrapT = THREE.RepeatWrapping;
+  deskTex.repeat.set(1.2, 1.2);
+  deskTex.anisotropy = 8;
+  img.onload = () => { deskTex.needsUpdate = true; };
+  const desk = new THREE.Mesh(new THREE.PlaneGeometry(9, 6), new THREE.MeshStandardMaterial({ map: deskTex, roughness: 0.62, metalness: 0, envMapIntensity: 0.4 }));
+  desk.receiveShadow = true;
+  scene.add(desk);
 
-  let cur = null;
+  // the phone, lying on the desk
+  const N = copy.notify;
+  const lc = document.createElement('canvas'); lc.width = 720; lc.height = 1500;
+  const lk = lc.getContext('2d');
+  const lockTex = new THREE.CanvasTexture(lc); lockTex.colorSpace = THREE.SRGBColorSpace; lockTex.anisotropy = 8;
+  function drawLock(t) {
+    let g = lk.createLinearGradient(0, 0, 300, 1500); g.addColorStop(0, '#F4D9AE'); g.addColorStop(0.45, '#E9B98A'); g.addColorStop(1, '#B9785A');
+    lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
+    g = lk.createRadialGradient(520, 260, 10, 520, 260, 760); g.addColorStop(0, 'rgba(255,248,220,0.7)'); g.addColorStop(1, 'rgba(255,248,220,0)'); lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
+    lk.fillStyle = '#000'; lk.beginPath(); lk.roundRect(290, 40, 140, 40, 20); lk.fill();
+    lk.fillStyle = 'rgba(60,36,20,0.85)'; lk.textAlign = 'center';
+    lk.font = '600 30px Pretendard'; lk.fillText(N.date, 360, 190);
+    lk.font = '300 190px Pretendard'; lk.fillText(N.time, 360, 370);
+    const p = E.outBack(prog(t, T.notify, T.notify + 0.32)), a = clamp(prog(t, T.notify, T.notify + 0.1));
+    if (a > 0) {
+      const nx = 46, ny = lerp(300, 470, p), nw = 628, nh = 250;
+      lk.save(); lk.globalAlpha = a;
+      lk.shadowColor = 'rgba(80,40,10,0.25)'; lk.shadowBlur = 30; lk.shadowOffsetY = 10;
+      lk.fillStyle = 'rgba(250,248,244,0.96)'; lk.beginPath(); lk.roundRect(nx, ny, nw, nh, 44); lk.fill();
+      lk.shadowBlur = 0; lk.shadowOffsetY = 0;
+      lk.fillStyle = '#fff'; lk.beginPath(); lk.roundRect(nx + 32, ny + 32, 72, 72, 18); lk.fill();
+      lk.strokeStyle = 'rgba(0,0,0,0.08)'; lk.lineWidth = 2; lk.stroke();
+      lk.fillStyle = '#10B415'; lk.save(); lk.translate(nx + 68, ny + 68); lk.transform(1, -0.45, 0, 1, 0, 0); lk.fillRect(-9, -20, 18, 42); lk.restore();
+      lk.textAlign = 'left'; lk.fillStyle = '#6a6c6e'; lk.font = '600 28px Pretendard'; lk.fillText(N.app, nx + 124, ny + 64);
+      lk.textAlign = 'right'; lk.fillText('지금', nx + nw - 34, ny + 64);
+      lk.textAlign = 'left'; lk.fillStyle = '#141516'; lk.font = '800 36px Pretendard'; lk.fillText(N.title, nx + 34, ny + 150);
+      lk.fillStyle = '#4b4d50'; lk.font = '400 28px Pretendard'; lk.fillText(N.body, nx + 34, ny + 198);
+      lk.restore();
+    }
+    lockTex.needsUpdate = true;
+  }
+  const phone = new THREE.Group();
+  const PW = 0.76, PH = 1.58, PD = 0.085;
+  const body = new THREE.Mesh(bodyGeo(PW, PH, PD, 0.115, 0.02), metal(0xc9b9a6, 0.3));
+  body.castShadow = true;
+  const bezel = new THREE.Mesh(roundRectGeo(PW - 0.024, PH - 0.024, 0.103), new THREE.MeshPhysicalMaterial({ color: 0x050505, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05 }));
+  bezel.position.z = PD / 2 + 0.0004;
+  const scr = new THREE.Mesh(roundRectGeo(PW - 0.05, PH - 0.05, 0.085), screenMat(lockTex));
+  scr.position.z = PD / 2 + 0.0008;
+  const glare = new THREE.Mesh(roundRectGeo(PW - 0.05, PH - 0.05, 0.085), new THREE.MeshBasicMaterial({ map: glareTex(), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  glare.position.z = PD / 2 + 0.0012;
+  phone.add(body, bezel, scr, glare);
+  phone.position.set(0.15, -0.05, PD / 2);
+  phone.rotation.z = -0.32;
+  scene.add(phone);
+
   function update(t) {
-    const CM = camMatrix(camAt(t), W, H);
-    el.style.opacity = tw(t, 19.05, T.morning + 0.25, E.inOutSine) * (1 - tw(t, T.sweepA - 0.25, T.sweepA + 0.15, E.inOutSine));
-    place(desk, CM, planeModel(NOTE.x + 200, NOTE.y, -14, 4200, 2600));
-    place(nShadow, CM, planeModel(NOTE.x + 26, NOTE.y + 34, -12, NOTE.w + 260, NOTE.h + 220, { rz: NOTE.rz }));
-    place(note, CM, MN);
-    for (const p of props) place(p.el, CM, planeModel(NOTE.x + p.x, NOTE.y + p.y, p.h / 2, p.w, p.h, { rx: -90 }));
-    sun.style.opacity = (0.85 + 0.15 * drift(t, 3, 0.2)).toFixed(3);
-    const nk = tw(t, T.notify, T.notify + 0.35, E.outBack);
-    notif.style.opacity = clamp(nk * 1.4).toFixed(3);
-    notif.style.transform = `translate(-50%, ${((1 - nk) * -150).toFixed(1)}px)`;
-    cur = { CM, M: MN };
+    drawLock(t);
+    // a slow push down towards the phone, drifting around it
+    const k = tw(t, 15.8, 17.6, E.inOutSine);
+    const ang = lerp(-0.5, -0.32, k), dist = lerp(3.6, 2.85, k), tilt = lerp(0.62, 0.42, k);
+    camera.position.set(0.15 + Math.sin(ang) * dist * Math.sin(tilt), -0.05 - Math.cos(ang) * dist * Math.sin(tilt), dist * Math.cos(tilt));
+    camera.up.set(0, 0, 1);
+    camera.lookAt(0.12, 0.02, 0);
   }
 
   function draw(fx, t) {
-    if (!cur || !Q) return;
-    const P3 = pts => project(cur.CM, pts.map(([x, y]) => xf(cur.M, x, y, 0)));
-    const fade = tw(t, 19.1, T.morning + 0.25) * (1 - tw(t, T.sweepA - 0.25, T.sweepA + 0.1));
-    // the answer drawn by the light: graphite, wings in blue, balloons in orange, spout in 연두
-    const dk = tw(t, T.doodleA, T.doodleB, E.inOutSine);
-    let acc = 0;
-    draws.forEach((d, j) => {
-      const a0 = acc / total, a1 = (acc + lens[j]) / total;
-      acc += lens[j];
-      const k = clamp((dk - a0) / (a1 - a0));
-      if (k <= 0) return;
-      fx.line(P3(slice(d.pts, 0, k)), { w: 3, alpha: fade, taper: 0, head: k < 1 ? 0.9 : 0, cool: 1 - 0.7 * (k < 1 ? 1 : 0) * (1 - prog(t, T.doodleB, T.doodleB + 0.3)), ink: d.ink, inkW: 0.85 });
-    });
-    // the stamp: a light drops onto the question mark — its dot becomes the slanted ClassIn i-dot, then cools to ink
-    const drop = prog(t, T.stamp - 0.32, T.stamp);
-    if (drop > 0 && drop < 1) {
-      const q = P3([Q])[0];
-      const from = [q[0] + 160, q[1] - 520];
-      const k = E.inCubic(drop);
-      fx.line([[lerp(from[0], q[0], Math.max(0, k - 0.3)), lerp(from[1], q[1], Math.max(0, k - 0.3))], [lerp(from[0], q[0], k), lerp(from[1], q[1], k)]], { w: 4.5, alpha: fade, taper: 1, head: 1.2 });
-    }
-    if (t >= T.stamp) {
-      const k = prog(t, T.stamp, T.stamp + 0.5);
-      const s = 1 + 0.6 * (1 - E.outBack(Math.min(1, k * 2)));
-      const poly = P3(dotShape(s));
-      fx.shape(poly, fade * (1 - 0.65 * tw(t, T.stamp + 0.2, T.stamp + 0.8)), 1 - k);
-      const q = P3([Q])[0];
-      fx.flare(q[0], q[1], 120 * (1 - k) + 20, 0.8 * fade * (1 - k));
-      for (let i = 0; i < 2; i++) {
-        const rk = prog(t, T.stamp + i * 0.08, T.stamp + 0.6 + i * 0.08);
-        if (rk <= 0 || rk >= 1) continue;
-        const R = 20 + 90 * E.outCubic(rk);
-        fx.line(P3(Array.from({ length: 41 }, (_, a) => [Q[0] + Math.cos(a / 40 * Math.PI * 2) * R, Q[1] + Math.sin(a / 40 * Math.PI * 2) * R * 0.9])), { w: 2 * (1 - rk), alpha: (1 - rk) * fade, taper: 0 });
-      }
-      // printed: the question mark's dot is covered and the slanted i-dot stays on the page in green ink
-      const cov = P3(Array.from({ length: 13 }, (_, a) => [Q[0] + Math.cos(a / 12 * Math.PI * 2) * 10, Q[1] + Math.sin(a / 12 * Math.PI * 2) * 10]));
-      fx.inkPoly(cov, '#FBFAF6', fade * tw(t, T.stamp, T.stamp + 0.05));
-      fx.inkPoly(P3(dotShape(1)), '#2FB838', fade * tw(t, T.stamp + 0.15, T.stamp + 0.6));
-    }
+    const a = tw(t, 15.85, 16.08) * (1 - tw(t, T.sweepA - 0.3, T.sweepA - 0.02));
+    if (a <= 0) return;
+    gl.canvas.style.opacity = a.toFixed(3);
+    gl.draw(scene, camera);
+    // the report arrives: a soft flare on the screen
+    const f = prog(t, T.notify, T.notify + 0.5);
+    if (f > 0 && f < 1) fx.flare(W * 0.52, H * 0.45, 420 * (0.4 + f), 0.35 * (1 - f) * a, '255,230,170');
   }
 
-  return { el, range: ctx.S.morning, layout, update, draw };
+  return { el: null, range: ctx.S.morning, update, draw };
 }

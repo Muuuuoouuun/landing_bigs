@@ -1,8 +1,0 @@
-<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#0b0c0e}</style></head><body><canvas id="c" width="1400" height="700"></canvas>
-<script type="module">
-import { whaleStrokes } from '../js/scenes/whale.js';
-const g=document.getElementById('c').getContext('2d');
-g.translate(700,330); g.scale(2.2,2.2); g.lineWidth=2; g.lineCap='round'; g.lineJoin='round';
-for(const s of whaleStrokes()){ g.strokeStyle=s.accent?'#a6e86a':'#dfe8d8'; g.beginPath(); s.pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); }
-window.ok=1;
-</script></body></html>

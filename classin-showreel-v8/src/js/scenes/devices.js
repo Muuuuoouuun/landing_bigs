@@ -1,0 +1,177 @@
+// S1–S3 (v8) · 0.00–3.72 · real 3D (three.js): a phone spins in out of the dark and stops dead on the beat — the
+// ClassIn notification slams onto the lock screen: 오늘은 상상 퀴즈 수업! The pen's light fills [입장하기], a tap, and
+// the phone stretches and turns into a tablet with the live class on it. The pen spins in like a drumstick, taps
+// the screen, writes the quiz — and the camera dives into the screen until it is the frame (the room scene's
+// tablet shows the very same canvas, so the hand-over is invisible).
+import { E, tw, prog, clamp, lerp } from '../core.js';
+import { bodyGeo, roundRectGeo, metal, screenMat, glareTex, makePen } from '../gl.js';
+import { BOARD } from '../classui.js';
+
+const PH = { w: 0.76, h: 1.58, d: 0.085, r: 0.115 };
+const TB = { w: 1.52, h: 2.64, d: 0.07, r: 0.12 }; // the tablet, in the phone's portrait frame (it ends turned 90°)
+const SW = 2.56, SH = 1.44; // the tablet's screen: exactly 16:9
+
+export default function devicesScene(ctx) {
+  const { T, copy, gl, W, H } = ctx;
+  const THREE = gl.THREE;
+  const scene = new THREE.Scene();
+  scene.environment = gl.env;
+  const camera = new THREE.PerspectiveCamera(30, W / H, 0.02, 100);
+  const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(-4, 6, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0xc8f7a8, 3.0); rim.position.set(6, 3, -3); scene.add(rim);
+  const rim2 = new THREE.DirectionalLight(0xffffff, 1.4); rim2.position.set(-6, -1, -2); scene.add(rim2);
+
+  // ---------- lock screen (canvas texture) ----------
+  const lc = document.createElement('canvas'); lc.width = 720; lc.height = 1500;
+  const lk = lc.getContext('2d');
+  const lockTex = new THREE.CanvasTexture(lc); lockTex.colorSpace = THREE.SRGBColorSpace; lockTex.anisotropy = 8;
+  const L = copy.lock;
+  function drawLock(t) {
+    lk.setTransform(1, 0, 0, 1, 0, 0);
+    let g = lk.createLinearGradient(0, 0, 400, 1500); g.addColorStop(0, '#1d3b2a'); g.addColorStop(0.5, '#14261f'); g.addColorStop(1, '#0a110e');
+    lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
+    g = lk.createRadialGradient(560, 300, 10, 560, 300, 700); g.addColorStop(0, 'rgba(140,230,90,0.45)'); g.addColorStop(1, 'rgba(140,230,90,0)'); lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
+    lk.fillStyle = '#000'; lk.beginPath(); lk.roundRect(290, 40, 140, 40, 20); lk.fill();
+    lk.fillStyle = 'rgba(255,255,255,0.9)'; lk.textAlign = 'center';
+    lk.font = '600 30px Pretendard'; lk.fillText(L.date, 360, 190);
+    lk.font = '300 190px Pretendard'; lk.fillText(L.time, 360, 370);
+    // the notification slams in on the beat
+    const p = prog(t, T.slam, T.slam + 0.18), a = clamp(p * 3);
+    if (a > 0) {
+      const s = lerp(1.18, 1, E.outCubic(p)), nx = 52, ny = 470, nw = 616, nh = 290;
+      lk.save(); lk.globalAlpha = a; lk.translate(360, ny + nh / 2); lk.scale(s, s); lk.translate(-360, -(ny + nh / 2));
+      lk.fillStyle = 'rgba(245,246,243,0.95)'; lk.beginPath(); lk.roundRect(nx, ny, nw, nh, 44); lk.fill();
+      lk.fillStyle = '#fff'; lk.beginPath(); lk.roundRect(nx + 32, ny + 32, 72, 72, 18); lk.fill();
+      lk.strokeStyle = 'rgba(0,0,0,0.08)'; lk.lineWidth = 2; lk.stroke();
+      lk.fillStyle = '#10B415'; lk.save(); lk.translate(nx + 68, ny + 68); lk.transform(1, -0.45, 0, 1, 0, 0); lk.fillRect(-9, -20, 18, 42); lk.restore();
+      lk.textAlign = 'left'; lk.fillStyle = '#6a6c6e'; lk.font = '600 28px Pretendard'; lk.fillText(L.app, nx + 124, ny + 64);
+      lk.textAlign = 'right'; lk.fillText('지금', nx + nw - 34, ny + 64);
+      lk.textAlign = 'left'; lk.fillStyle = '#141516'; lk.font = '800 42px Pretendard'; lk.fillText(L.title, nx + 34, ny + 152);
+      lk.fillStyle = '#4b4d50'; lk.font = '400 29px Pretendard'; lk.fillText(L.sub, nx + 34, ny + 196);
+      const bx = nx + 34, by = ny + 222, bw = nw - 68, f = tw(t, T.btnA, T.btnB, E.inOutCubic);
+      lk.fillStyle = '#E3E5E1'; lk.beginPath(); lk.roundRect(bx, by, bw, 46, 23); lk.fill();
+      if (f > 0) {
+        g = lk.createLinearGradient(bx, 0, bx + bw * f, 0); g.addColorStop(0, '#11A715'); g.addColorStop(1, '#52D13A');
+        lk.save(); lk.beginPath(); lk.roundRect(bx, by, bw, 46, 23); lk.clip(); lk.fillStyle = g; lk.fillRect(bx, by, bw * f, 46);
+        if (f < 1) { const hg = lk.createRadialGradient(bx + bw * f, by + 23, 0, bx + bw * f, by + 23, 40); hg.addColorStop(0, 'rgba(250,255,230,1)'); hg.addColorStop(1, 'rgba(170,240,110,0)'); lk.fillStyle = hg; lk.fillRect(bx + bw * f - 40, by - 20, 80, 86); }
+        lk.restore();
+      }
+      lk.fillStyle = f > 0.5 ? '#fff' : '#55575a'; lk.font = '800 26px Pretendard'; lk.textAlign = 'center'; lk.fillText(L.btn, nx + nw / 2, by + 32);
+      // the tap
+      const tp = prog(t, T.tap, T.tap + 0.35);
+      if (tp > 0 && tp < 1) { lk.strokeStyle = `rgba(200,255,160,${(1 - tp).toFixed(3)})`; lk.lineWidth = 6; lk.beginPath(); lk.arc(nx + nw / 2, by + 23, 20 + tp * 140, 0, Math.PI * 2); lk.stroke(); }
+      lk.restore();
+    }
+    lockTex.needsUpdate = true;
+  }
+
+  // ---------- the device ----------
+  const dev = new THREE.Group();
+  scene.add(dev);
+  const bodyMat = metal(0x2b2e33, 0.26);
+  const bezelMat = new THREE.MeshPhysicalMaterial({ color: 0x050505, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 0.6 });
+  const body = new THREE.Mesh(undefined, bodyMat), bezel = new THREE.Mesh(undefined, bezelMat);
+  const lockScr = new THREE.Mesh(undefined, screenMat(lockTex));
+  const classTex = new THREE.CanvasTexture(ctx.classUI.canvas); classTex.colorSpace = THREE.SRGBColorSpace; classTex.anisotropy = 8;
+  const classScr = new THREE.Mesh(roundRectGeo(SW, SH, 0.03), screenMat(classTex));
+  classScr.rotation.z = -Math.PI / 2; // the class screen is landscape inside the portrait frame
+  const glare = new THREE.Mesh(roundRectGeo(1, 1, 0.02), new THREE.MeshBasicMaterial({ map: glareTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  dev.add(body, bezel, lockScr, classScr, glare);
+  let dims = '';
+  function shape(w, h, d, r, round) {
+    const key = [w, h, d, r, round].map(v => v.toFixed(4)).join();
+    if (key === dims) return;
+    dims = key;
+    body.geometry?.dispose(); bezel.geometry?.dispose(); lockScr.geometry?.dispose();
+    body.geometry = bodyGeo(w, h, d, r, Math.min(0.02, d * 0.26));
+    bezel.geometry = roundRectGeo(w - 0.024, h - 0.024, r - 0.012); bezel.position.z = d / 2 + 0.0004;
+    lockScr.geometry = roundRectGeo(w - 0.05, h - 0.05, Math.max(0.01, r - 0.03)); lockScr.position.z = d / 2 + 0.0008;
+    classScr.position.z = d / 2 + 0.0009;
+    classScr.scale.set((h - 0.08) / SW, (w - 0.08) / SH, 1);
+    if (Math.abs(round - 0.03) > 1e-4) { classScr.geometry.dispose(); classScr.geometry = roundRectGeo(SW, SH, Math.max(0.0005, round)); }
+    glare.scale.set(w - 0.05, h - 0.05, 1); glare.position.z = d / 2 + 0.0012;
+  }
+
+  // ---------- the pen ----------
+  const pen = makePen();
+  scene.add(pen);
+  const nib = new THREE.PointLight(0x9fe07a, 0, 1.4);
+  scene.add(nib);
+
+  // a point on the class screen (class px) in world space
+  const v = new THREE.Vector3();
+  function screenPoint(px, py) {
+    v.set((px / 1920 - 0.5) * SW, (0.5 - py / 1080) * SH, 0);
+    classScr.updateMatrixWorld(true);
+    return classScr.localToWorld(v.clone());
+  }
+
+  function update(t) {
+    drawLock(t);
+    ctx.classUI.draw(t);
+    classTex.needsUpdate = true;
+    // phone → tablet: a rubbery stretch while it turns to landscape
+    const mk = prog(t, T.morphA, T.morphB);
+    const st = E.outBack(mk), turn = E.inOutCubic(prog(t, T.morphA, T.morphB - 0.15));
+    const w = lerp(PH.w, TB.w, st), h = lerp(PH.h, TB.h, st), d = lerp(PH.d, TB.d, mk), r = lerp(PH.r, TB.r, mk);
+    const dive = prog(t, T.diveA, T.dive);
+    shape(w, h, d, r, lerp(0.03, 0.0005, E.inCubic(dive)));
+    const cf = tw(t, T.morphA + 0.35, T.morphB - 0.05);
+    lockScr.material.opacity = 1 - cf; classScr.material.opacity = cf;
+    lockScr.visible = cf < 1; classScr.visible = cf > 0;
+    glare.material.opacity = 0.9 * (1 - tw(t, T.diveA, T.dive - 0.15));
+    // the phone spins in and stops dead on the slam; a slow push; it leans back as a tablet; faces us for the dive
+    const spin = E.outCubic(prog(t, 0, T.slam));
+    dev.position.set(lerp(0.9, 0, spin), lerp(-0.7, 0, spin), lerp(-3.5, 0, spin));
+    dev.rotation.set(lerp(-0.3, 0.06, spin) - 0.26 * tw(t, T.morphA, T.morphB) * (1 - E.inOutCubic(dive)), lerp(-Math.PI * 4, 0, spin) + 0.18 * Math.sin(t * 1.3) * (1 - mk) * spin, turn * Math.PI / 2);
+    dev.updateMatrixWorld(true);
+    // camera: close on the phone → pull back for the tablet → dive head-on into the screen (it fills the frame at T.dive)
+    const c0 = new THREE.Vector3(lerp(0, 0.06, tw(t, T.slam, T.tap)), lerp(0.05, 0.1, tw(t, T.slam, T.tap)), lerp(4.2, 3.35, tw(t, T.slam, T.tap, E.inOutSine)));
+    const c1 = new THREE.Vector3(0.1, 0.35, 5.4);
+    const pos = c0.clone().lerp(c1, tw(t, T.morphA, T.morphB, E.inOutCubic));
+    const look = new THREE.Vector3(0, 0, 0);
+    if (dive > 0) {
+      const ctr = screenPoint(960, 540), n = new THREE.Vector3(0, 0, 1).applyQuaternion(classScr.getWorldQuaternion(new THREE.Quaternion()));
+      const D = (SH / 2) / Math.tan(THREE.MathUtils.degToRad(15));
+      const end = ctr.clone().addScaledVector(n, D);
+      const k = E.inOutCubic(dive);
+      pos.lerp(end, k);
+      look.lerp(ctr, k);
+    }
+    camera.position.copy(pos);
+    camera.up.set(0, 1, 0);
+    camera.lookAt(look);
+    // the pen: spins in like a drumstick, taps the screen, writes along the quiz, then lifts away out of the dive
+    const pin = prog(t, T.penIn, T.penTap);
+    pen.visible = t > T.penIn && t < T.dive - 0.1;
+    if (pen.visible) {
+      const q = prog(t, T.quizA, T.quizB);
+      const tip = screenPoint(BOARD.x + 120 + 640 * q, BOARD.y + (q < 0.35 ? 80 : 160));
+      const n = new THREE.Vector3(0, 0, 1).applyQuaternion(classScr.getWorldQuaternion(new THREE.Quaternion()));
+      const away = E.inCubic(prog(t, T.diveA + 0.05, T.dive - 0.15));
+      const from = new THREE.Vector3(2.8, 1.9, 1.6);
+      const at = tip.clone().addScaledVector(n, 0.02 + 0.06 * Math.abs(Math.sin(q * 18)) * (q > 0 && q < 1 ? 1 : 0));
+      const p = from.clone().lerp(at, E.outCubic(pin)).add(new THREE.Vector3(1.6, 1.2, 0.8).multiplyScalar(away));
+      // orient: tip down onto the screen, leaning to the right; spinning while it flies in
+      pen.position.copy(p);
+      pen.rotation.set(0.45 + (1 - pin) * Math.PI * 3, (1 - pin) * Math.PI * 4, -0.55 - (1 - pin) * 1.2);
+      // keep the tip at the target: offset by the tip vector
+      pen.updateMatrixWorld(true);
+      const tipW = new THREE.Vector3(0, pen.userData.tipY, 0).applyMatrix4(pen.matrixWorld);
+      pen.position.add(p.clone().sub(tipW));
+      nib.position.copy(p).addScaledVector(n, 0.05);
+      nib.intensity = 3 * tw(t, T.penTap - 0.1, T.penTap) * (1 - away);
+    }
+    ctx.flash += 0.4 * (t >= T.slam ? 1 - prog(t, T.slam, T.slam + 0.25) : 0) + 0.25 * (t >= T.tap ? 1 - prog(t, T.tap, T.tap + 0.2) : 0);
+    if (t >= T.slam && t < T.slam + 0.3) { const a = (1 - prog(t, T.slam, T.slam + 0.3)) * 14; ctx.shake[0] += Math.sin(t * 190) * a; ctx.shake[1] += Math.cos(t * 160) * a; }
+  }
+
+  function draw(fx, t) {
+    if (t >= T.dive) return; // the room scene's tablet takes over, pixel for pixel
+    gl.draw(scene, camera);
+    // the slam: shards of light out of the notification; the tap's flare
+    if (t >= T.slam && t < T.slam + 0.6) fx.shards(W * 0.5, H * 0.47, t, T.slam, { n: 18, seed: 3, speed: 1300, life: 0.5, len: 80, w: 2.4, spreadY: 0.8 });
+  }
+
+  return { el: null, range: ctx.S.devices, update, draw };
+}

@@ -37,7 +37,7 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch({
   executablePath: exe,
-  args: ['--font-render-hinting=none', '--disable-lcd-text', '--force-color-profile=srgb', '--hide-scrollbars', '--disable-gpu-vsync'],
+  args: ['--font-render-hinting=none', '--disable-lcd-text', '--force-color-profile=srgb', '--hide-scrollbars', '--disable-gpu-vsync', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
 const [W, H] = fmt === '9x16' ? [1080, 1920] : [1920, 1080];
 
