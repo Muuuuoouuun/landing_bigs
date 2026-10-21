@@ -1,11 +1,12 @@
 // S1–S3 (v8) · 0.00–3.72 · real 3D (three.js): a phone spins in out of the dark and stops dead on the beat — the
 // ClassIn notification slams onto the lock screen: 오늘은 상상 퀴즈 수업! The pen's light fills [입장하기], a tap, and
-// the phone stretches and turns into a tablet with the live class on it. The pen spins in like a drumstick, taps
-// the screen, writes the quiz — and the camera dives into the screen until it is the frame (the room scene's
-// tablet shows the very same canvas, so the hand-over is invisible).
+// the phone stretches and turns into a tablet with the live class on it. As it lands the pen flips in (one turn,
+// slowing), touches down and writes the question — its tip on the handwriting path, its body hanging on a damped
+// spring (v8.1) — then lifts away as the camera dives into the screen until it is the frame (the room scene's tablet
+// shows the very same canvas, so the hand-over is invisible).
 import { E, tw, prog, clamp, lerp } from '../core.js';
 import { bodyGeo, roundRectGeo, metal, screenMat, glareTex, makePen } from '../gl.js';
-import { BOARD } from '../classui.js';
+import { makeQuizPen } from '../classui.js';
 
 const PH = { w: 0.76, h: 1.58, d: 0.085, r: 0.115 };
 const TB = { w: 1.52, h: 2.64, d: 0.07, r: 0.12 }; // the tablet, in the phone's portrait frame (it ends turned 90°)
@@ -106,6 +107,71 @@ export default function devicesScene(ctx) {
     return classScr.localToWorld(v.clone());
   }
 
+  // ---------- the pen rig (v8.1) ----------
+  // Everything in the class screen's own frame (x, y in its plane, z off the glass), so the hand-held pen ignores the
+  // device's motion. The tip follows a path: a flip-in arc that slows into the touch-down, the handwriting
+  // (makeQuizPen: shared with the board's ink and the sound), a press and a lift-off. The top hangs on a damped
+  // spring towards "tip + pen length × lean": the body trails the tip, leans into each move and settles with a small
+  // wobble. Integrated deterministically from T.penIn at 960 Hz on every call (render(t) stays pure).
+  const quizPen = makeQuizPen(T, copy);
+  const UPV = new THREE.Vector3(0, 1, 0), PEN_L = 0.66 - pen.userData.tipY;
+  const loc = (px, py, z = 0) => new THREE.Vector3((px / 1920 - 0.5) * SW, (0.5 - py / 1080) * SH, z);
+  const lean = (tilt, az) => new THREE.Vector3(Math.sin(tilt) * Math.cos(az), Math.sin(tilt) * Math.sin(az), Math.cos(tilt));
+  const TILT = 0.74, AZ = 0.5;                                     // ≈ 42° off the glass normal, top towards upper right
+  const FLIP_AX = new THREE.Vector3(Math.cos(AZ + Math.PI / 2), Math.sin(AZ + Math.PI / 2), 0);
+  const S0 = new THREE.Vector3(2.3, 1.7, 1.7), SC = new THREE.Vector3(1.3, 1.25, 1.05);
+  function tipAt(t) {
+    const q0 = quizPen(T.penTap), start = loc(q0.x, q0.y);
+    if (t < T.penTap) {                                            // flight: a curved arc, slowing into the glass
+      const u = clamp((t - T.penIn) / (T.penTap - T.penIn)), m = 1 - (1 - u) ** 2.4, a = 1 - m;
+      return { p: S0.clone().multiplyScalar(a * a).addScaledVector(SC, 2 * a * m).addScaledVector(start, m * m), c: 0 };
+    }
+    if (t < T.quizB) {
+      const q = quizPen(t), press = -0.005 * Math.sin(Math.PI * clamp((t - T.penTap) / 0.07));
+      return { p: loc(q.x, q.y, q.z + press), c: q.c };
+    }
+    const q = quizPen(T.quizB), v = (t - T.quizB) / 0.3, e = E.inCubic(clamp(v)), dip = -0.004 * Math.sin(Math.PI * clamp(v / 0.15));
+    return { p: loc(q.x, q.y).add(new THREE.Vector3(0.95 * e, 0.55 * e, 1.6 * e + dip)), c: v < 0.06 ? 1 : 0 };
+  }
+  function leanAt(t) {
+    const d = lean(TILT + 0.4 * tw(t, T.quizB + 0.03, T.quizB + 0.3), AZ);
+    if (t < T.penTap) {                                            // one turn end over end, slowing as it comes in
+      const u = clamp((t - T.penIn) / (T.penTap - 0.04 - T.penIn)), f = (1 - Math.exp(-3.4 * u)) / (1 - Math.exp(-3.4));
+      d.applyAxisAngle(FLIP_AX, -Math.PI * 2 * (1 - f));
+    }
+    return d;
+  }
+  const _top = new THREE.Vector3(), _vel = new THREE.Vector3(), _tg = new THREE.Vector3(), _acc = new THREE.Vector3();
+  function penState(t) {
+    const dt = 1 / 960, t1 = Math.min(t, T.dive);
+    let tp = tipAt(T.penIn).p;
+    _top.copy(tp).addScaledVector(leanAt(T.penIn), PEN_L); _vel.set(0, 0, 0);
+    for (let s = T.penIn; s < t1; s += dt) {
+      const flying = s < T.penTap, w = 2 * Math.PI * (flying ? 9 : 4.2), z = flying ? 0.75 : 0.42;
+      tp = tipAt(s + dt).p;
+      _tg.copy(tp).addScaledVector(leanAt(s + dt), PEN_L);
+      _acc.copy(_tg).sub(_top).multiplyScalar(w * w).addScaledVector(_vel, -2 * z * w);
+      _vel.addScaledVector(_acc, dt);
+      const prev = _top.clone();
+      _top.addScaledVector(_vel, dt);
+      _top.sub(tp).setLength(PEN_L).add(tp);                         // rigid: the top stays a pen length from the tip
+      _vel.copy(_top).sub(prev).divideScalar(dt);
+    }
+    const tip = tipAt(t1);
+    return { tip: tip.p, top: _top.clone(), c: tip.c };
+  }
+  // the tip's track for the sound (cues.js): contact, speed along the glass (screen widths / s), height
+  function track(fs = 240) {
+    const out = { t0: T.penIn, fs, c: [], sp: [], z: [] };
+    let prev = tipAt(T.penIn).p;
+    for (let t = T.penIn; t < T.quizB + 0.32; t += 1 / fs) {
+      const p = tipAt(t);
+      out.c.push(p.c); out.sp.push(+(Math.hypot(p.p.x - prev.x, p.p.y - prev.y) * fs / SW).toFixed(4)); out.z.push(+p.p.z.toFixed(4));
+      prev = p.p;
+    }
+    return out;
+  }
+
   function update(t) {
     drawLock(t);
     ctx.classUI.draw(t);
@@ -141,26 +207,17 @@ export default function devicesScene(ctx) {
     camera.position.copy(pos);
     camera.up.set(0, 1, 0);
     camera.lookAt(look);
-    // the pen: spins in like a drumstick, taps the screen, writes along the quiz, then lifts away out of the dive
-    const pin = prog(t, T.penIn, T.penTap);
-    pen.visible = t > T.penIn && t < T.dive - 0.1;
+    // the pen (v8.1 rig): tip on its path in the screen's frame, body from the spring-hung top
+    const pr = penState(t);
+    pen.visible = t > T.penIn && t < T.dive - 0.06;
     if (pen.visible) {
-      const q = prog(t, T.quizA, T.quizB);
-      const tip = screenPoint(BOARD.x + 120 + 640 * q, BOARD.y + (q < 0.35 ? 80 : 160));
-      const n = new THREE.Vector3(0, 0, 1).applyQuaternion(classScr.getWorldQuaternion(new THREE.Quaternion()));
-      const away = E.inCubic(prog(t, T.diveA + 0.05, T.dive - 0.15));
-      const from = new THREE.Vector3(2.8, 1.9, 1.6);
-      const at = tip.clone().addScaledVector(n, 0.02 + 0.06 * Math.abs(Math.sin(q * 18)) * (q > 0 && q < 1 ? 1 : 0));
-      const p = from.clone().lerp(at, E.outCubic(pin)).add(new THREE.Vector3(1.6, 1.2, 0.8).multiplyScalar(away));
-      // orient: tip down onto the screen, leaning to the right; spinning while it flies in
-      pen.position.copy(p);
-      pen.rotation.set(0.45 + (1 - pin) * Math.PI * 3, (1 - pin) * Math.PI * 4, -0.55 - (1 - pin) * 1.2);
-      // keep the tip at the target: offset by the tip vector
-      pen.updateMatrixWorld(true);
-      const tipW = new THREE.Vector3(0, pen.userData.tipY, 0).applyMatrix4(pen.matrixWorld);
-      pen.position.add(p.clone().sub(tipW));
-      nib.position.copy(p).addScaledVector(n, 0.05);
-      nib.intensity = 3 * tw(t, T.penTap - 0.1, T.penTap) * (1 - away);
+      classScr.updateMatrixWorld(true);
+      const tipW = classScr.localToWorld(pr.tip.clone()), topW = classScr.localToWorld(pr.top.clone());
+      const dir = topW.sub(tipW).normalize();
+      pen.quaternion.setFromUnitVectors(UPV, dir);
+      pen.position.copy(tipW).addScaledVector(dir, -pen.userData.tipY);
+      nib.position.copy(tipW).addScaledVector(new THREE.Vector3(0, 0, 1).applyQuaternion(classScr.getWorldQuaternion(new THREE.Quaternion())), 0.05);
+      nib.intensity = 2.6 * pr.c * (1 - tw(t, T.quizB, T.quizB + 0.1));
     }
     ctx.flash += 0.4 * (t >= T.slam ? 1 - prog(t, T.slam, T.slam + 0.25) : 0) + 0.25 * (t >= T.tap ? 1 - prog(t, T.tap, T.tap + 0.2) : 0);
     if (t >= T.slam && t < T.slam + 0.3) { const a = (1 - prog(t, T.slam, T.slam + 0.3)) * 14; ctx.shake[0] += Math.sin(t * 190) * a; ctx.shake[1] += Math.cos(t * 160) * a; }
@@ -173,5 +230,5 @@ export default function devicesScene(ctx) {
     if (t >= T.slam && t < T.slam + 0.6) fx.shards(W * 0.5, H * 0.47, t, T.slam, { n: 18, seed: 3, speed: 1300, life: 0.5, len: 80, w: 2.4, spreadY: 0.8 });
   }
 
-  return { el: null, range: ctx.S.devices, update, draw };
+  return { el: null, range: ctx.S.devices, update, draw, track };
 }

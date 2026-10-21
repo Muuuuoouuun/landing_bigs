@@ -286,6 +286,31 @@ def build_music():
 
 
 # ---------------------------------------------------------------- sound design
+def ctrl(arr, fs, n, att=0.003, rel=0.012):
+    """control samples at fs → per-sample envelope, with one-pole attack / release smoothing"""
+    x = np.interp(np.arange(n) / SR, np.arange(len(arr)) / fs, np.asarray(arr, float), right=0.0)
+    if att <= 0 and rel <= 0:
+        return x
+    ka, kr = 1 - math.exp(-1 / (att * SR)), 1 - math.exp(-1 / (rel * SR))
+    y, v = np.empty(n), 0.0
+    for i in range(n):
+        d = x[i] - v
+        v += d * (ka if d > 0 else kr)
+        y[i] = v
+    return y
+
+
+def modal(n, modes, rnd, click=0.8, lo=2000):
+    """struck object: damped sinusoids (freq, decay s, amp) + a short noise click"""
+    tt = np.arange(n) / SR
+    s = np.zeros(n)
+    for f, d, a in modes:
+        s += a * np.sin(2 * np.pi * f * tt + rnd.random() * 6.283) * np.exp(-tt / d)
+    m = int(0.0012 * SR)
+    s[:m] += fft_filter(rnd.standard_normal(m), lo=lo) * np.linspace(1, 0, m) * click
+    return s
+
+
 def sfx_voice(c):
     ty, g = c['type'], c.get('gain', 1.0)
     dur = c.get('dur', 0.3)
@@ -330,6 +355,53 @@ def sfx_voice(c):
         n = int(dur * SR)
         s = sine_sweep(dur, f0, f1) * bell_env(n, 0.8, 1.5) * 0.35 + band_sweep(dur, f0 * 2, f1 * 2, 0.4, seed=9) * bell_env(n, 0.8, 1.5) * 0.4
         return s * g, c.get('pan', 0.0), 0.15
+    # ---- v8.1: sounds driven by the motion itself ----
+    if ty == 'tok':  # the pen's nib touching the glass: plastic modes + the tablet body
+        r = np.random.default_rng(c.get('seed', 1))
+        br, body, n = c.get('bright', 1.0), c.get('body', 0.5), int(0.1 * SR)
+        j = lambda: 0.97 + 0.06 * r.random()
+        s = modal(n, [(2350 * br * j(), 0.010, 1.0), (3900 * br * j(), 0.007, 0.6), (6100 * br * j(), 0.0045, 0.38), (8700 * br * j(), 0.003, 0.22),
+                      (190 * j(), 0.026, 0.9 * body), (420 * j(), 0.012, 0.3 * body)], r)
+        return s * g * 0.6, c.get('pan', 0.0), 0.04
+    if ty == 'scribble':  # friction under a moving tip; loudness and brightness follow the tip's speed
+        fs, con, sp = c['fs'], np.asarray(c['c'], float), np.asarray(c['sp'], float)
+        felt = c.get('tip') == 'felt'
+        n = int(len(con) / fs * SR) + int(0.05 * SR)
+        ref = np.percentile(sp[con > 0], 90) if (con > 0).any() else 1.0
+        spn = np.clip(sp / max(ref, 1e-4), 0, 1.4)
+        a = ctrl(con * spn ** 0.7, fs, n, 0.003, 0.014)
+        br = ctrl(np.clip(spn, 0, 1), fs, n, 0.01, 0.03)
+        r = np.random.default_rng(c.get('seed', int(c['t'] * 1000)))
+        wn = r.standard_normal(n)
+        lo, hi = (fft_filter(wn, 450, 1700), fft_filter(wn, 1400, 4200)) if felt else (fft_filter(wn, 1100, 3400), fft_filter(wn, 2800, 9000))
+        s = (lo * (1 - 0.55 * br) + hi * (0.45 + 0.55 * br)) * a
+        if not felt:  # stick-slip: sparse grains, denser when the tip moves faster
+            grains = (r.random(n) < 300 * a / SR) * r.standard_normal(n)
+            s += fft_filter(grains, 2500, 7500) * 2.2 * a
+        return s * g * (0.9 if felt else 0.75), c.get('pan', 0.0), 0.05
+    if ty == 'penfly':  # air past the pen: loudness and pitch from its speed, a swish per half turn when it spins
+        fs, sp = c['fs'], np.asarray(c['sp'], float)
+        n = int(len(sp) / fs * SR) + int(0.1 * SR)
+        spn = sp / max(sp.max(), 1e-4)
+        a = ctrl(spn ** 1.6, fs, n, 0.012, 0.05)
+        br = ctrl(spn, fs, n, 0.02, 0.06)
+        r = np.random.default_rng(int(c['t'] * 1000))
+        wn = r.standard_normal(n)
+        s = (fft_filter(wn, 220, 1100) * (1 - br) + fft_filter(wn, 800, 3800) * br) * a
+        if 'rot' in c:
+            rot = ctrl(c['rot'], fs, n, 0, 0)
+            s *= 0.3 + 0.7 * np.abs(np.sin(rot))
+        pan = c.get('pan', 0.0)
+        return s * g * 1.4, (pan if np.isscalar(pan) else list(pan)), 0.15
+    if ty == 'clack':  # a block folding into a house: a small wooden knock
+        r = np.random.default_rng(c.get('seed', 1))
+        f0, n = 1150 * c.get('pitch', 1) * (0.9 + 0.2 * r.random()), int(0.12 * SR)
+        s = modal(n, [(f0, 0.045, 1.0), (f0 * 2.71, 0.018, 0.45), (f0 * 5.2, 0.008, 0.2)], r, click=0.5, lo=1500)
+        return s * g * 0.5, c.get('pan', 0.0), 0.1
+    if ty == 'land':  # the light drops onto the street: a soft low thump and a breath of air
+        n = int(1.2 * SR)
+        s = sine_sweep(1.2, 150, 52) * env_exp(n, 0.13) * 0.9 + band_sweep(1.2, 2600, 7000, 0.6, seed=4) * env_exp(n, 0.32) * 0.28
+        return s * g, 0.0, 0.3
     if ty == 'tick':
         r = np.random.default_rng(c.get('seed', 0))
         n = int(0.05 * SR)
@@ -476,8 +548,8 @@ def sfx_voice(c):
 def build_sfx():
     dry, wet = np.zeros((2, N)), np.zeros((2, N))
     for c in CUES:
-        if c['type'] != 'hit' and abs(c['t'] - HERO) < 0.06:
-            continue  # nothing but the hero hit within 60 ms of it
+        if c['type'] not in ('hit', 'tok') and abs(c['t'] - HERO) < 0.06:
+            continue  # nothing but the hero hit (and the nib landing on the i) within 60 ms of it
         sig, pan, send = sfx_voice(c)
         place(dry, sig, c['t'], pan=pan)
         place(wet, sig * send, c['t'], pan=pan)

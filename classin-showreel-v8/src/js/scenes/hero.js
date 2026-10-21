@@ -94,13 +94,18 @@ export default function heroScene(ctx) {
 
   function draw(fx, t) {
     if (t >= T.penUp && t < T.hero) {
-      // the pen: up from below the frame, spinning on its axis, tilting upright, landing on the i
-      const k = E.inOutCubic(prog(t, T.penUp, T.hero - 0.02));
+      // the pen (v8.1): rises out of the frame and slows into place while its spin dies away (ending on a whole turn);
+      // it tips upright on a damped spring — about 3° past, and back — so its nib lands on the i's foot on the hit
+      const DU = T.hero - 0.02 - T.penUp, u = clamp((t - T.penUp) / DU), tt = u * DU;
+      const k = 1 - (1 - u) ** 3;
       const top = [R.dot[0], R.dot[1]];
       const len = (foot[1] - top[1]) * U; // world length from the i's foot to the dot
-      const sy = lerp(0.9, len / 1.416, k), sx = lerp(0.9, 1.15, k);
+      const sy = lerp(0.9, len / 1.416, E.inOutCubic(u)), sx = lerp(0.9, 1.15, u);
       pen.scale.set(sx, sy, sx);
-      pen.rotation.set(0, (1 - k) * Math.PI * 6, lerp(-1.1, 0, k));
+      const spin = 5 * 2 * Math.PI * (1 - (1 - Math.exp(-4 * u)) / (1 - Math.exp(-4)));
+      const w = 2 * Math.PI * 2.2, z = 0.7, wd = w * Math.sqrt(1 - z * z);
+      const tilt = -1.1 * Math.exp(-z * w * tt) * (Math.cos(wd * tt) + (z / Math.sqrt(1 - z * z)) * Math.sin(wd * tt));
+      pen.rotation.set(0, spin, tilt);
       const fw = toW(foot), from = [fw[0] + 1.2, fw[1] - 1.6];
       pen.position.set(lerp(from[0], fw[0], k), lerp(from[1], fw[1], k), 0);
       pen.updateMatrixWorld(true);

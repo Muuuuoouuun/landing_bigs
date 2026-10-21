@@ -48,9 +48,9 @@
    12.1
   ],
   "dawn": [
-   11.5,
-   14.6
-  ],
+      11.5,
+      14.62
+    ],
   "nation": [
    13.9,
    16.1
@@ -76,11 +76,11 @@
   "tap": 1.36,
   "morphA": 1.5,
   "morphB": 2.3,
-  "penIn": 2.25,
-  "penTap": 2.85,
-  "quizA": 2.9,
-  "quizB": 3.55,
-  "diveA": 3.05,
+  "penIn": 1.95,
+  "penTap": 2.42,
+  "quizA": 2.47,
+  "quizB": 3.32,
+  "diveA": 3.3,
   "dive": 3.72,
   "whaleDrawA": 3.6,
   "whaleDrawB": 4.25,

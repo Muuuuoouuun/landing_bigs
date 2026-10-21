@@ -16,8 +16,9 @@ export const street = j => j * PZ + PZ / 2;                 // street centre bet
 export const cross = i => i * PX + PX / 2;                  // cross street centre (x)
 
 // the light's route: along the streets, right-angle turns, to one house
-export const ROUTE = [[-200, street(-2)], [cross(-2), street(-2)], [cross(-2), street(0)], [cross(0), street(0)], [cross(0), street(1)], [120.5, street(1)]];
-export const RT = { a: 12.0, b: 12.95 };                    // head leaves / arrives
+export const ROUTE = [[-112, street(-2)], [cross(-2), street(-2)], [cross(-2), street(0)], [cross(0), street(0)], [cross(0), street(1)], [120.5, street(1)]];
+// default beats (the film passes its own timeline): window, light lands, sweep done, whip, rise, map
+const TDEF = { window: 11.6, dawnA: 12.0, sweepB: 13.1, whipA: 13.12, whipB: 13.38, rise: 14.0, mapIn: 14.35 };
 const SPREAD = 140;                                         // m/s: how fast the change spreads out from the route
 const ease = E.inOutSine, inv = e => Math.acos(1 - 2 * e) / Math.PI;
 
@@ -34,7 +35,9 @@ float fieldT(vec2 p) {
   return best;
 }`;
 
-export async function createTown(THREE, { env = null, base = '../assets/gen/town/', W = 1920, H = 1080 } = {}) {
+export async function createTown(THREE, { env = null, assets = '../assets/gen/', T = TDEF, W = 1920, H = 1080 } = {}) {
+  const base = assets + 'town/';
+  const RT = { a: T.dawnA, b: T.sweepB - 0.15 };              // the light lands / reaches the house
   const meta = await (await fetch(base + 'town.json')).json();
   const loader = new THREE.TextureLoader();
   const load = f => new Promise((res, rej) => loader.load(base + f, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; res(t); }, undefined, rej));
@@ -71,14 +74,14 @@ export async function createTown(THREE, { env = null, base = '../assets/gen/town
   // ---------- the houses ----------
   const r = rng(808);
   const houses = [];
-  const T = { street: street(0), x0: 46 };                    // the street the low shot runs along (lights near → far)
+  const LS = { street: street(0), x0: 46 }, LOWLIT = T.whipB + 0.04;                    // the street the low shot runs along (lights near → far)
   for (let i = BI[0]; i <= BI[1]; i++) for (let j = BJ[0]; j <= BJ[1]; j++) for (let row = 0; row < 2; row++) for (let k = 0; k < 4; k++) {
     const cx = i * PX - BL / 2 + LOT / 2 + k * LOT;
     const cz = j * PZ + (row ? 1 : -1) * (BD / 2 - YARD - HD / 2);
     const floors = r() < 0.55 ? 3 : 2, gable = r() < 0.75, v = Math.floor(r() * 4), flip = r() < 0.5, tint = r();
     const tB = fieldT(cx, cz);
-    const onStreet = Math.abs(cz - T.street) < 9 && cx < T.x0 + 6;
-    const tLit = onStreet ? 13.42 + Math.max(0, T.x0 - cx) * 0.0055 : tB + 0.55 + r() * 0.7;
+    const onStreet = Math.abs(cz - LS.street) < 9 && cx < LS.x0 + 6;
+    const tLit = onStreet ? LOWLIT + Math.max(0, LS.x0 - cx) * 0.0055 : tB + 0.55 + r() * 0.7;
     houses.push({ cx, cz, rot: row ? 0 : Math.PI, floors, gable, v, flip, tint, tB, tLit });
   }
 
@@ -338,7 +341,7 @@ totalEmissiveRadiance += texture2D(uGlow, vMapUv).rgb * uWarm * vLit * kT;` : ''
     fragmentShader: 'varying vec3 vW;\n' + GLSL_FIELD + '\nvoid main(){ float k = smoothstep(0.05, 0.2, uTime - fieldT(vW.xz)); if (k <= 0.0) discard; gl_FragColor = vec4(vec3(0.09, 0.09, 0.1), 0.85 * k); }',
   })));
   // trees in the front yards (cut-out sprites): only for the low shots, they fade out as the camera climbs
-  const treeMats = await Promise.all(['trees_0.png', 'trees_1.png', 'trees_2.png'].map(f => new Promise(res => loader.load('../assets/gen/' + f, t => {
+  const treeMats = await Promise.all(['trees_0.png', 'trees_1.png', 'trees_2.png'].map(f => new Promise(res => loader.load(assets + f, t => {
     t.colorSpace = THREE.SRGBColorSpace;
     res(new THREE.SpriteMaterial({ map: t, alphaTest: 0.5, color: 0x9a98a6, fog: true, transparent: true }));
   }))));
@@ -418,13 +421,13 @@ totalEmissiveRadiance += texture2D(uGlow, vMapUv).rgb * uWarm * vLit * kT;` : ''
   // ---------- camera: top-down over the blocks → swoop to 3/4 → whip to the street → crane up ----------
   const camera = new THREE.PerspectiveCamera(22, W / H, 1, 4000);
   const KEYS = [
-    { t: 11.6, tg: [-40, 0, -14], yaw: -4, pitch: 89, dist: 250, fov: 22 },
-    { t: 12.0, tg: [-34, 0, -10], yaw: -1, pitch: 88.5, dist: 236, fov: 22, e: E.inOutSine },
-    { t: 12.95, tg: [24, 0, 20], yaw: 30, pitch: 40, dist: 175, fov: 30, e: E.inOutCubic },
-    { t: 13.12, tg: [30, 0, 22], yaw: 35, pitch: 37, dist: 165, fov: 30, e: E.outSine || (x => Math.sin(x * Math.PI / 2)) },
-    { t: 13.38, tg: [-30, 4.5, street(0) - 0.8], yaw: 90, pitch: -1, dist: 76, fov: 34, e: E.inOutExpo },
-    { t: 14.0, tg: [-42, 4.5, street(0) - 0.8], yaw: 90, pitch: -1, dist: 70, fov: 34, e: E.inOutSine },
-    { t: 14.6, tg: [-10, 0, 8], yaw: 90, pitch: 88, dist: 430, fov: 26, e: E.inOutCubic },
+    { t: T.window - 0.1, tg: [-46, 0, -18], yaw: -5, pitch: 89, dist: 270, fov: 22 },
+    { t: T.dawnA, tg: [-34, 0, -10], yaw: -1, pitch: 88.5, dist: 236, fov: 22, e: E.outQuad },
+    { t: RT.b, tg: [24, 0, 20], yaw: 30, pitch: 40, dist: 175, fov: 30, e: E.inOutCubic },
+    { t: T.whipA, tg: [30, 0, 22], yaw: 35, pitch: 37, dist: 165, fov: 30, e: E.outQuad },
+    { t: T.whipB, tg: [-30, 4.5, street(0) - 0.8], yaw: 90, pitch: -1, dist: 76, fov: 34, e: E.inOutExpo },
+    { t: T.rise, tg: [-42, 4.5, street(0) - 0.8], yaw: 90, pitch: -1, dist: 70, fov: 34, e: E.inOutSine },
+    { t: T.mapIn + 0.25, tg: [-10, 0, 8], yaw: 90, pitch: 88, dist: 430, fov: 26, e: E.inOutCubic },
   ];
   function cam(t) {
     let i = 0; while (i < KEYS.length - 2 && t > KEYS[i + 1].t) i++;
@@ -455,13 +458,19 @@ totalEmissiveRadiance += texture2D(uGlow, vMapUv).rgb * uWarm * vLit * kT;` : ''
     Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 100, far: 1200 });
     sun.shadow.camera.updateProjectionMatrix();
     // route
-    const s = headS(t), [hx, hz] = at(s), on = t > RT.a - 0.1 && t < RT.b + 0.6;
+    const s = headS(t), [hx, hz] = at(s), on = t > RT.a - 0.14 && t < RT.b + 0.6;
     RU.uHead.value = t < RT.a ? 0 : s;
     head.visible = on; head.position.set(hx, 2.2, hz);
-    const hs = 11 * (1 + 0.12 * Math.sin(t * 40)) * (t > RT.b ? 1 - prog(t, RT.b, RT.b + 0.6) : 1);
+    const drop = 1 - E.inCubic(prog(t, RT.a - 0.14, RT.a));                    // falls out of the sky onto the street
+    const hs = 11 * (1 + 0.12 * Math.sin(t * 40) + 5 * drop) * (t > RT.b ? 1 - prog(t, RT.b, RT.b + 0.6) : 1);
+    head.material.opacity = 1 - 0.7 * drop;
     head.scale.set(hs, hs, 1);
     headLight.position.set(hx, 6, hz); headLight.intensity = on ? 1600 * (t > RT.b ? 1 - prog(t, RT.b, RT.b + 0.6) : 1) : 0;
   }
 
-  return { scene, camera, update, houses, fieldT, headS, at, L };
+  // world → screen px (for 2D overlays: the whale's light, flares)
+  const pv = new THREE.Vector3();
+  function toScreen(x, y, z) { pv.set(x, y, z).project(camera); return [(pv.x + 1) / 2 * W, (1 - pv.y) / 2 * H, pv.z]; }
+  const dest = ROUTE[ROUTE.length - 1];
+  return { scene, camera, update, houses, fieldT, headS, at, L, RT, toScreen, dest, exposure: 0.9, pitch: t => cam(t).pitch };
 }

@@ -46,14 +46,14 @@ async function openPage() {
   page.on('pageerror', e => console.error('[page]', e.message));
   page.on('console', m => m.type() === 'error' && console.error('[console]', m.text()));
   await page.goto(url);
-  await page.waitForFunction(() => window.__film?.ready, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__film?.ready, null, { timeout: 300000 }); // the 3D town takes a while to build
   await page.addStyleTag({ content: '#viewport{display:block!important} #stage{transform:none!important}' });
   return page;
 }
 
 async function shoot(page, t, file) {
   await page.evaluate(tt => window.__film.render(tt), t);
-  await page.screenshot({ path: file, type: 'jpeg', quality, clip: { x: 0, y: 0, width: W, height: H } });
+  await page.screenshot({ path: file, type: 'jpeg', quality, clip: { x: 0, y: 0, width: W, height: H }, timeout: 300000 }); // first 3D frames compile shaders
 }
 
 const t0 = Date.now();

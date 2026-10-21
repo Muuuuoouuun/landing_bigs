@@ -127,17 +127,26 @@ await document.fonts.load("400 40px NanumPen", '오늘의 퀴즈: 고래가 하�
 await document.fonts.ready;
 await Promise.all([...document.images].map(img => img.decode().catch(() => {})));
 await ctx.classUI.ready;
+await Promise.all(scenes.map(s => s.ready));
 // measure layout anchors while every scene is displayed (hidden scenes report zero boxes)
 for (const s of scenes) if (s.el) s.el.style.display = 'block';
 ctx.CM = camMatrix(worldCam(0, ctx.T, P), W, H);
 for (const s of scenes) s.layout?.();
 for (const s of scenes) if (s.el) s.el.style.display = 'none';
 
+// what the motion-driven sounds need: the 3D pen's tip track and when the light reaches each house in view
+function cueData() {
+  const dev = scenes[scenes.length - 1], town = scenes[2].town?.();
+  const X = { pen: dev.track?.(240) };
+  if (town) X.town = town.houses.map(hs => { town.update(hs.tB); const q = town.toScreen(hs.cx, 4, hs.cz); return { t: hs.tB, x: q[0], y: q[1], z: q[2], f3: hs.floors === 3 }; })
+    .filter(q => q.z < 1 && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50).map(q => ({ t: +q.t.toFixed(4), pan: +((q.x / W) * 1.2 - 0.6).toFixed(2), f3: q.f3 }));
+  return X;
+}
 const beatsOut = Object.fromEntries(Object.entries(TL.beats).map(([k, v]) => [k, +film(v).toFixed(4)]));
 const barsOut = Array.from({ length: Math.ceil(TL.meta.duration / TL.meta.bar) + 1 }, (_, k) => +film(k * TL.meta.bar).toFixed(4));
 window.__film = {
   render, duration: DUR, fps: TL.meta.fps, W, H, ready: true, scenes, story, film,
-  cues: buildCues(TL.beats, TL.copy).map(mapCue),
+  cues: buildCues(TL.beats, TL.copy, cueData()).map(mapCue),
   music: { duration: DUR, bpm: TL.meta.music?.bpm || TL.meta.bpm, beats: beatsOut, bars: barsOut },
 };
 

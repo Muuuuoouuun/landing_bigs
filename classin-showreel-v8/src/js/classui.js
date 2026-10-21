@@ -28,9 +28,52 @@ const bbox = strokes => { const xs = strokes.flat().map(p => p[0]), ys = strokes
 const PB = PARTS.map(bbox);
 
 function loadImg(src) { const i = new Image(); i.src = src; return i; }
+// v8.1 · the question, handwritten by the pen: each syllable is one quick run with the tip on the glass (down and
+// up again while it crosses the syllable); between syllables the tip lifts a hair and travels, higher over the
+// spaces. One path shared by the board (ink shows only where the tip has been), the 3D pen (devices.js) and the
+// sound (cues.js: the friction follows the tip's speed). Tip in class px, lift z in world units, contact c 0/1.
+export function makeQuizPen(T, copy) {
+  const X0 = BOARD.x + 110, BASE = BOARD.y + 176, GH = 44;
+  const mj = u => u * u * u * (10 - 15 * u + 6 * u * u); // minimum-jerk
+  let S = null;
+  function layout() {
+    const c = document.createElement('canvas').getContext('2d');
+    c.font = '62px NanumPen';
+    const ch = [...copy.quiz[1]], G = [];
+    let x = 0;
+    ch.forEach((g, i) => { const x1 = c.measureText(ch.slice(0, i + 1).join('')).width; G.push({ g, x0: x, w: x1 - x, sp: g === ' ' }); x = x1; });
+    const wt = g => (g.sp ? 0.55 : g.g === '?' ? 0.8 : 1), tot = G.reduce((a, g) => a + wt(g), 0);
+    let tt = T.quizA;
+    for (const g of G) { g.t0 = tt; tt += (T.quizB - T.quizA) * wt(g) / tot; g.t1 = tt; }
+    // segments: contact over a syllable, then a lift to the next syllable's start
+    const ink = G.filter(g => !g.sp), seg = [];
+    ink.forEach((g, j) => {
+      const ph = j * 1.3, down = g.t0 + (g.t1 - g.t0) * 0.74;
+      const yAt = u => BASE - GH * (0.47 + 0.3 * Math.cos(u * Math.PI * 2 + ph));
+      seg.push({ c: 1, t0: g.t0, t1: down, g, yAt });
+      const nx = ink[j + 1];
+      if (nx) seg.push({ c: 0, t0: down, t1: nx.t0, a: [X0 + g.x0 + g.w * 0.9, yAt(1)], b: [X0 + nx.x0 + nx.w * 0.1, BASE - GH * (0.47 + 0.3 * Math.cos((j + 1) * 1.3))], hop: G.indexOf(nx) - G.indexOf(g) > 1 ? 0.05 : 0.018, g });
+    });
+    S = { seg, G, last: ink[ink.length - 1] };
+  }
+  return t => {
+    if (!S) layout();
+    const { seg } = S;
+    if (t < seg[0].t0) { const s0 = seg[0]; return { x: X0 + s0.g.x0 + s0.g.w * 0.1, y: s0.yAt(0), z: 0, c: t >= T.penTap ? 1 : 0, reveal: 0 }; }
+    let i = 0; while (i < seg.length - 1 && t >= seg[i].t1) i++;
+    const sg = seg[i], u = clamp((t - sg.t0) / (sg.t1 - sg.t0)), m = mj(u);
+    if (sg.c) {
+      const g = sg.g;
+      return { x: X0 + g.x0 + g.w * (0.1 + 0.8 * m), y: sg.yAt(u), z: 0, c: 1, reveal: g.x0 + g.w * clamp(m * 1.1) };
+    }
+    return { x: lerp(sg.a[0], sg.b[0], m), y: lerp(sg.a[1], sg.b[1], m), z: sg.hop * Math.sin(Math.PI * u), c: 0, reveal: sg.g.x0 + sg.g.w };
+  };
+}
+
 
 export function createClassUI(ctx) {
   const { T, copy } = ctx;
+  const quizPen = makeQuizPen(T, copy);
   const canvas = document.createElement('canvas');
   canvas.width = CW; canvas.height = CH;
   const k = canvas.getContext('2d');
@@ -175,19 +218,20 @@ export function createClassUI(ctx) {
     // tool rail and pages
     rr(BOARD.x + 16, BOARD.y + 18, 48, 360, 12); k.fillStyle = 'rgba(0,0,0,0.25)'; k.fill();
     for (let i = 0; i < 6; i++) { rr(BOARD.x + 24, BOARD.y + 28 + i * 56, 32, 32, 8); k.fillStyle = i === 0 ? 'rgba(126,217,87,0.25)' : 'rgba(255,255,255,0.05)'; k.fill(); }
-    // the quiz, written by the pen
-    const q = prog(t, T.quizA, T.quizB);
-    if (q > 0) {
+    // the quiz: a printed label, and the question handwritten by the pen — ink only where its tip has been
+    k.save();
+    k.font = '600 30px Pretendard'; k.fillStyle = 'rgba(244,244,239,0.6)'; k.textBaseline = 'alphabetic';
+    k.fillText(copy.quiz[0], BOARD.x + 112, BOARD.y + 92);
+    k.restore();
+    const qp = quizPen(t);
+    if (qp.reveal > 0) {
       k.save();
       k.font = '62px NanumPen';
-      const w0 = k.measureText(copy.quiz[0]).width, w1 = k.measureText(copy.quiz[1]).width, tot = w0 + w1;
-      const r0 = clamp(q * tot / w0), r1 = clamp((q * tot - w0) / w1);
       k.shadowColor = 'rgba(0,0,0,0.45)'; k.shadowBlur = 5; k.shadowOffsetY = 2;
-      k.save(); k.beginPath(); k.rect(BOARD.x + 110, BOARD.y + 30, w0 * r0, 90); k.clip(); k.fillStyle = '#F4F4EF'; k.fillText(copy.quiz[0], BOARD.x + 110, BOARD.y + 96); k.restore();
-      k.save(); k.beginPath(); k.rect(BOARD.x + 110, BOARD.y + 110, w1 * r1, 90); k.clip(); k.fillStyle = '#A6E86A'; k.fillText(copy.quiz[1], BOARD.x + 110, BOARD.y + 176); k.restore();
+      k.beginPath(); k.rect(BOARD.x + 100, BOARD.y + 110, qp.reveal + 10, 100); k.clip(); k.fillStyle = '#A6E86A'; k.fillText(copy.quiz[1], BOARD.x + 110, BOARD.y + 176);
       k.restore();
-      if (q < 1) { const onL2 = q * tot > w0; head(BOARD.x + 110 + (onL2 ? w1 * r1 : w0 * r0), BOARD.y + (onL2 ? 160 : 80), '170,240,110', 0.8); }
     }
+    if (t > T.penTap && t < T.quizB + 0.05 && qp.c) head(qp.x, qp.y + 6, '170,240,110', 0.55);
     // the teacher's whale
     const wu = prog(t, T.whaleDrawA, T.whaleDrawB);
     if (wu > 0) strokes(whale, wLen, wTot, E.inOutSine(wu), { w: 4.6, color: '#F2F2EE', sheen: 0.45, shadow: 0.6, grain: 0.7, seed: 1 });

@@ -7,3 +7,4 @@ out/audio.wav
 src/assets/gen/raw/
 __pycache__/
 node_modules
+out/*.log
