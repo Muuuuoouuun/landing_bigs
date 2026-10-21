@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.min.js" } }</script>
+<style>html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #20232b; } canvas { display: block; }</style>
+</head><body>
+<script type="module">
+// Look test (v8.1, houses only): the town as real 3D on a street grid — blocks become houses where the light passes.
+// ?t=12.5 shows one moment; window.renderAt(t) renders any moment (for frame capture).
+import { createGL } from '../js/gl.js';
+import { createTown } from '../js/town.js';
+
+const T0 = performance.now(), log = m => console.log(`[town] ${m} ${((performance.now() - T0) / 1000).toFixed(2)}s`);
+const gl = createGL(1920, 1080, document.body);
+gl.renderer.toneMappingExposure = 0.9;
+const town = await createTown(gl.THREE, { env: gl.env });
+log('built');
+window.renderAt = t => { town.update(t); gl.begin(); gl.draw(town.scene, town.camera); gl.end(); };
+const q = new URLSearchParams(location.search);
+window.renderAt(+(q.get('t') || 12.5));
+log('first frame');
+window.__town = town; window.__gl = gl;
+window.__ready = true;
+</script>
+</body></html>
