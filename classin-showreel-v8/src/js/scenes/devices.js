@@ -1,5 +1,6 @@
-// S1–S3 (v8) · 0.00–3.72 · real 3D (three.js): a phone spins in out of the dark and stops dead on the beat — the
-// ClassIn notification slams onto the lock screen: 오늘은 상상 퀴즈 수업! The pen's light fills [입장하기], a tap, and
+// S1–S3 (v8.2) · 0.00–3.72 · real 3D (three.js): the ClassIn app icon — the seagull, a glossy tile — rushes out of
+// the dark on a streak of light and stops dead on the beat in front of the phone; it glints, then flies into its
+// slot and the notification opens around it: 오늘은 상상 퀴즈 수업! The pen's light fills [입장하기], a tap, and
 // the phone stretches and turns into a tablet with the live class on it. As it lands the pen flips in (one turn,
 // slowing), touches down and writes the question — its tip on the handwriting path, its body hanging on a damped
 // spring (v8.1) — then lifts away as the camera dives into the screen until it is the frame (the room scene's tablet
@@ -27,6 +28,21 @@ export default function devicesScene(ctx) {
   const lk = lc.getContext('2d');
   const lockTex = new THREE.CanvasTexture(lc); lockTex.colorSpace = THREE.SRGBColorSpace; lockTex.anisotropy = 8;
   const L = copy.lock;
+  // the official ClassIn app icon (the seagull), drawn as iOS does: a continuous-corner tile; glint 0..1 sweeps a sheen
+  const appIcon = new Image();
+  appIcon.src = 'assets/classin_app_icon.png';
+  const iconReady = appIcon.decode().catch(() => {});
+  function appIconOn(k, x, y, s, glint = 0) {
+    k.save();
+    k.beginPath(); k.roundRect(x, y, s, s, s * 0.2237); k.clip();
+    k.drawImage(appIcon, x, y, s, s);
+    if (glint > 0 && glint < 1) {
+      const gx = x - s + glint * 3 * s, g = k.createLinearGradient(gx, y, gx + s * 0.6, y + s);
+      g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      k.fillStyle = g; k.fillRect(x, y, s, s);
+    }
+    k.restore();
+  }
   function drawLock(t) {
     lk.setTransform(1, 0, 0, 1, 0, 0);
     let g = lk.createLinearGradient(0, 0, 400, 1500); g.addColorStop(0, '#1d3b2a'); g.addColorStop(0.5, '#14261f'); g.addColorStop(1, '#0a110e');
@@ -37,15 +53,13 @@ export default function devicesScene(ctx) {
     lk.font = '600 30px Pretendard'; lk.fillText(L.date, 360, 190);
     lk.font = '300 190px Pretendard'; lk.fillText(L.time, 360, 370);
     // the notification slams in on the beat
-    const p = prog(t, T.slam, T.slam + 0.18), a = clamp(p * 3);
+    const p = prog(t, T.notifIn, T.notifIn + 0.18), a = clamp(p * 3);
     if (a > 0) {
       const s = lerp(1.18, 1, E.outCubic(p)), nx = 52, ny = 470, nw = 616, nh = 290;
       lk.save(); lk.globalAlpha = a; lk.translate(360, ny + nh / 2); lk.scale(s, s); lk.translate(-360, -(ny + nh / 2));
       lk.fillStyle = 'rgba(245,246,243,0.95)'; lk.beginPath(); lk.roundRect(nx, ny, nw, nh, 44); lk.fill();
-      lk.fillStyle = '#fff'; lk.beginPath(); lk.roundRect(nx + 32, ny + 32, 72, 72, 18); lk.fill();
-      lk.strokeStyle = 'rgba(0,0,0,0.08)'; lk.lineWidth = 2; lk.stroke();
-      lk.fillStyle = '#10B415'; lk.save(); lk.translate(nx + 68, ny + 68); lk.transform(1, -0.45, 0, 1, 0, 0); lk.fillRect(-9, -20, 18, 42); lk.restore();
-      lk.textAlign = 'left'; lk.fillStyle = '#6a6c6e'; lk.font = '600 28px Pretendard'; lk.fillText(L.app, nx + 124, ny + 64);
+      if (t >= T.iconLand) appIconOn(lk, nx + 30, ny + 28, 78);
+      lk.textAlign = 'left'; lk.fillStyle = '#3d3f42'; lk.font = '700 29px Pretendard'; lk.fillText(L.app, nx + 126, ny + 66);
       lk.textAlign = 'right'; lk.fillText('지금', nx + nw - 34, ny + 64);
       lk.textAlign = 'left'; lk.fillStyle = '#141516'; lk.font = '800 42px Pretendard'; lk.fillText(L.title, nx + 34, ny + 152);
       lk.fillStyle = '#4b4d50'; lk.font = '400 29px Pretendard'; lk.fillText(L.sub, nx + 34, ny + 196);
@@ -91,6 +105,52 @@ export default function devicesScene(ctx) {
     classScr.scale.set((h - 0.08) / SW, (w - 0.08) / SH, 1);
     if (Math.abs(round - 0.03) > 1e-4) { classScr.geometry.dispose(); classScr.geometry = roundRectGeo(SW, SH, Math.max(0.0005, round)); }
     glare.scale.set(w - 0.05, h - 0.05, 1); glare.position.z = d / 2 + 0.0012;
+  }
+
+  // ---------- the app icon tile (v8.2 brand hook) ----------
+  const ICON = 0.5, ID = 0.06;
+  const iconCv = document.createElement('canvas'); iconCv.width = iconCv.height = 512;
+  const iconTex = new THREE.CanvasTexture(iconCv); iconTex.colorSpace = THREE.SRGBColorSpace; iconTex.anisotropy = 8;
+  iconReady.then(() => { const k = iconCv.getContext('2d'); k.beginPath(); k.roundRect(0, 0, 512, 512, 512 * 0.2237); k.clip(); k.drawImage(appIcon, 0, 0, 512, 512); iconTex.needsUpdate = true; });
+  const tile = new THREE.Group();
+  const tileBody = new THREE.Mesh(bodyGeo(ICON, ICON, ID, ICON * 0.2237, 0.014), metal(0x1b1c1f, 0.22));
+  const tileFace = new THREE.Mesh(roundRectGeo(ICON - 0.004, ICON - 0.004, ICON * 0.2237 - 0.002), new THREE.MeshBasicMaterial({ map: iconTex, transparent: true, toneMapped: false }));
+  tileFace.position.z = ID / 2 + 0.0006;
+  const tileGlint = new THREE.Mesh(roundRectGeo(ICON - 0.004, ICON - 0.004, ICON * 0.2237 - 0.002), new THREE.MeshBasicMaterial({ map: glareTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  tileGlint.position.z = ID / 2 + 0.0012;
+  tile.add(tileBody, tileFace, tileGlint);
+  scene.add(tile);
+  // where the icon sits in the notification (lock-screen canvas px → the phone's screen)
+  const SLOT = { x: 52 + 30 + 39, y: 470 + 28 + 39, s: 78 };
+  const _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _f = new THREE.Vector3();
+  function placeTile(t) {
+    tile.visible = t < T.iconLand;
+    if (!tile.visible) return;
+    // hold pose: 2.3 in front of the camera, facing it
+    camera.getWorldDirection(_f);
+    const hold = camera.position.clone().addScaledVector(_f, 1.95 - 0.1 * tw(t, T.slam, T.iconFly, E.outCubic));
+    const holdQ = camera.quaternion.clone().multiply(_q.setFromEuler(new THREE.Euler(0.05, lerp(-0.22, 0.18, tw(t, T.slam, T.iconFly, E.inOutSine)), 0)));
+    if (t < T.slam) {                                              // the rush in, stopping dead on the slam
+      const u = 1 - (1 - prog(t, 0, T.slam)) ** 3;
+      const far = camera.position.clone().addScaledVector(_f, 16).add(new THREE.Vector3(1.4, 0.7, 0));
+      tile.position.copy(far.lerp(hold, u));
+      tile.quaternion.copy(holdQ).multiply(_q.setFromEuler(new THREE.Euler(0, 0, -0.6 * (1 - u))));
+      tile.scale.setScalar(1);
+    } else if (t < T.iconFly) {
+      tile.position.copy(hold); tile.quaternion.copy(holdQ); tile.scale.setScalar(1);
+    } else {                                                       // into its slot in the notification
+      const k = E.inOutCubic(prog(t, T.iconFly, T.iconLand));
+      lockScr.updateMatrixWorld(true);
+      const W2 = PH.w - 0.05, H2 = PH.h - 0.05;
+      _p.set((SLOT.x / 720 - 0.5) * W2, (0.5 - SLOT.y / 1500) * H2, 0.004);
+      const slot = lockScr.localToWorld(_p.clone()), slotQ = lockScr.getWorldQuaternion(new THREE.Quaternion());
+      tile.position.copy(hold.lerp(slot, k));
+      tile.quaternion.copy(holdQ.slerp(slotQ, k));
+      const sc = lerp(1, (SLOT.s / 720) * W2 / ICON, k);
+      tile.scale.set(sc, sc, sc * (1 - 0.9 * k));
+    }
+    tileGlint.material.opacity = 0.9 * Math.sin(Math.PI * prog(t, T.slam + 0.04, T.iconFly));
+    tileGlint.material.map.offset.set(lerp(0.6, -0.6, prog(t, T.slam + 0.04, T.iconFly)), 0);
   }
 
   // ---------- the pen ----------
@@ -207,6 +267,8 @@ export default function devicesScene(ctx) {
     camera.position.copy(pos);
     camera.up.set(0, 1, 0);
     camera.lookAt(look);
+    camera.updateMatrixWorld(true);
+    placeTile(t);
     // the pen (v8.1 rig): tip on its path in the screen's frame, body from the spring-hung top
     const pr = penState(t);
     pen.visible = t > T.penIn && t < T.dive - 0.06;
@@ -227,8 +289,14 @@ export default function devicesScene(ctx) {
     if (t >= T.dive) return; // the room scene's tablet takes over, pixel for pixel
     gl.draw(scene, camera);
     // the slam: shards of light out of the notification; the tap's flare
+    if (t < T.slam + 0.05) {                                       // the streak of light the icon rides in on
+      const pts = [];
+      for (let i = 10; i >= 0; i--) { const tt = Math.max(0, Math.min(T.slam, t) - i * 0.016); placeTile(tt); const q = tile.position.clone().project(camera); pts.push([(q.x + 1) / 2 * W, (1 - q.y) / 2 * H]); }
+      placeTile(t);
+      fx.line(pts, { w: 6, alpha: 1 - prog(t, T.slam, T.slam + 0.05), taper: 1, head: 0.8 });
+    }
     if (t >= T.slam && t < T.slam + 0.6) fx.shards(W * 0.5, H * 0.47, t, T.slam, { n: 18, seed: 3, speed: 1300, life: 0.5, len: 80, w: 2.4, spreadY: 0.8 });
   }
 
-  return { el: null, range: ctx.S.devices, update, draw, track };
+  return { el: null, range: ctx.S.devices, update, draw, track, ready: iconReady };
 }

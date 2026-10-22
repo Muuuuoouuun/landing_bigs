@@ -236,3 +236,10 @@ body.portrait .tl { font-size: 92px; }
 .shd8 { background: radial-gradient(closest-side, rgba(8,10,18,0.55), rgba(8,10,18,0)); }
 .curtain8 { background: linear-gradient(to top, rgba(170,240,110,0) 0%, rgba(190,250,140,0.55) 18%, rgba(230,255,200,0.75) 50%, rgba(190,250,140,0.4) 85%, rgba(170,240,110,0) 100%); mix-blend-mode: screen; filter: blur(2px); }
 .column8 { background: linear-gradient(to right, rgba(160,240,100,0) 0%, rgba(190,250,140,0.35) 35%, rgba(240,255,220,0.85) 50%, rgba(190,250,140,0.35) 65%, rgba(160,240,100,0) 100%); mix-blend-mode: screen; filter: blur(6px); -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%, #000 70%, transparent 100%); }
+
+/* v8.2 · brand: the official ClassIn app icon (seagull) on the live-activity cards and in the end-card lock-up */
+.tracker.live .hd { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.tracker.live .ico { width: 34px; height: 34px; border-radius: 22.37%; display: block; box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+.tracker.live .app { font: 700 17px Pretendard; font-style: normal; letter-spacing: -0.01em; color: rgba(255,255,255,0.86); }
+.e2.lock { display: flex; align-items: center; gap: 22px; }
+.e2.lock .ico { width: 78px; height: 78px; border-radius: 22.37%; display: block; box-shadow: 0 6px 18px rgba(20,24,20,0.18), 0 1px 2px rgba(0,0,0,0.2); }

@@ -26,7 +26,10 @@ export function buildCues(T, copy, X = {}) {
   // bar 1 · the phone spins in, the notification slams, the button fills, a tap
   add(0, 'reverse', { dur: T.slam, gain: 0.8 });
   add(T.slam, 'slam');
-  add(T.slam + 0.03, 'notif', { gain: 0.42 });
+  add(T.slam + 0.04, 'shimmer', { dur: T.iconFly - T.slam, gain: 0.18 });       // the icon's glint
+  add(T.iconFly, 'whoosh', { dur: T.iconLand - T.iconFly + 0.05, gain: 0.26, f0: 1800, f1: 700, pan: [0, -0.3] });
+  add(T.notifIn + 0.02, 'notif', { gain: 0.42 });
+  add(T.iconLand, 'tok', { gain: 0.3, bright: 0.85, body: 0.5, seed: 11 });     // it seats in its slot
   add(T.btnA, 'zip', { dur: T.btnB - T.btnA, gain: 0.22, f0: 600, f1: 1800, pan: [-0.2, 0.2] });
   add(T.tap, 'blip', { gain: 0.5 });
   // bar 2 · phone → tablet, the pen, the quiz, into the screen

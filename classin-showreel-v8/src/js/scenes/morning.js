@@ -35,6 +35,9 @@ export default function morningScene(ctx) {
 
   // the phone, lying on the desk
   const N = copy.notify;
+  const appIcon = new Image();
+  appIcon.src = 'assets/classin_app_icon.png';
+  const iconReady = appIcon.decode().catch(() => {});
   const lc = document.createElement('canvas'); lc.width = 720; lc.height = 1500;
   const lk = lc.getContext('2d');
   const lockTex = new THREE.CanvasTexture(lc); lockTex.colorSpace = THREE.SRGBColorSpace; lockTex.anisotropy = 8;
@@ -53,10 +56,8 @@ export default function morningScene(ctx) {
       lk.shadowColor = 'rgba(80,40,10,0.25)'; lk.shadowBlur = 30; lk.shadowOffsetY = 10;
       lk.fillStyle = 'rgba(250,248,244,0.96)'; lk.beginPath(); lk.roundRect(nx, ny, nw, nh, 44); lk.fill();
       lk.shadowBlur = 0; lk.shadowOffsetY = 0;
-      lk.fillStyle = '#fff'; lk.beginPath(); lk.roundRect(nx + 32, ny + 32, 72, 72, 18); lk.fill();
-      lk.strokeStyle = 'rgba(0,0,0,0.08)'; lk.lineWidth = 2; lk.stroke();
-      lk.fillStyle = '#10B415'; lk.save(); lk.translate(nx + 68, ny + 68); lk.transform(1, -0.45, 0, 1, 0, 0); lk.fillRect(-9, -20, 18, 42); lk.restore();
-      lk.textAlign = 'left'; lk.fillStyle = '#6a6c6e'; lk.font = '600 28px Pretendard'; lk.fillText(N.app, nx + 124, ny + 64);
+      lk.save(); lk.beginPath(); lk.roundRect(nx + 30, ny + 28, 78, 78, 78 * 0.2237); lk.clip(); lk.drawImage(appIcon, nx + 30, ny + 28, 78, 78); lk.restore();
+      lk.textAlign = 'left'; lk.fillStyle = '#3d3f42'; lk.font = '700 29px Pretendard'; lk.fillText(N.app, nx + 126, ny + 66);
       lk.textAlign = 'right'; lk.fillText('지금', nx + nw - 34, ny + 64);
       lk.textAlign = 'left'; lk.fillStyle = '#141516'; lk.font = '800 36px Pretendard'; lk.fillText(N.title, nx + 34, ny + 150);
       lk.fillStyle = '#4b4d50'; lk.font = '400 28px Pretendard'; lk.fillText(N.body, nx + 34, ny + 198);
@@ -99,5 +100,5 @@ export default function morningScene(ctx) {
     if (f > 0 && f < 1) fx.flare(W * 0.52, H * 0.45, 420 * (0.4 + f), 0.35 * (1 - f) * a, '255,230,170');
   }
 
-  return { el: null, range: ctx.S.morning, update, draw };
+  return { el: null, range: ctx.S.morning, update, draw, ready: iconReady };
 }

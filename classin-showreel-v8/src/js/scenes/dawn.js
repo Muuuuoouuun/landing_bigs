@@ -21,7 +21,7 @@ export default function dawnScene(ctx) {
 
   // the tracker card (ClassIn class status), top left
   const st = copy.tracker.steps;
-  const card = h('div', 'tracker', `<b>${copy.tracker.title}</b><span>${copy.tracker.sub}</span>
+  const card = h('div', 'tracker live', `<div class="hd"><img class="ico" src="assets/classin_app_icon.png" alt=""><em class="app">ClassIn</em></div><b>${copy.tracker.title}</b><span>${copy.tracker.sub}</span>
     <div class="steps">${st.map((s, i) => `<i class="d${i}"></i>`).join('<em></em>')}</div>
     <div class="labels">${st.map(s => `<span>${s}</span>`).join('')}</div>`);
   el.appendChild(card);

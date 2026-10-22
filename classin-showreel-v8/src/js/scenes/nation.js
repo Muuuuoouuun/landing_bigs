@@ -16,7 +16,7 @@ export default function nationScene(ctx) {
   const plate = h('div', 'plate', '<img src="assets/gen/aerial.jpg" alt="">');
   const shade = h('div', 'nshade');
   const labels = h('div', 'nlabels');
-  const card = h('div', 'tracker nat', `<b>${copy.nation.big}</b><span>${copy.nation.sub}</span>`);
+  const card = h('div', 'tracker nat live', `<div class="hd"><img class="ico" src="assets/classin_app_icon.png" alt=""><em class="app">ClassIn</em></div><b>${copy.nation.big}</b><span>${copy.nation.sub}</span>`);
   el.append(plate, shade, labels, card);
   const r = rng(9);
   const dots = [];
