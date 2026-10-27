@@ -8,6 +8,13 @@ import { E, tw, prog, clamp, lerp, shake, h } from '../core.js';
 import { createMark } from '../brandmark.js';
 import { makePen } from '../gl.js';
 
+// the end card's moves (shared with the sound cues): block i rises, rolls over (lands at roll[i] + ROLL), the colour
+// drains once the last one is down, the underline is drawn, the proof line comes in — all before the fade at T.fadeA
+export const endTimes = (T, n = 6) => {
+  const ED = T.dot, k = [...Array(n).keys()];
+  return { ED, ROLL: 0.28, rise: k.map(i => ED + i * 0.03), roll: k.map(i => ED + 0.07 + i * 0.07), drain: ED + 0.85, ul: ED + 0.9, proof: ED + 1.0 };
+};
+
 // where the mark rests (shared with the tagline's convergence point)
 export function markRest(W, H, P) {
   const w = P ? 820 : 980;
@@ -32,9 +39,10 @@ export default function heroScene(ctx) {
   const LINES = P ? [['즐거운', '수업'], ['하나가,'], ['전국', '모든'], ['집으로.']] : [['즐거운', '수업', '하나가,'], ['전국', '모든', '집으로.']];
   const FACES = ['#BCD9F2', '#F6C9A0', '#F3C4D2', '#F5DE9A', '#BDEBD3', '#EEE8DD'];
   const end = h('div', 'endblk');
-  const blocks = [];
+  const blocks = [], rows = [];
   LINES.forEach(words => {
     const row = h('div', 'erow');
+    rows.push(row);
     words.forEach(w => {
       const i = blocks.length;
       const b = h('div', 'blk', `<i class="fr"></i><i class="bt" style="background:${FACES[i % FACES.length]}"></i><span>${w}</span>`);
@@ -89,21 +97,26 @@ export default function heroScene(ctx) {
     ctx.shake[0] += sh[0]; ctx.shake[1] += sh[1];
     ctx.flash += 0.35 * (t >= T.hero ? 1 - prog(t, T.hero, T.hero + 0.35) : 0);
     // end card: rise (stagger), roll over on the beat (no bounce), colour drains, the emphasis is drawn
-    const ED = T.dot;                                              // the end card starts as the mark has gone
+    const ET = endTimes(T, blocks.length), ED = ET.ED;              // the end card starts as the mark has gone
     end.style.opacity = (tw(t, ED - 0.05, ED + 0.05) * (1 - tw(t, T.fadeA, 24.0, E.inOutSine))).toFixed(3);
+    const drain = tw(t, ET.drain, ET.drain + 0.25, E.inOutSine);
+    // as the colour goes, the blocks' margins close up: the words settle into one typeset line pair
+    const close = tw(t, ET.drain + 0.05, ET.drain + 0.4, E.inOutCubic);
+    end.style.gap = `${lerp(22, 2, close).toFixed(1)}px`;
+    for (const r of rows) r.style.gap = `${lerp(18, 10, close).toFixed(1)}px`;
     blocks.forEach((b, i) => {
-      const rise = tw(t, ED + i * 0.04, ED + i * 0.04 + 0.32, E.outQuart);
-      const roll = tw(t, ED + 0.34 + i * 0.09, ED + 0.34 + i * 0.09 + 0.3, E.inOutQuart);
-      const drain = tw(t, ED + 0.95, ED + 1.2, E.inOutSine);
+      const rise = tw(t, ET.rise[i], ET.rise[i] + 0.3, E.outQuart);
+      const roll = tw(t, ET.roll[i], ET.roll[i] + ET.ROLL, E.inOutQuart);
       b.el.style.transform = `translateY(${((1 - rise) * 70).toFixed(1)}px) rotateX(${(90 * roll).toFixed(2)}deg)`;
       b.el.style.opacity = rise.toFixed(3);
+      b.el.style.padding = `0 ${lerp(34, 6, close).toFixed(1)}px`;
       b.fr.style.opacity = (1 - drain).toFixed(3);
       b.bt.style.opacity = (1 - drain).toFixed(3);
       b.sp.style.color = i === 0 ? `rgb(${Math.round(lerp(29, 16, drain))},${Math.round(lerp(31, 180, drain))},${Math.round(lerp(28, 21, drain))})` : '#1D1F1C';
     });
-    ul.style.transform = `scaleX(${tw(t, ED + 1.0, ED + 1.3, E.inOutCubic).toFixed(4)})`;
-    e3.style.opacity = tw(t, ED + 1.15, ED + 1.45).toFixed(3);
-    e3.style.transform = `translateY(${((1 - tw(t, ED + 1.15, ED + 1.45, E.outQuart)) * 14).toFixed(1)}px)`;
+    ul.style.transform = `scaleX(${tw(t, ET.ul, ET.ul + 0.3, E.inOutCubic).toFixed(4)})`;
+    e3.style.opacity = tw(t, ET.proof, ET.proof + 0.3).toFixed(3);
+    e3.style.transform = `translateY(${((1 - tw(t, ET.proof, ET.proof + 0.3, E.outQuart)) * 14).toFixed(1)}px)`;
   }
 
   function draw(fx, t) {

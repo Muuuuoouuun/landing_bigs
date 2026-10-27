@@ -4,13 +4,13 @@ import { LineFX } from './line.js';
 import { clamp, drift, keyed, camMatrix, rng, tw, E, h, pchip } from './core.js';
 import { worldCam } from './world.js';
 import devicesScene from './scenes/devices.js';
-import roomScene from './scenes/room.js';
+import roomScene, { FRAGS, fragTimes } from './scenes/room.js';
 import whaleScene from './scenes/whale.js';
 import dawnScene from './scenes/dawn.js';
 import nationScene from './scenes/nation.js';
 import morningScene from './scenes/morning.js';
 import tagScene from './scenes/tagline.js';
-import heroScene from './scenes/hero.js';
+import heroScene, { endTimes } from './scenes/hero.js';
 import { createGL } from './gl.js';
 import { createClassUI } from './classui.js';
 import { buildCues } from './cues.js';
@@ -138,6 +138,10 @@ for (const s of scenes) if (s.el) s.el.style.display = 'none';
 function cueData() {
   const dev = scenes[scenes.length - 1], town = scenes[2].town?.();
   const X = { pen: dev.track?.(240) };
+  // (v8.3) the class's pieces leaving the glass and lying down into the grid; the end card's blocks
+  const FT = fragTimes(TL.beats);
+  X.frags = FRAGS.map((f, i) => ({ up: FT.up[i], lay: FT.grid[i] + FT.LAY, pan: +(((f.x + f.w / 2) / 1920) * 1.2 - 0.6).toFixed(2), col: i % 4, row: Math.floor(i / 4) }));
+  X.end = endTimes(TL.beats);
   if (town) X.town = town.houses.map(hs => { town.update(hs.tB); const q = town.toScreen(hs.cx, 4, hs.cz); return { t: hs.tB, x: q[0], y: q[1], z: q[2], f3: hs.floors === 3 }; })
     .filter(q => q.z < 1 && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50).map(q => ({ t: +q.t.toFixed(4), pan: +((q.x / W) * 1.2 - 0.6).toFixed(2), f3: q.f3 }));
   if (town) X.motes = town.motes.map(m => { town.update(m.t1); const q = town.toScreen(m.x, m.y, m.z); return { t: m.t1, x: q[0], y: q[1], z: q[2] }; })

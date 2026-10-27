@@ -77,7 +77,16 @@ export function buildCues(T, copy, X = {}) {
   // bar 6 · out of the screen, across the room, through the window
   add(T.lift, 'whoosh', { dur: 0.7, gain: 0.45, f0: 2400, f1: 500, big: 1 });
   add(T.flyA, 'air', { dur: T.window - T.flyA, gain: 0.28 });
-  add(T.window - 0.1, 'shimmer', { dur: 0.8, gain: 0.25 });
+  if (X.frags) {
+    // (v8.3) the class's pieces come off the glass one after another — light plastic ticks, panned where each one sits —
+    // and lie down into the grid: soft wooden knocks, bunched in 30 ms steps, the last ones a little lower
+    X.frags.forEach((f, i) => add(f.up, 'tok', { gain: 0.11, bright: 1.25 + 0.04 * (i % 5), body: 0.15, seed: 50 + i, pan: f.pan }));
+    const bins = new Map();
+    for (const f of X.frags) { const k = Math.round(f.lay / 0.03), b = bins.get(k) || { n: 0, pan: 0 }; b.n++; b.pan += (f.col - 1.5) * 0.3; bins.set(k, b); }
+    const ks = [...bins.keys()].sort((a, b) => a - b);
+    ks.forEach((k, j) => { const b = bins.get(k); add(k * 0.03, 'clack', { gain: Math.min(0.26, 0.12 + 0.06 * Math.log2(b.n)), pitch: 1.3 - 0.25 * j / Math.max(1, ks.length - 1), seed: 70 + j, pan: +(b.pan / b.n).toFixed(2) }); });
+  }
+  add(T.window - 0.1, 'shimmer', { dur: 0.8, gain: 0.18 });
   // bar 7 · every home: the light sweeps the clay town into houses, a whip, the windows light
   add(T.dawnA - 0.02, 'land', { gain: 0.5 });
   add(T.dawnA, 'swipe', { dur: T.sweepB - 0.15 - T.dawnA, gain: 0.16, pan: [-0.6, 0.5] });
@@ -129,8 +138,14 @@ export function buildCues(T, copy, X = {}) {
   add(T.hero, 'hit', { gain: 0.95 });
   add(T.traceB, 'ink', { dur: T.fillB - T.traceB + 0.3, gain: 0.3 });
   add(T.shineA, 'air', { dur: T.shineB - T.shineA, gain: 0.22 });
-  add(T.dot, 'ping', { gain: 0.32 });
-  add(T.lineA, 'zip', { dur: T.lineB - T.lineA, gain: 0.28, f0: 1200, f1: 2400, pan: [-0.3, 0.3] });
-  add(T.lineB, 'shimmer', { dur: 1.4, gain: 0.2 });
+  if (X.end) {
+    // (v8.3) the end card in blocks: they rise on a breath, each lands its roll with a wooden knock climbing the scale,
+    // the colour drains on one low note, the underline is drawn with a felt stroke
+    const E_ = X.end, up = [0, 2, 4, 7, 9, 12];
+    add(E_.rise[0], 'air', { dur: 0.45, gain: 0.16 });
+    E_.roll.forEach((r, i) => add(r + E_.ROLL - 0.02, 'clack', { gain: 0.2, pitch: 0.8 * 2 ** (up[i % up.length] / 12), seed: 90 + i, pan: ((i % 3) - 1) * 0.3 }));
+    add(E_.drain + 0.05, 'pluck', { gain: 0.14, semi: -12 });
+    add(E_.ul, 'scribble', { ...strokes(0.3, 1, 240, 93), tip: 'felt', gain: 0.3, pan: -0.15 });
+  }
   return c.sort((a, b) => a.t - b.t);
 }
