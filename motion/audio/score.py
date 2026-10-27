@@ -12,18 +12,10 @@ the sound of each style lives here.
 import numpy as np
 
 from dsp import (SR, add, compress, delay, each, hp, lp, mono_lows, mtof, norm, reverb, saturate, tt, widen)
+from grid import CHORDS, MusicGrid
 from instruments import (bass, bell, bell_pluck, brass, cello, choir, clap, crash, cymbal_swell, kick, marimba, piano,
                          pluck_bass, shaker, snare, snare_soft, strings, timpani, tom)
 
-CHORDS = {  # name → (bass midi, close voicing around C4–C5)
-    'Dm': (38, [62, 65, 69, 74]),
-    'Bb': (34, [58, 62, 65, 70]),
-    'F': (41, [60, 65, 69, 72]),
-    'C': (36, [60, 64, 67, 72]),
-    'Gm': (31, [62, 67, 70, 74]),
-    'A': (33, [61, 64, 69, 73]),
-    'D': (38, [62, 66, 69, 74]),
-}
 ARP8 = [0, 2, 1, 2]
 ARP16 = [0, 2, 1, 3, 2, 1, 0, 2]
 MARIMBA_RUN = [65, 69, 72, 74, 77, 81, 84, 89]  # F major pentatonic climb, one note per cell stamp
@@ -64,6 +56,7 @@ class Score:
         self.eighth, self.sixteenth = self.beat // 2, self.beat // 4
         self.bus = {name: np.zeros((2, self.total)) for name in BUSES}
         self.kicks = []
+        self.grid = MusicGrid(spec)
 
     def fr(self, frame):
         return int(round(frame * self.spf))
@@ -185,17 +178,20 @@ class Score:
             if b % 2 == 0:
                 root, _ = CHORDS[per_beat[b]]
                 add(self.bus['bass'], pluck_bass(mtof(root + 12)), start + b * self.beat, 0.5)
+        # the stamps on screen step in whole frames; the mallets play them as exact 16ths (words as 32nds)
         for i, f in enumerate(sec['notes']):  # one mallet note per cell stamp on screen
             m = MARIMBA_RUN[i % len(MARIMBA_RUN)]
-            add(self.bus['keys'], marimba(mtof(m)), self.fr(f), 0.55, pan=(-0.35 if i % 2 else 0.35))
-            add(self.bus['keys'], marimba(mtof(m - 12), 0.45, 0.4), self.fr(f), 0.22)
+            pos = self.fr(self.grid.snap(f))
+            add(self.bus['keys'], marimba(mtof(m)), pos, 0.55, pan=(-0.35 if i % 2 else 0.35))
+            add(self.bus['keys'], marimba(mtof(m - 12), 0.45, 0.4), pos, 0.22)
         for f in sec['stabs']:  # lightly strummed chord on each stamped word
-            beat = min(n_beats - 1, (self.fr(f) - start) // self.beat)
+            pos = self.fr(self.grid.snap(f, 8))
+            beat = min(n_beats - 1, (pos - start) // self.beat)
             _, tones = CHORDS[per_beat[beat]]
             for k, m in enumerate(tones[:3]):
-                add(self.bus['keys'], marimba(mtof(m + 12), 0.5), self.fr(f) + k * 60, 0.3, pan=(k - 1) * 0.4)
+                add(self.bus['keys'], marimba(mtof(m + 12), 0.5), pos + k * 60, 0.3, pan=(k - 1) * 0.4)
         for i, (f, m) in enumerate(sec.get('pickup', [])):
-            add(self.bus['keys'], marimba(mtof(m), 0.45), self.fr(f), 0.42, pan=(0.3 if i % 2 else -0.3))
+            add(self.bus['keys'], marimba(mtof(m), 0.45), self.fr(self.grid.snap(f)), 0.42, pan=(0.3 if i % 2 else -0.3))
         for b in range(n_beats):
             bpos = start + b * self.beat
             if b % 2 == 0:
