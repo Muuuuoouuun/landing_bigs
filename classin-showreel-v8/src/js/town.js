@@ -346,7 +346,7 @@ totalEmissiveRadiance += vec3(1.0, 0.86, 0.6) * 2.2 * vH.z * kT * on;`));
   ribbon.frustumCulled = false;
   scene.add(ribbon);
   // gathering threads: a soft point at each thread's head and five fading points behind it (additive)
-  const TRAIL = 6, NM = motes.length * (TRAIL + 1);
+  const TRAIL = 12, NM = motes.length * (TRAIL + 1);
   const mg = new THREE.BufferGeometry();
   mg.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(NM * 3), 3));
   mg.setAttribute('aA', new THREE.Float32BufferAttribute(new Float32Array(NM * 2), 2));   // alpha, size (m)
@@ -370,11 +370,11 @@ totalEmissiveRadiance += vec3(1.0, 0.86, 0.6) * 2.2 * vH.z * kT * on;`));
     let i = 0;
     for (const m of motes) {
       for (let k = 0; k <= TRAIL; k++) {
-        const tt = t - k * 0.014, on = tt >= m.t0 && tt <= m.t1 && t >= m.t0;
+        const tt = t - k * 0.006, on = tt >= m.t0 && tt <= m.t1 && t >= m.t0;
         const p = on ? moteAt(m, tt) : [0, -100, 0];
         P[i * 3] = p[0]; P[i * 3 + 1] = p[1]; P[i * 3 + 2] = p[2];
         const fade = 1 - k / (TRAIL + 1), land = 1 - 0.6 * prog(tt, m.t1 - 0.04, m.t1);
-        A[i * 2] = on ? fade * land * (m.pre ? 0.9 : 0.75) : 0; A[i * 2 + 1] = (k ? 1.1 : 1.6) * fade;
+        A[i * 2] = on ? fade * land : 0; A[i * 2 + 1] = (k ? 2.0 : 2.8) * (0.4 + 0.6 * fade);
         i++;
       }
     }

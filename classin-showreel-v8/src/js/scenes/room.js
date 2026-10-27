@@ -79,7 +79,7 @@ export default function roomScene(ctx) {
       Lp = [lerp(Lp[0], q[0], k), lerp(Lp[1], q[1], k)]; R = lerp(R, 900, k);
       wglow.style.background = `radial-gradient(circle at ${q[0].toFixed(1)}px ${q[1].toFixed(1)}px, rgba(150,236,110,${(0.32 * wg.a).toFixed(3)}) 0px, rgba(150,236,110,${(0.1 * wg.a).toFixed(3)}) 260px, rgba(0,0,0,0) 620px)`;
     } else wglow.style.background = 'none';
-    const dark = 0.62 * (1 - tw(t, T.lift + 0.4, T.window + 0.3));
+    const dark = 0.62 * (1 - 0.75 * tw(t, T.lift - 0.1, T.flyA + 0.35) - 0.25 * tw(t, T.flyA + 0.35, T.window + 0.3)); // the room opens up as the whale comes out
     night.style.background = `radial-gradient(circle at ${Lp[0].toFixed(1)}px ${Lp[1].toFixed(1)}px, rgba(9,10,13,${(dark * 0.05).toFixed(3)}) 0px, rgba(9,10,13,${(dark * 0.35).toFixed(3)}) ${(R * 0.42).toFixed(0)}px, rgba(9,10,13,${dark.toFixed(3)}) ${R.toFixed(0)}px)`;
     // rings of light spread over the glass as the whale comes out of it
     for (let i = 0; i < 3; i++) {
