@@ -2,7 +2,7 @@
 Sound effects — soft, weighty and in key with the score.
 
 Hits carry an orchestral stab on the chord the music is on (Dm on the impact and the AI slam,
-F on the crossing, D major on the logo). Each riser is a struck chord's reverb played backwards, in
+F as ClassIn lands in ④ 가치, D major on the logo). Each riser is a struck chord's reverb played backwards, in
 the harmony sounding under it — Dm into the impact, the dominant (A major) into the AI slam and the
 logo — so it breathes into the hit instead of rubbing against the music. Every transition has its
 own move (zoom, push, iris, wipe, whip, dip), close-up cuts get a soft focus pull, and repeated

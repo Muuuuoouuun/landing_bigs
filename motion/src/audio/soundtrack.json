@@ -13,7 +13,7 @@
       {"style": "secure", "from": 268, "to": 422, "chords": [["Dm", 2], ["Bb", 2], ["Gm", 2], ["Dm", 2], ["Bb", 2], ["C", 1]], "_scene": "② 관리 — one chord per shot (wide, four close-ups, wide)"},
       {"style": "variation", "from": 422, "to": 478, "chords": [["F", 2], ["Bb", 1], ["C", 1]], "notes": [422, 426, 429, 433, 436, 440, 443, 447], "stabs": [450, 456, 458, 460, 464], "pickup": [[467, 79], [471, 84], [474, 88]], "_scene": "interlude — mallet variation: one note per cell stamp, chord stabs on the statement"},
       {"style": "ai", "from": 506, "to": 632, "chords": [["Dm", 4], ["Bb", 3], ["C", 2]], "_scene": "AI slam + ③ AI 강의평가 — the fullest groove, choir bed"},
-      {"style": "lift", "from": 632, "to": 730, "chords": [["Dm", 1], ["Bb", 1], ["C", 1], ["F", 2], ["Bb", 1], ["C", 1]], "release": 674, "_scene": "④ 가치 — half-time tension and a snare build while the costs fall, the release on the crossing"}
+      {"style": "lift", "from": 632, "to": 730, "chords": [["Dm", 1], ["Bb", 1], ["C", 1], ["F", 2], ["Bb", 1], ["C", 1]], "release": 674, "_scene": "④ 가치 — half-time tension and a snare build while the waste blocks are struck out, the release as ClassIn lands"}
     ],
     "melodies": [
       {"voice": "violins", "notes": [[58, 86, 2], [86, 81, 2], [114, 77, 2], [142, 76, 2], [170, 81, 2], [198, 84, 2], [226, 79, 3]], "_scene": "the drop — violins state the motif an octave up in half notes (D–A–F–E), then answer it"},
@@ -92,7 +92,6 @@
     {"at": 598, "sfx": "bell", "volume": 0.3},
     {"at": 604, "sfx": "bell-3", "volume": 0.28},
     {"at": 632, "sfx": "whip", "volume": 0.36},
-    {"at": 646, "sfx": "thud", "volume": 0.45},
     {"at": 653, "sfx": "strike-1", "volume": 0.28},
     {"at": 660, "sfx": "strike-2", "volume": 0.28},
     {"at": 667, "sfx": "strike-3", "volume": 0.28},

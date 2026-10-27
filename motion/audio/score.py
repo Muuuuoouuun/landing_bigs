@@ -235,8 +235,8 @@ class Score:
                 add(self.bus['keys'], reverb(bell([mtof(tones[2] + 12), mtof(tones[0] + 24)], 1.6, 0.07, 0.9), 1.8, 0.4), bpos, 0.12)
 
     def lift(self, sec):
-        """④ 가치: tension while the costs fall (half-time, a snare roll that builds), then the release
-        on the crossing — full major-key groove, high strings and the piano-octave melody."""
+        """④ 가치: tension while the waste blocks are struck out (half-time, a snare roll that builds),
+        then the release as ClassIn lands — full major-key groove, high strings and the piano-octave melody."""
         start, end, n_beats, per_beat = self.section_bounds(sec)
         release = self.fr(sec.get('release', sec['from']))
         for b, run, name in chord_runs(per_beat):
@@ -247,7 +247,7 @@ class Score:
             if not after:
                 root, _ = CHORDS[name]
                 add(self.bus['bass'], bass(mtof(root), dur - 0.4, 1.2), pos, 0.3)
-        # the build: 8ths then 16ths on a brushed snare, climbing into the crossing
+        # the build: 8ths then 16ths on a brushed snare, climbing into the release
         p, k = start + self.beat, 0
         while p < release:
             prog = (p - start) / max(1, release - start)
