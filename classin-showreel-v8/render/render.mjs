@@ -53,6 +53,8 @@ async function openPage() {
 
 async function shoot(page, t, file) {
   await page.evaluate(tt => window.__film.render(tt), t);
+  // images that sat off screen for a while can be dropped from the decode cache; make sure they are back before the shot
+  await page.evaluate(() => Promise.all([...document.images].filter(i => i.complete && i.naturalWidth).map(i => i.decode().catch(() => {}))));
   await page.screenshot({ path: file, type: 'jpeg', quality, clip: { x: 0, y: 0, width: W, height: H }, timeout: 300000 }); // first 3D frames compile shaders
 }
 
