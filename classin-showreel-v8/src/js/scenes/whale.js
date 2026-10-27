@@ -10,7 +10,7 @@ import { TABLET, classToWorld } from './room.js';
 import WH from '../../assets/gen/whale.js';
 
 const SX = (TABLET.w - 2 * TABLET.bez) / 1920;
-const P1 = [1150, -420, 760], P2 = [1308, -872, 1050]; // → the window on the wall
+const P1 = [860, -260, 640], P2 = [1308, -872, 1050]; // swings left over the desk, then into the window
 const PENS = ['#9FD0FF', '#F59A23'];
 
 export default function whaleScene(ctx) {
@@ -33,7 +33,8 @@ export default function whaleScene(ctx) {
     const b = [P0[0], P0[1], P0[2] + 130 * up];
     const pos = b.map((v, i) => (1 - fk) * (1 - fk) * v + 2 * fk * (1 - fk) * P1[i] + fk * fk * P2[i]);
     const s = lerp(WS * SX, 0.72, up) * lerp(1, 0.5, fk);
-    const M = M4.chain(M4.T(pos[0], pos[1], pos[2]), M4.RX(-17.2 * fk), M4.RZ(lerp(TABLET.rz, -22, fk)), M4.RY(180 * turn), M4.S(s, s, 1));
+    const stand = tw(t, T.lift - 0.1, T.flyA + 0.15, E.inOutCubic); // peels off the glass and turns to face the room
+    const M = M4.chain(M4.T(pos[0], pos[1], pos[2]), M4.RX(-90 * stand), M4.RX(-17.2 * fk), M4.RZ(lerp(TABLET.rz, -22, fk)), M4.RY(180 * turn), M4.S(s, s, 1));
     return { M, pos, up, edge: 0.35 + 0.65 * Math.abs(Math.cos(turn * Math.PI)) };
   }
   const ap = (M, [x, y]) => [M[0] * x + M[4] * y + M[12], M[1] * x + M[5] * y + M[13], M[2] * x + M[6] * y + M[14]];
@@ -41,9 +42,10 @@ export default function whaleScene(ctx) {
   function update(t) {
     const vis = t > T.liftA && t < T.window + 0.45;
     pic.el.style.visibility = vis ? 'visible' : 'hidden';
-    if (!vis) return pic.clear();
-    const { M } = pose(t);
+    if (!vis) { ctx.whaleGlow = null; return pic.clear(); }
+    const { M, pos } = pose(t);
     place2(pic.el, ctx.CM, pic.model(M));
+    ctx.whaleGlow = { pos, a: tw(t, T.liftA, T.lift) * (1 - tw(t, T.window + 0.1, T.window + 0.45)) };
     const rv = tw(t, T.liftA, T.liftA + 0.4, E.inOutSine);
     const out = 1 - tw(t, T.window + 0.2, T.window + 0.45);
     pic.draw({ wave: swimDy(t, tw(t, T.liftA + 0.3, T.lift) * 1.2), reveal: lerp(-300, 300, rv), soft: 70, alpha: 0.95 * out });

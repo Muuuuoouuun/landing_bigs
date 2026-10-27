@@ -49,6 +49,16 @@ export async function createTown(THREE, { env = null, assets = '../assets/gen/',
     const k = clamp((s - cum[i]) / segL[i]), a = ROUTE[i], b = ROUTE[i + 1];
     return [lerp(a[0], b[0], k), lerp(a[1], b[1], k)];
   }
+  function nearestS(x, z) {
+    let best = 1e9, bs = 0;
+    for (let i = 0; i < segL.length; i++) {
+      const [ax, az] = ROUTE[i], [bx, bz] = ROUTE[i + 1], abx = bx - ax, abz = bz - az;
+      const q = clamp(((x - ax) * abx + (z - az) * abz) / (abx * abx + abz * abz)), d = Math.hypot(x - ax - abx * q, z - az - abz * q);
+      if (d < best) { best = d; bs = cum[i] + q * segL[i]; }
+    }
+    return bs;
+  }
+  const timeAtS = s => RT.a + (RT.b - RT.a) * inv(clamp(s / L));
   function fieldT(x, z) {
     let best = 1e5;
     for (let i = 0; i < segL.length; i++) {
@@ -114,6 +124,18 @@ export async function createTown(THREE, { env = null, assets = '../assets/gen/',
     face([[x0, 0, z0], [x0, 0, z1], [x0, Hh, z1], [x0, Hh, z0]], [-1, 0, 0], HD, 3.4);
     const top = hs.col.map(v => Math.min(1, v * 1.06));
     push(B.house, hs, [[x0, Hh, z1], [x1, Hh, z1], [x1, Hh, z0], [x0, Hh, z0]], [0, 1, 0], [[0, 0], [0, 0], [0, 0], [0, 0]], NOWIN, top);
+  }
+  // (v8.2) the homes' light gathers into it: just before it lands, threads of light lift off the roofs around the
+  // landing point and fall in with it; then, as it runs, each home beside the route sends a thread up and into it
+  const motes = [];
+  { const rr = rng(4242), [lx, lz] = at(0);
+    for (const hs of houses) {
+      const top = hs.floors * FLOOR + 0.8, dl = Math.hypot(hs.cx - lx, hs.cz - lz);
+      if (dl < 48 && rr() < 0.75) { const t1 = RT.a - 0.01; motes.push({ x: hs.cx, y: top, z: hs.cz, t0: t1 - 0.2 - rr() * 0.12 - dl * 0.0015, t1, bend: 10 + rr() * 8, pre: true }); continue; }
+      if (distRoute(hs.cx, hs.cz) > 28 || rr() < 0.3) continue;
+      const t1 = timeAtS(nearestS(hs.cx, hs.cz)) + 0.05 + rr() * 0.08;
+      motes.push({ x: hs.cx, y: top, z: hs.cz, t0: t1 - 0.2 - rr() * 0.1, t1, bend: 7 + rr() * 9 });
+    }
   }
   // round trees in the front yards and street lamps on the kerbs (blocks too: grey first, then colour)
   const tmp = new THREE.IcosahedronGeometry(1, 2).toNonIndexed(), tp = tmp.attributes.position, tn = tmp.attributes.normal;
@@ -323,6 +345,41 @@ totalEmissiveRadiance += vec3(1.0, 0.86, 0.6) * 2.2 * vH.z * kT * on;`));
   }));
   ribbon.frustumCulled = false;
   scene.add(ribbon);
+  // gathering threads: a soft point at each thread's head and five fading points behind it (additive)
+  const TRAIL = 6, NM = motes.length * (TRAIL + 1);
+  const mg = new THREE.BufferGeometry();
+  mg.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(NM * 3), 3));
+  mg.setAttribute('aA', new THREE.Float32BufferAttribute(new Float32Array(NM * 2), 2));   // alpha, size (m)
+  const MU = { uScale: { value: 1 } };
+  const motePts = new THREE.Points(mg, new THREE.ShaderMaterial({
+    uniforms: MU, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false,
+    vertexShader: 'attribute vec2 aA; varying float vA; uniform float uScale; void main(){ vA = aA.x; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = max(1.5, aA.y * uScale / -mv.z); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'varying float vA; void main(){ float d = length(gl_PointCoord - 0.5) * 2.0; if (d > 1.0 || vA <= 0.0) discard; float core = smoothstep(0.45, 0.0, d), halo = exp(-d * d * 5.0); gl_FragColor = vec4((vec3(1.0, 0.98, 0.9) * core + vec3(0.45, 1.0, 0.3) * halo * 0.6) * vA, 1.0); }',
+  }));
+  motePts.frustumCulled = false;
+  scene.add(motePts);
+  const qb = (a0, c, b, e) => a0 * (1 - e) * (1 - e) + 2 * c * e * (1 - e) + b * e * e;
+  function moteAt(m, t) {
+    const u = clamp((t - m.t0) / (m.t1 - m.t0)), e = u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+    const [hx, hz] = m.pre ? at(0) : at(headS(t)), hy = m.pre ? 2.2 + 30 * (1 - E.inCubic(prog(t, RT.a - 0.14, RT.a))) : 2.2;
+    const cx = (m.x + hx) / 2, cz = (m.z + hz) / 2, cy = Math.max(m.y, hy) + m.bend;
+    return [qb(m.x, cx, hx, e), qb(m.y, cy, hy, e), qb(m.z, cz, hz, e)];
+  }
+  function updateMotes(t) {
+    const P = mg.attributes.position.array, A = mg.attributes.aA.array;
+    let i = 0;
+    for (const m of motes) {
+      for (let k = 0; k <= TRAIL; k++) {
+        const tt = t - k * 0.014, on = tt >= m.t0 && tt <= m.t1 && t >= m.t0;
+        const p = on ? moteAt(m, tt) : [0, -100, 0];
+        P[i * 3] = p[0]; P[i * 3 + 1] = p[1]; P[i * 3 + 2] = p[2];
+        const fade = 1 - k / (TRAIL + 1), land = 1 - 0.6 * prog(tt, m.t1 - 0.04, m.t1);
+        A[i * 2] = on ? fade * land * (m.pre ? 0.9 : 0.75) : 0; A[i * 2 + 1] = (k ? 1.1 : 1.6) * fade;
+        i++;
+      }
+    }
+    mg.attributes.position.needsUpdate = true; mg.attributes.aA.needsUpdate = true;
+  }
   const headTex = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 128; const k = c.getContext('2d');
     const g = k.createRadialGradient(64, 64, 0, 64, 64, 64);
@@ -371,6 +428,8 @@ totalEmissiveRadiance += vec3(1.0, 0.86, 0.6) * 2.2 * vH.z * kT * on;`));
     sun.position.copy(sun.target.position).addScaledVector(SUN, 600);
     Object.assign(sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 100, far: 1200 });
     sun.shadow.camera.updateProjectionMatrix();
+    MU.uScale.value = H / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+    updateMotes(t);
     // route
     const s = headS(t), [hx, hz] = at(s), on = t > RT.a - 0.14 && t < RT.b + 0.6;
     RU.uHead.value = t < RT.a ? 0 : s;
@@ -385,5 +444,5 @@ totalEmissiveRadiance += vec3(1.0, 0.86, 0.6) * 2.2 * vH.z * kT * on;`));
   // world → screen px (for 2D overlays: the whale's light, flares)
   const pv = new THREE.Vector3();
   function toScreen(x, y, z) { pv.set(x, y, z).project(camera); return [(pv.x + 1) / 2 * W, (1 - pv.y) / 2 * H, pv.z]; }
-  return { scene, camera, update, houses, fieldT, headS, at, L, RT, toScreen, dest, exposure: 0.9, pitch: t => cam(t).pitch };
+  return { scene, camera, update, houses, motes, fieldT, headS, at, L, RT, toScreen, dest, exposure: 0.9, pitch: t => cam(t).pitch };
 }

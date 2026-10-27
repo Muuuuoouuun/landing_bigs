@@ -81,6 +81,13 @@ export function buildCues(T, copy, X = {}) {
   // bar 7 · every home: the light sweeps the clay town into houses, a whip, the windows light
   add(T.dawnA - 0.02, 'land', { gain: 0.5 });
   add(T.dawnA, 'swipe', { dur: T.sweepB - 0.15 - T.dawnA, gain: 0.16, pan: [-0.6, 0.5] });
+  if (X.motes) {
+    // the homes' threads of light arriving: soft glints, bunched in 40 ms steps, climbing in pitch as the light runs
+    const bins = new Map();
+    for (const m of X.motes) { const k = Math.round(m.t / 0.04), b = bins.get(k) || { n: 0, pan: 0 }; b.n++; b.pan += m.pan; bins.set(k, b); }
+    const ks = [...bins.keys()].sort((a, b) => a - b), k0 = ks[0] || 0, k1 = ks[ks.length - 1] || 1;
+    for (const k of ks) { const b = bins.get(k); add(k * 0.04, 'glint', { gain: Math.min(0.16, 0.05 + 0.03 * Math.log2(1 + b.n)), semi: Math.round(12 * (k - k0) / Math.max(1, k1 - k0)), seed: k, pan: +(b.pan / b.n).toFixed(2) }); }
+  }
   if (X.town) {
     // the blocks fold into houses where the light has passed: a cascade of small wooden clacks (in view only)
     const bins = new Map();

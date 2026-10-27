@@ -398,6 +398,13 @@ def sfx_voice(c):
         f0, n = 1150 * c.get('pitch', 1) * (0.9 + 0.2 * r.random()), int(0.12 * SR)
         s = modal(n, [(f0, 0.045, 1.0), (f0 * 2.71, 0.018, 0.45), (f0 * 5.2, 0.008, 0.2)], r, click=0.5, lo=1500)
         return s * g * 0.5, c.get('pan', 0.0), 0.1
+    if ty == 'glint':  # a thread of light arriving: a small soft bell, higher as the run goes on
+        r = np.random.default_rng(c.get('seed', 1))
+        f0, n = midi(86 + c.get('semi', 0)) * (0.995 + 0.01 * r.random()), int(0.18 * SR)
+        tt = tvec(0.18)
+        s = (np.sin(2 * np.pi * f0 * tt) + 0.35 * np.sin(2 * np.pi * f0 * 2.76 * tt) * np.exp(-tt / 0.03)) * np.exp(-tt / 0.07)
+        s *= np.minimum(1, tt / 0.003)
+        return s * g * 0.5, c.get('pan', 0.0), 0.35
     if ty == 'land':  # the light drops onto the street: a soft low thump and a breath of air
         n = int(1.2 * SR)
         s = sine_sweep(1.2, 150, 52) * env_exp(n, 0.13) * 0.9 + band_sweep(1.2, 2600, 7000, 0.6, seed=4) * env_exp(n, 0.32) * 0.28

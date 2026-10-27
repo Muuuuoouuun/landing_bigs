@@ -140,6 +140,8 @@ function cueData() {
   const X = { pen: dev.track?.(240) };
   if (town) X.town = town.houses.map(hs => { town.update(hs.tB); const q = town.toScreen(hs.cx, 4, hs.cz); return { t: hs.tB, x: q[0], y: q[1], z: q[2], f3: hs.floors === 3 }; })
     .filter(q => q.z < 1 && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50).map(q => ({ t: +q.t.toFixed(4), pan: +((q.x / W) * 1.2 - 0.6).toFixed(2), f3: q.f3 }));
+  if (town) X.motes = town.motes.map(m => { town.update(m.t1); const q = town.toScreen(m.x, m.y, m.z); return { t: m.t1, x: q[0], y: q[1], z: q[2] }; })
+    .filter(q => q.z < 1 && q.x > -50 && q.x < W + 50 && q.y > -50 && q.y < H + 50).map(q => ({ t: +q.t.toFixed(4), pan: +((q.x / W) * 1.2 - 0.6).toFixed(2) }));
   return X;
 }
 const beatsOut = Object.fromEntries(Object.entries(TL.beats).map(([k, v]) => [k, +film(v).toFixed(4)]));

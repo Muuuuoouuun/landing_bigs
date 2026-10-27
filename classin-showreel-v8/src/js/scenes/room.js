@@ -5,7 +5,7 @@
 // finished drawing (the friends' parts on the teacher's whale) is drawn here too.
 import { E, tw, prog, clamp, lerp, M4, xf, place, planeModel, h } from '../core.js';
 import { project } from '../line.js';
-import { CW, CH, onBoard, PARTS } from '../classui.js';
+import { CW, CH, onBoard, PARTS, WC } from '../classui.js';
 import { whaleStrokes } from '../whalegeo.js';
 import SPRITES from '../../assets/gen/sprites.js';
 
@@ -40,6 +40,9 @@ export default function roomScene(ctx) {
   el.appendChild(screen);
   const night = h('div', 'nightpool');
   el.appendChild(night);
+  const wglow = h('div', 'nightpool');
+  wglow.style.mixBlendMode = 'screen';
+  el.appendChild(wglow);
 
   // the finished drawing (class px), for the light to run over
   const drawing = [...whaleStrokes().map(s => s.pts), ...PARTS.flat()].map(p => p.map(onBoard));
@@ -61,17 +64,31 @@ export default function roomScene(ctx) {
     place(phone, CM, planeModel(PHONE.x, PHONE.y, 1, PHONE.w, PHONE.h, { rz: PHONE.rz }));
     place(tab, CM, MT);
     place(screen, CM, MS(1));
-    // the night: the tablet's glow lights the desk; the rest falls away into the dark
-    const Lp = project(CM, [[TABLET.x, TABLET.y, 0]])[0];
-    const R = 1300 * CM[0] + 180;
-    const dark = 0.62 * (1 - tw(t, T.lift + 0.4, T.window + 0.3));
-    night.style.background = `radial-gradient(circle at ${Lp[0].toFixed(1)}px ${Lp[1].toFixed(1)}px, rgba(9,10,13,${(dark * 0.05).toFixed(3)}) 0px, rgba(9,10,13,${(dark * 0.35).toFixed(3)}) ${(R * 0.42).toFixed(0)}px, rgba(9,10,13,${dark.toFixed(3)}) ${R.toFixed(0)}px)`;
     el.style.opacity = (1 - tw(t, T.window + 0.2, T.window + 0.5)).toFixed(3);
     cur = { CM };
   }
 
   function draw(fx, t) {
     if (!cur) return;
+    // the night: the tablet's glow lights the desk, the rest falls away into the dark — and once the whale is out,
+    // the pool of light travels with it across the room (computed here: the whale has placed itself by now)
+    const CM = cur.CM, wg = ctx.whaleGlow;
+    let Lp = project(CM, [[TABLET.x, TABLET.y, 0]])[0], R = 1300 * Math.min(CM[0] * CM[0] + CM[1] * CM[1], 4) ** 0.5 + 180;
+    if (wg && wg.a > 0) {
+      const q = project(CM, [wg.pos])[0], k = wg.a * tw(t, T.lift, T.flyA + 0.2);
+      Lp = [lerp(Lp[0], q[0], k), lerp(Lp[1], q[1], k)]; R = lerp(R, 900, k);
+      wglow.style.background = `radial-gradient(circle at ${q[0].toFixed(1)}px ${q[1].toFixed(1)}px, rgba(150,236,110,${(0.32 * wg.a).toFixed(3)}) 0px, rgba(150,236,110,${(0.1 * wg.a).toFixed(3)}) 260px, rgba(0,0,0,0) 620px)`;
+    } else wglow.style.background = 'none';
+    const dark = 0.62 * (1 - tw(t, T.lift + 0.4, T.window + 0.3));
+    night.style.background = `radial-gradient(circle at ${Lp[0].toFixed(1)}px ${Lp[1].toFixed(1)}px, rgba(9,10,13,${(dark * 0.05).toFixed(3)}) 0px, rgba(9,10,13,${(dark * 0.35).toFixed(3)}) ${(R * 0.42).toFixed(0)}px, rgba(9,10,13,${dark.toFixed(3)}) ${R.toFixed(0)}px)`;
+    // rings of light spread over the glass as the whale comes out of it
+    for (let i = 0; i < 3; i++) {
+      const k = prog(t, T.liftA + 0.15 + i * 0.12, T.liftA + 0.75 + i * 0.12);
+      if (k <= 0 || k >= 1) continue;
+      const r = 120 + 760 * E.outCubic(k), ring = [];
+      for (let a2 = 0; a2 <= 64; a2++) { const q = (a2 / 64) * Math.PI * 2; ring.push(classToWorld([WC[0] + Math.cos(q) * r, WC[1] + Math.sin(q) * r * 0.62], 2)); }
+      fx.line(project(CM, ring), { w: 2.6 * (1 - k) + 0.6, alpha: 0.75 * (1 - k), taper: 0, head: 0 });
+    }
     // the light runs over the finished drawing — the friends' parts and the teacher's whale become one
     const u = tw(t, T.lightA, T.lightB, E.inOutSine), cool = tw(t, T.lightB, T.lift);
     if (u <= 0 || t > T.lift + 0.2) return;

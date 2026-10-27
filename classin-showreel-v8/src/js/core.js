@@ -91,6 +91,7 @@ export function camMatrix(cam, W, H) {
     M4.RZ(cam.rz || 0),
     M4.RX(cam.rx || 0),
     M4.RY(cam.ry || 0),
+    M4.RZ(cam.yaw || 0), // turn about the world's vertical axis (v8.2: diagonal views across the room)
     M4.S(cam.s ?? 1, cam.s ?? 1, cam.s ?? 1),
     M4.T(-(cam.x || 0), -(cam.y || 0), -(cam.z || 0)),
   );
