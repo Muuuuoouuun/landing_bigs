@@ -28,7 +28,7 @@ export default function whaleScene(ctx) {
   // whale-local → world
   function pose(t) {
     const up = tw(t, T.lift - 0.05, T.flyA + 0.05, E.inOutCubic);
-    const turn = tw(t, T.lift + 0.3, T.flyA + 0.3, E.inOutCubic);
+    const turn = tw(t, T.lift + 0.32, T.lift + 0.54, E.inOutCubic); // a quick turn: edge-on for only a few frames
     const fk = tw(t, T.flyA, T.window + 0.15, E.inOutSine);
     const b = [P0[0], P0[1], P0[2] + 130 * up];
     const pos = b.map((v, i) => (1 - fk) * (1 - fk) * v + 2 * fk * (1 - fk) * P1[i] + fk * fk * P2[i]);

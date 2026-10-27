@@ -23,7 +23,7 @@ export function worldCam(t, T) {
     // (v8.2) out of the screen and down to desk height: a low diagonal view across the desk — the tablet in the
     // foreground, the whale big in the middle as it stands up off the glass, the window glowing behind — then after
     // the whale, through the room to the window
-    { t: T.lift + 0.5, x: 1110, y: 60, z: 330, s: 1.45, rx: 77, ry: 0, rz: 0, yaw: -20, d: 1400, e: E.inOutCubic },
+    { t: T.lift + 0.5, x: 1140, y: 40, z: 420, s: 1.42, rx: 78, ry: 0, rz: 0, yaw: -20, d: 1400, e: E.inOutCubic },
     { t: T.window - 0.3, x: 1180, y: -520, z: 820, s: 0.95, rx: 82, ry: 0, rz: 0, yaw: -10, d: 1550, e: E.inOutSine },
     { t: T.window + 0.5, x: 1308, y: -880, z: 1060, s: 2.6, rx: 88, ry: 0, rz: 0, yaw: 0, d: 1700, e: E.inCubic },
   ]);
