@@ -1,8 +1,9 @@
 // S13 (v8) · 히어로 (19.55–22.2) + 엔드카드 (22.2–24.0): the pen (real 3D) spins up out of the frame and stands
 // where the logo's i will be — its nib is the i's slanted foot, its light the i-dot. On the hit the light traces
 // the wordmark C → n and the ink floods out after it: the code-built mark settles onto the paper with its satin
-// bevel, grain and shadow; a slow sheen crosses it. Then the i-dot's light becomes a single point, stretches into a
-// line, and the end card opens out of it.
+// bevel, grain and shadow; a slow sheen crosses it. End card (v8.3, no logo, no light): the line set in blocks — grey
+// blocks rise into a precise grid, roll over one by one on the beat to show their coloured faces with the words, the
+// colour drains away and the ink stays; 즐거운 alone in ClassIn green, underlined by a solid bar drawn left to right.
 import { E, tw, prog, clamp, lerp, shake, h } from '../core.js';
 import { createMark } from '../brandmark.js';
 import { makePen } from '../gl.js';
@@ -27,16 +28,26 @@ export default function heroScene(ctx) {
   const sub = h('div', 'hsub', copy.sub);
   el.appendChild(sub);
   const CY = Math.round(H / 2);
-  const top = h('div', 'mask'), bot = h('div', 'mask');
-  const e1 = h('div', 'e1', P ? copy.end.replace(', ', ',<br>') : copy.end);
-  const small = createMark(P ? 300 : 320, { pad: 30 });
-  const e2 = h('div', 'e2 lock', '<img class="ico" src="assets/classin_app_icon.png" alt="">');
-  e2.appendChild(small.el);
+  // ---- end card: the line in blocks (v8.3) ----
+  const LINES = P ? [['즐거운', '수업'], ['하나가,'], ['전국', '모든'], ['집으로.']] : [['즐거운', '수업', '하나가,'], ['전국', '모든', '집으로.']];
+  const FACES = ['#BCD9F2', '#F6C9A0', '#F3C4D2', '#F5DE9A', '#BDEBD3', '#EEE8DD'];
+  const end = h('div', 'endblk');
+  const blocks = [];
+  LINES.forEach(words => {
+    const row = h('div', 'erow');
+    words.forEach(w => {
+      const i = blocks.length;
+      const b = h('div', 'blk', `<i class="fr"></i><i class="bt" style="background:${FACES[i % FACES.length]}"></i><span>${w}</span>`);
+      row.appendChild(b);
+      blocks.push({ el: b, fr: b.querySelector('.fr'), bt: b.querySelector('.bt'), sp: b.querySelector('span'), w });
+    });
+    end.appendChild(row);
+  });
+  const ul = h('i', 'eul');
+  blocks[0].sp.appendChild(ul);
   const e3 = h('div', 'e3', copy.proof);
-  top.appendChild(e1);
-  bot.append(e2, e3);
-  el.append(top, bot);
-  small.draw({ fill: 1, dot: 0.7, lift: 0.6 });
+  end.appendChild(e3);
+  el.appendChild(end);
 
   // the pen that becomes the i (three.js): stands from the i's foot to the i-dot
   const { gl } = ctx, THREE = gl.THREE;
@@ -53,13 +64,7 @@ export default function heroScene(ctx) {
   const foot = [R.lx + ((2105 + 2222.5) / 2 - 2) * kk, R.ly + (700 - 4) * kk]; // the i's slanted foot
   const toW = ([x, y]) => [(x - W / 2) * U, (H / 2 - y) * U];
 
-  function layout() {
-    top.style.top = '0px'; top.style.height = `${CY}px`;
-    bot.style.top = `${CY}px`; bot.style.height = `${H - CY}px`;
-    e1.style.top = `${CY - (P ? 200 : 110)}px`;
-    e2.style.top = '22px';
-    e3.style.top = `${P ? 150 : 140}px`;
-  }
+  function layout() {}
 
   function update(t) {
     el.style.opacity = clamp(prog(t, T.hero - 0.1, T.hero)) * (1 - tw(t, T.fadeA, 24.0, E.inOutSine));
@@ -83,13 +88,22 @@ export default function heroScene(ctx) {
     const sh = shake(t, T.hero, 6, 0.28);
     ctx.shake[0] += sh[0]; ctx.shake[1] += sh[1];
     ctx.flash += 0.35 * (t >= T.hero ? 1 - prog(t, T.hero, T.hero + 0.35) : 0);
-    // end card
-    const op = tw(t, T.lineB, T.lineB + 0.7, E.outQuint);
-    e1.style.transform = `translate(-50%, ${((1 - op) * (P ? 200 : 120)).toFixed(1)}px)`;
-    e2.style.transform = `translate(-50%, ${((1 - op) * -120).toFixed(1)}px)`;
-    e3.style.transform = `translate(-50%, ${((1 - tw(t, T.lineB + 0.15, T.lineB + 0.85, E.outQuint)) * -160).toFixed(1)}px)`;
-    e1.style.opacity = op; e2.style.opacity = op; e3.style.opacity = tw(t, T.lineB + 0.15, T.lineB + 0.85);
-    small.draw({ fill: 1, dot: 0.7, lift: 0.6, sheen: t > T.lineB + 0.6 ? lerp(-0.25, 1.25, tw(t, T.lineB + 0.6, T.lineB + 1.8, E.inOutSine)) : -1 });
+    // end card: rise (stagger), roll over on the beat (no bounce), colour drains, the emphasis is drawn
+    const ED = T.dot;                                              // the end card starts as the mark has gone
+    end.style.opacity = (tw(t, ED - 0.05, ED + 0.05) * (1 - tw(t, T.fadeA, 24.0, E.inOutSine))).toFixed(3);
+    blocks.forEach((b, i) => {
+      const rise = tw(t, ED + i * 0.04, ED + i * 0.04 + 0.32, E.outQuart);
+      const roll = tw(t, ED + 0.34 + i * 0.09, ED + 0.34 + i * 0.09 + 0.3, E.inOutQuart);
+      const drain = tw(t, ED + 0.95, ED + 1.2, E.inOutSine);
+      b.el.style.transform = `translateY(${((1 - rise) * 70).toFixed(1)}px) rotateX(${(90 * roll).toFixed(2)}deg)`;
+      b.el.style.opacity = rise.toFixed(3);
+      b.fr.style.opacity = (1 - drain).toFixed(3);
+      b.bt.style.opacity = (1 - drain).toFixed(3);
+      b.sp.style.color = i === 0 ? `rgb(${Math.round(lerp(29, 16, drain))},${Math.round(lerp(31, 180, drain))},${Math.round(lerp(28, 21, drain))})` : '#1D1F1C';
+    });
+    ul.style.transform = `scaleX(${tw(t, ED + 1.0, ED + 1.3, E.inOutCubic).toFixed(4)})`;
+    e3.style.opacity = tw(t, ED + 1.15, ED + 1.45).toFixed(3);
+    e3.style.transform = `translateY(${((1 - tw(t, ED + 1.15, ED + 1.45, E.outQuart)) * 14).toFixed(1)}px)`;
   }
 
   function draw(fx, t) {
@@ -124,22 +138,6 @@ export default function heroScene(ctx) {
     fx.flare(D[0], D[1], 240 * (1 - prog(t, T.hero, T.hero + 0.5)) + 40, 1 - prog(t, T.hero, T.hero + 0.6));
     fx.shards(D[0], D[1], t, T.hero, { n: 14, seed: 5, speed: 1000, life: 0.45, len: 60, w: 2, spreadY: 1 });
     fx.shape(mark.geo.iDot.map(p => [R.lx + p[0], R.ly + p[1]]), 1 - tw(t, T.hero + 0.1, T.hero + 0.5, E.inOutQuad), 1);
-    // the i-dot's light becomes a single point, travels to centre, stretches into the line
-    if (t > T.shineB) {
-      const glow = tw(t, T.shineB, T.shineB + 0.35);
-      const mv = tw(t, T.dot - 0.2, T.lineA + 0.02, E.inOutCubic);
-      const x = lerp(D[0], W / 2, mv), y = lerp(D[1], CY, mv);
-      const st = tw(t, T.lineA, T.lineB, E.outQuint);
-      const half = st * (P ? 300 : 340);
-      if (st <= 0.001) fx.head(x, y, 4 + (1 - mv) * 2, glow);
-      else {
-        const cool = tw(t, T.lineB, T.lineB + 0.8);
-        const pts = [];
-        for (let i = 0; i <= 24; i++) pts.push([W / 2 - half + (2 * half * i) / 24, CY]);
-        fx.line(pts, { w: lerp(5, 2.4, st), alpha: 1, taper: 0, head: 0, cool: cool * 0.85, ink: '#8DD63F', inkW: 0.9 });
-        fx.head(W / 2, CY, lerp(5, 2, st), 1 - st * 0.75);
-      }
-    }
   }
 
   return { el, range: ctx.S.hero, layout, update, draw };

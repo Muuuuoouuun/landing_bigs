@@ -243,3 +243,19 @@ body.portrait .tl { font-size: 92px; }
 .tracker.live .app { font: 700 17px Pretendard; font-style: normal; letter-spacing: -0.01em; color: rgba(255,255,255,0.86); }
 .e2.lock { display: flex; align-items: center; gap: 22px; }
 .e2.lock .ico { width: 78px; height: 78px; border-radius: 22.37%; display: block; box-shadow: 0 6px 18px rgba(20,24,20,0.18), 0 1px 2px rgba(0,0,0,0.2); }
+
+/* v8.3 · end card: the line set in blocks (no logo, no light) */
+.endblk { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-56%); display: flex; flex-direction: column; align-items: center; gap: 22px; opacity: 0; }
+.endblk .erow { display: flex; gap: 18px; perspective: 1100px; }
+.endblk .blk { position: relative; height: 132px; padding: 0 34px; display: flex; align-items: center; transform-style: preserve-3d; }
+.endblk .blk i.fr, .endblk .blk i.bt { position: absolute; inset: 0; border-radius: 14px; backface-visibility: hidden; }
+.endblk .blk i.fr { background: linear-gradient(180deg, #CDD0D5, #B9BDC3); box-shadow: 0 10px 22px rgba(30,34,40,0.16), inset 0 1px 0 rgba(255,255,255,0.5); transform: translateZ(66px); }
+.endblk .blk i.bt { transform: rotateX(-90deg) translateZ(66px); box-shadow: 0 10px 22px rgba(30,34,40,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
+.endblk .blk span { position: relative; font: 800 84px Pretendard; letter-spacing: -0.035em; color: #1D1F1C; white-space: nowrap; transform: rotateX(-90deg) translateZ(66px); backface-visibility: hidden; }
+.endblk .eul { position: absolute; left: 2px; right: 2px; bottom: -8px; height: 9px; border-radius: 4px; background: #10B415; transform-origin: 0 50%; transform: scaleX(0); }
+.endblk .e3 { position: static; transform: none; margin-top: 22px; font: 500 30px Pretendard; color: var(--ink2); letter-spacing: -0.005em; opacity: 0; }
+
+/* v8.3 · the class screen's pieces, floating */
+.frag { border-radius: 16px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06); background: #15171B; }
+.frag canvas { display: block; width: 100%; height: 100%; }
+.frag .gy { position: absolute; inset: 0; background: linear-gradient(180deg, #C6CAD0, #AEB3BA); opacity: 0; }

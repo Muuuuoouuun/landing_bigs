@@ -5,7 +5,7 @@
 // finished drawing (the friends' parts on the teacher's whale) is drawn here too.
 import { E, tw, prog, clamp, lerp, M4, xf, place, planeModel, h } from '../core.js';
 import { project } from '../line.js';
-import { CW, CH, onBoard, PARTS, WC } from '../classui.js';
+import { CW, CH, onBoard, PARTS, WC, TILES } from '../classui.js';
 import { whaleStrokes } from '../whalegeo.js';
 import SPRITES from '../../assets/gen/sprites.js';
 
@@ -17,6 +17,20 @@ export const MT = planeModel(TABLET.x, TABLET.y, 2, TABLET.w, TABLET.h, { rz: TA
 export const MS = (z = 1) => M4.chain(MT, M4.T(TABLET.bez, TABLET.bez, z), M4.S(SX, SY, 1));
 export const classToWorld = ([x, y], z = 1) => xf(MS(z), x, y, 0);
 export const SCREEN_SCALE = 1920 / (TABLET.w - 2 * TABLET.bez); // camera scale at which the screen is the frame
+
+// (v8.3) the class screen comes apart: 16 pieces (header, six seats, four tools, five chat lines) lift off the glass and
+// fan out around the tablet; then they lie down flat into a 4 × 4 grid of grey blocks — the town seen from above
+export const FRAGS = [
+  { x: 0, y: 0, w: 1920, h: 66 },
+  ...TILES.map(q => ({ x: q.x, y: q.y, w: q.w, h: q.h })),
+  ...[0, 1, 2, 3].map(i => ({ x: 1478, y: 140 + i * 62, w: 384, h: 50 })),
+  ...[0, 1, 2, 3, 4].map(i => ({ x: 1484, y: 456 + i * 86, w: 360, h: 72 })),
+];
+export const fragTimes = T => ({
+  up: FRAGS.map((_, i) => T.liftA + 0.3 + i * 0.035),              // leaves the glass
+  grid: FRAGS.map((_, i) => T.window - 0.62 + ((i * 7) % 16) * 0.018), // lies down into the grid
+  FAN: 0.5, LAY: 0.36,
+});
 
 export default function roomScene(ctx) {
   const { T } = ctx;
@@ -43,6 +57,23 @@ export default function roomScene(ctx) {
   const wglow = h('div', 'nightpool');
   wglow.style.mixBlendMode = 'screen';
   el.appendChild(wglow);
+  const FT = fragTimes(T);
+  const frags = FRAGS.map((f, i) => {
+    const d = h('div', 'obj frag', '<canvas></canvas><i class="gy"></i>');
+    d.style.width = `${f.w}px`; d.style.height = `${f.h}px`;
+    const cv = d.querySelector('canvas'); cv.width = f.w; cv.height = f.h;
+    el.appendChild(d);
+    // fan pose (class px around the screen, lift z in world units, tilt towards the camera, scale)
+    let fan;
+    if (i === 0) fan = { cx: 960, cy: -420, z: 300, rx: -24, rz: 0, k: 0.95 };
+    else if (i <= 6) { const o = i - 3.5; fan = { cx: 960 + o * 360, cy: -150 - 34 * o * o, z: 210 + 22 * Math.abs(o), rx: -30, rz: o * 3.2, k: 1.9 }; }
+    else if (i <= 10) { const j = i - 7; fan = { cx: 2420 + j * 40, cy: 120 + j * 230, z: 130 + j * 34, rx: -18, rz: -6 + j * 3.5, k: 2.1 }; }
+    else { const j = i - 11; fan = { cx: -520 - j * 30, cy: 160 + j * 200, z: 120 + j * 30, rx: -18, rz: 6 - j * 2.5, k: 2.0 }; }
+    // grid pose: a 4 × 4 grid of equal cells (the town's block proportions) over the screen, flat on the glass
+    const cw = 420, ch = 190, gap = 60, col = i % 4, row = Math.floor(i / 4);
+    const grid = { cx: 30 + col * (cw + gap) + cw / 2, cy: 70 + row * (ch + gap) + ch / 2, z: 6, rx: 0, rz: 0, sx: cw / f.w, sy: ch / f.h };
+    return { f, d, cv, g: cv.getContext('2d'), gy: d.querySelector('.gy'), fan, grid, up: FT.up[i], lay: FT.grid[i] };
+  });
 
   // the finished drawing (class px), for the light to run over
   const drawing = [...whaleStrokes().map(s => s.pts), ...PARTS.flat()].map(p => p.map(onBoard));
@@ -64,6 +95,27 @@ export default function roomScene(ctx) {
     place(phone, CM, planeModel(PHONE.x, PHONE.y, 1, PHONE.w, PHONE.h, { rz: PHONE.rz }));
     place(tab, CM, MT);
     place(screen, CM, MS(1));
+    // (v8.3) no photographed room: once the whale is out, desk, wall and props fall away into the dark
+    const off = 1 - tw(t, T.lift - 0.15, T.lift + 0.35);
+    for (const e of [desk, wall, phone, tShadow, pShadow, ...PROPS.map(p => p.el)]) e.style.opacity = off.toFixed(3);
+    const gone = 1 - tw(t, T.window - 0.4, T.window - 0.08);       // the tablet itself leaves as the grid forms
+    for (const e of [tab, screen, glowD]) e.style.opacity = (gone * (e === glowD ? 0.9 : 1)).toFixed(3);
+    const g2 = screen.getContext('2d');
+    for (const q of frags) {
+      const a1 = tw(t, q.up, q.up + FT.FAN, E.inOutCubic), a2 = tw(t, q.lay, q.lay + FT.LAY, E.inOutCubic), f = q.f;
+      q.d.style.visibility = a1 > 0 ? 'visible' : 'hidden';
+      if (a1 <= 0) continue;
+      q.g.drawImage(screen, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h);
+      const L = (a, b, k) => a + (b - a) * k;
+      const p = { cx: L(L(f.x + f.w / 2, q.fan.cx, a1), q.grid.cx, a2), cy: L(L(f.y + f.h / 2, q.fan.cy, a1), q.grid.cy, a2), z: L(L(2, q.fan.z, a1), q.grid.z, a2),
+        rx: L(q.fan.rx * a1, 0, a2), rz: L(q.fan.rz * a1, 0, a2), sx: L(L(1, q.fan.k, a1), q.grid.sx, a2), sy: L(L(1, q.fan.k, a1), q.grid.sy, a2) };
+      const c = classToWorld([p.cx, p.cy], p.z);
+      place(q.d, CM, M4.chain(M4.T(c[0], c[1], c[2]), M4.RZ(TABLET.rz + p.rz), M4.RX(p.rx), M4.S(SX * p.sx, SY * p.sy, 1), M4.T(-f.w / 2, -f.h / 2, 0)));
+      q.gy.style.opacity = tw(t, q.lay + 0.1, q.lay + FT.LAY + 0.05).toFixed(3);
+      q.d.style.opacity = gone > 0.01 || a2 > 0.5 ? '1' : '0';
+      // its place on the glass goes dark as it leaves
+      g2.save(); g2.globalAlpha = Math.min(1, a1 * 1.4); g2.fillStyle = '#0D0F12'; g2.fillRect(f.x - 4, f.y - 4, f.w + 8, f.h + 8); g2.restore();
+    }
     el.style.opacity = (1 - tw(t, T.window + 0.2, T.window + 0.5)).toFixed(3);
     cur = { CM };
   }

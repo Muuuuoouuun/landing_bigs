@@ -126,9 +126,6 @@ export default function dawnScene(ctx) {
       const tail = toS([236, 4]);
       fx.flare(tail[0], tail[1], 60 + 900 * sp.s, 0.28 * sp.a);
     }
-    // through the window: a flash of dawn light
-    const fw = prog(t, T.window - 0.05, T.window + 0.35);
-    if (fw > 0 && fw < 1) fx.flare(W * 0.55, H * 0.4, 900 * (0.5 + fw), 0.55 * (1 - fw), '255,236,200');
   }
 
   return { el, range: ctx.S.dawn, update, draw, ready, town: () => town };

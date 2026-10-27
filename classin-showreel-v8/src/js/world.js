@@ -20,12 +20,11 @@ export function worldCam(t, T) {
     // the drawing comes together, the light, the whale
     { t: T.assembleB, ...at(860, 560, 1.18), e: E.inOutCubic },
     { t: T.lift, ...at(820, 520, 1.24), e: E.inOutSine },
-    // (v8.2) out of the screen and down to desk height: a low diagonal view across the desk — the tablet in the
-    // foreground, the whale big in the middle as it stands up off the glass, the window glowing behind — then after
-    // the whale, through the room to the window
-    { t: T.lift + 0.5, x: 1140, y: 40, z: 420, s: 1.42, rx: 78, ry: 0, rz: 0, yaw: -20, d: 1400, e: E.inOutCubic },
-    { t: T.window - 0.3, x: 1180, y: -520, z: 820, s: 0.95, rx: 82, ry: 0, rz: 0, yaw: -10, d: 1550, e: E.inOutSine },
-    { t: T.window + 0.5, x: 1308, y: -880, z: 1060, s: 2.6, rx: 88, ry: 0, rz: 0, yaw: 0, d: 1700, e: E.inCubic },
+    // (v8.3) out of the screen to a three-quarter view: the class's pieces fan out around the tablet, the whale rises
+    // through them; a slow orbit; then straight down as they lie flat into the grid that becomes the town
+    { t: T.lift + 0.55, x: TABLET.x, y: TABLET.y - 120, z: 210, s: 1.3, rx: 44, ry: 0, rz: 0, yaw: -20, d: 1500, e: E.inOutCubic },
+    { t: T.window - 0.5, x: TABLET.x, y: TABLET.y - 120, z: 220, s: 1.22, rx: 38, ry: 0, rz: 0, yaw: 12, d: 1500, e: E.inOutSine },
+    { t: T.window + 0.05, x: TABLET.x, y: TABLET.y, z: 0, s: 3.1, rx: 0, ry: 0, rz: -TABLET.rz, yaw: 0, d: 1700, e: E.inOutCubic }, // TABLET.x/y is its centre
   ]);
   const room = t > T.lift ? 1 : 0;
   c.rx += 1.2 * drift(t, 3.1, 0.11) * room;
