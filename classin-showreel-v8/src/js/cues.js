@@ -138,14 +138,8 @@ export function buildCues(T, copy, X = {}) {
   add(T.hero, 'hit', { gain: 0.95 });
   add(T.traceB, 'ink', { dur: T.fillB - T.traceB + 0.3, gain: 0.3 });
   add(T.shineA, 'air', { dur: T.shineB - T.shineA, gain: 0.22 });
-  if (X.end) {
-    // (v8.3) the end card in blocks: they rise on a breath, each lands its roll with a wooden knock climbing the scale,
-    // the colour drains on one low note, the underline is drawn with a felt stroke
-    const E_ = X.end, up = [0, 2, 4, 7, 9, 12];
-    add(E_.rise[0], 'air', { dur: 0.45, gain: 0.16 });
-    E_.roll.forEach((r, i) => add(r + E_.ROLL - 0.02, 'clack', { gain: 0.2, pitch: 0.8 * 2 ** (up[i % up.length] / 12), seed: 90 + i, pan: ((i % 3) - 1) * 0.3 }));
-    add(E_.drain + 0.05, 'pluck', { gain: 0.14, semi: -12 });
-    add(E_.ul, 'scribble', { ...strokes(0.3, 1, 240, 93), tip: 'felt', gain: 0.3, pan: -0.15 });
-  }
+  add(T.dot, 'ping', { gain: 0.32 });
+  add(T.lineA, 'zip', { dur: T.lineB - T.lineA, gain: 0.28, f0: 1200, f1: 2400, pan: [-0.3, 0.3] });
+  add(T.lineB, 'shimmer', { dur: 1.4, gain: 0.2 });
   return c.sort((a, b) => a.t - b.t);
 }
