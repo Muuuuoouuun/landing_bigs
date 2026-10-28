@@ -45,9 +45,11 @@ export default function devicesScene(ctx) {
   }
   function drawLock(t) {
     lk.setTransform(1, 0, 0, 1, 0, 0);
-    let g = lk.createLinearGradient(0, 0, 400, 1500); g.addColorStop(0, '#1d3b2a'); g.addColorStop(0.5, '#14261f'); g.addColorStop(1, '#0a110e');
+    // (v8.4) a brighter wallpaper: deep green to a lit mint, two soft glows
+    let g = lk.createLinearGradient(0, 0, 400, 1500); g.addColorStop(0, '#356f4b'); g.addColorStop(0.5, '#214a35'); g.addColorStop(1, '#132a1f');
     lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
-    g = lk.createRadialGradient(560, 300, 10, 560, 300, 700); g.addColorStop(0, 'rgba(140,230,90,0.45)'); g.addColorStop(1, 'rgba(140,230,90,0)'); lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
+    g = lk.createRadialGradient(560, 300, 10, 560, 300, 760); g.addColorStop(0, 'rgba(170,245,120,0.6)'); g.addColorStop(1, 'rgba(170,245,120,0)'); lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
+    g = lk.createRadialGradient(120, 1250, 10, 120, 1250, 640); g.addColorStop(0, 'rgba(110,215,170,0.32)'); g.addColorStop(1, 'rgba(110,215,170,0)'); lk.fillStyle = g; lk.fillRect(0, 0, 720, 1500);
     lk.fillStyle = '#000'; lk.beginPath(); lk.roundRect(290, 40, 140, 40, 20); lk.fill();
     lk.fillStyle = 'rgba(255,255,255,0.9)'; lk.textAlign = 'center';
     lk.font = '600 30px Pretendard'; lk.fillText(L.date, 360, 190);
@@ -84,6 +86,7 @@ export default function devicesScene(ctx) {
   const dev = new THREE.Group();
   scene.add(dev);
   const bodyMat = metal(0x2b2e33, 0.26);
+  const TITANIUM = new THREE.Color(0xa29e96), GRAPHITE = new THREE.Color(0x2b2e33); // phone frame → the tablet's
   const bezelMat = new THREE.MeshPhysicalMaterial({ color: 0x050505, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 0.6 });
   const body = new THREE.Mesh(undefined, bodyMat), bezel = new THREE.Mesh(undefined, bezelMat);
   const lockScr = new THREE.Mesh(undefined, screenMat(lockTex));
@@ -105,6 +108,42 @@ export default function devicesScene(ctx) {
     classScr.scale.set((h - 0.08) / SW, (w - 0.08) / SH, 1);
     if (Math.abs(round - 0.03) > 1e-4) { classScr.geometry.dispose(); classScr.geometry = roundRectGeo(SW, SH, Math.max(0.0005, round)); }
     glare.scale.set(w - 0.05, h - 0.05, 1); glare.position.z = d / 2 + 0.0012;
+  }
+
+  // ---------- (v8.4) the phone is an iPhone: frosted glass back, the square camera plateau, side buttons ----------
+  // (no maker's logo). All in the phone's frame; shown until the phone starts turning into the tablet.
+  const iphone = new THREE.Group();
+  dev.add(iphone);
+  {
+    const glassBack = new THREE.MeshPhysicalMaterial({ color: 0xa9a59c, roughness: 0.5, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.35, envMapIntensity: 1.1 });
+    const glassGloss = new THREE.MeshPhysicalMaterial({ color: 0xa4a097, roughness: 0.16, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05, envMapIntensity: 1.3 });
+    const ti = metal(0xa29e96, 0.3);
+    const lensGlass = new THREE.MeshPhysicalMaterial({ color: 0x05060a, roughness: 0.04, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02, envMapIntensity: 2.2 });
+    const lensCoat = new THREE.MeshPhysicalMaterial({ color: 0x1b2747, roughness: 0.12, metalness: 0.3, clearcoat: 1, envMapIntensity: 1.6 });
+    const zb = -PH.d / 2;
+    const back = new THREE.Mesh(roundRectGeo(PH.w - 0.026, PH.h - 0.026, PH.r - 0.013), glassBack);
+    back.rotation.y = Math.PI; back.position.z = zb - 0.0006;
+    iphone.add(back);
+    // the plateau, top left as seen from the back (= +x in the phone's frame)
+    const PS = 0.36, pc = [PH.w / 2 - 0.03 - PS / 2, PH.h / 2 - 0.03 - PS / 2], PD = 0.014;
+    const plate = new THREE.Mesh(bodyGeo(PS, PS, PD, 0.085, 0.004), glassGloss);
+    plate.position.set(pc[0], pc[1], zb - PD / 2 + 0.001);
+    iphone.add(plate);
+    const zp = zb - PD + 0.001;
+    const lens = (x, y) => {
+      const g = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.064, 0.066, 0.018, 48), ti); ring.rotation.x = Math.PI / 2; ring.position.z = -0.009; g.add(ring);
+      const glass = new THREE.Mesh(new THREE.CircleGeometry(0.05, 48), lensGlass); glass.rotation.y = Math.PI; glass.position.z = -0.0185; g.add(glass);
+      const coat = new THREE.Mesh(new THREE.CircleGeometry(0.024, 32), lensCoat); coat.rotation.y = Math.PI; coat.position.z = -0.0188; g.add(coat);
+      g.position.set(x, y, zp); iphone.add(g);
+    };
+    lens(pc[0] + 0.085, pc[1] + 0.085); lens(pc[0] + 0.085, pc[1] - 0.085); lens(pc[0] - 0.075, pc[1]);
+    const dot = (x, y, r, m) => { const d = new THREE.Mesh(new THREE.CircleGeometry(r, 32), m); d.rotation.y = Math.PI; d.position.set(x, y, zp - 0.0004); iphone.add(d); };
+    dot(pc[0] - 0.075, pc[1] + 0.12, 0.021, new THREE.MeshPhysicalMaterial({ color: 0xf1ead2, roughness: 0.35, clearcoat: 1 })); // flash
+    dot(pc[0] - 0.075, pc[1] - 0.12, 0.019, lensGlass);                                                                        // LiDAR
+    // buttons: action + volume on the left, the side button on the right (as seen from the front)
+    const btn = (side, y, len) => { const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, len, 0.03), ti); b.position.set(side * (PH.w / 2 + 0.003), y, 0); iphone.add(b); };
+    btn(-1, 0.47, 0.06); btn(-1, 0.33, 0.11); btn(-1, 0.19, 0.11); btn(1, 0.26, 0.17);
   }
 
   // ---------- the app icon tile (v8.2 brand hook) ----------
@@ -130,8 +169,8 @@ export default function devicesScene(ctx) {
     camera.getWorldDirection(_f);
     const hold = camera.position.clone().addScaledVector(_f, 1.95 - 0.1 * tw(t, T.slam, T.iconFly, E.outCubic));
     const holdQ = camera.quaternion.clone().multiply(_q.setFromEuler(new THREE.Euler(0.05, lerp(-0.22, 0.18, tw(t, T.slam, T.iconFly, E.inOutSine)), 0)));
-    if (t < T.slam) {                                              // the rush in, stopping dead on the slam
-      const u = 1 - (1 - prog(t, 0, T.slam)) ** 3;
+    if (t < T.slam) {                                              // the rush in, accelerating, stopping dead on the slam
+      const u = prog(t, 0, T.slam) ** 2.2;
       const far = camera.position.clone().addScaledVector(_f, 16).add(new THREE.Vector3(1.4, 0.7, 0));
       tile.position.copy(far.lerp(hold, u));
       tile.quaternion.copy(holdQ).multiply(_q.setFromEuler(new THREE.Euler(0, 0, -0.6 * (1 - u))));
@@ -248,8 +287,13 @@ export default function devicesScene(ctx) {
     glare.material.opacity = 0.9 * (1 - tw(t, T.diveA, T.dive - 0.15));
     // the phone spins in and stops dead on the slam; a slow push; it leans back as a tablet; faces us for the dive
     const spin = E.outCubic(prog(t, 0, T.slam));
-    dev.position.set(lerp(0.9, 0, spin), lerp(-0.7, 0, spin), lerp(-3.5, 0, spin));
-    dev.rotation.set(lerp(-0.3, 0.06, spin) - 0.26 * tw(t, T.morphA, T.morphB) * (1 - E.inOutCubic(dive)), lerp(-Math.PI * 4, 0, spin) + 0.18 * Math.sin(t * 1.3) * (1 - mk) * spin, turn * Math.PI / 2);
+    // (v8.4) the turn: out of the dark back first (the camera plateau catching the rim light), one and a half turns —
+    // face-on as the icon arrives — settling behind the icon before it flies off to its slot
+    const SPIN = T.iconFly - 0.16, ry = -3 * Math.PI * (1 - (1 - Math.cos(Math.PI * clamp(t / SPIN))) / 2);
+    dev.position.set(lerp(0.6, 0, spin), lerp(-0.45, 0, spin), lerp(-2.0, 0, spin));
+    dev.rotation.set(lerp(-0.22, 0.06, spin) - 0.26 * tw(t, T.morphA, T.morphB) * (1 - E.inOutCubic(dive)), ry + 0.18 * Math.sin(t * 1.3) * (1 - mk) * tw(t, SPIN - 0.1, SPIN + 0.2), turn * Math.PI / 2);
+    bodyMat.color.lerpColors(TITANIUM, GRAPHITE, tw(t, T.morphA, T.morphA + 0.4));
+    iphone.visible = t < T.morphA + 0.05;
     dev.updateMatrixWorld(true);
     // camera: close on the phone → pull back for the tablet → dive head-on into the screen (it fills the frame at T.dive)
     const c0 = new THREE.Vector3(lerp(0, 0.06, tw(t, T.slam, T.tap)), lerp(0.05, 0.1, tw(t, T.slam, T.tap)), lerp(4.2, 3.35, tw(t, T.slam, T.tap, E.inOutSine)));

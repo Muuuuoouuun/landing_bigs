@@ -30,7 +30,7 @@ export default function heroScene(ctx) {
   const top = h('div', 'mask'), bot = h('div', 'mask');
   const e1 = h('div', 'e1', P ? copy.end.replace(', ', ',<br>') : copy.end);
   const small = createMark(P ? 300 : 320, { pad: 30 });
-  const e2 = h('div', 'e2 lock', '<img class="ico" src="assets/classin_app_icon.png" alt="">');
+  const e2 = h('div', 'e2 lock'); // (v8.4) the wordmark alone — no app icon on the end card
   e2.appendChild(small.el);
   const e3 = h('div', 'e3', copy.proof);
   top.appendChild(e1);

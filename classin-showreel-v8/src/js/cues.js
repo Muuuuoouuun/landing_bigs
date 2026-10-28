@@ -61,6 +61,7 @@ export function buildCues(T, copy, X = {}) {
   add(T.drop, 'boom', { gain: 0.5 });
   for (let i = 0; i < 7; i++) add(T.buzzA + i * 0.1, 'tick', { gain: 0.16 + 0.03 * (i % 2), seed: 10 + i, bright: 1.2 + (i % 3) * 0.2, pan: -0.5 + (i % 5) * 0.25 });
   add(T.ding, 'chime', { gain: 0.48 });
+  add(T.ding + 0.03, 'pop', { gain: 0.22, pitch: 1.15 });                   // (v8.4) the raised hand pops up
   add(T.ding + 0.18, 'blip', { gain: 0.3 });
   // bar 4 · everyone's board: four slates pop out, four parts drawn on the beat
   [0, 1, 2, 3].forEach(i => add(T.boardsA + i * 0.07, 'pop', { gain: 0.24, pitch: 0.9 + i * 0.1, pan: -0.5 + i * 0.33 }));

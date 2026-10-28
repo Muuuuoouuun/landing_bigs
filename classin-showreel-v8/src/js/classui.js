@@ -127,6 +127,13 @@ export function createClassUI(ctx) {
       if (f.naturalWidth) { const sw = Math.min(f.naturalWidth, f.naturalHeight * s.w / s.h), sh = sw * s.h / s.w; k.drawImage(f, (f.naturalWidth - sw) / 2, (f.naturalHeight - sh) * 0.3, sw, sh, s.x, s.y, s.w, s.h); }
       const g = k.createLinearGradient(0, s.y + s.h - 60, 0, s.y + s.h); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
       k.fillStyle = g; k.fillRect(s.x, s.y + s.h - 60, s.w, 60);
+      // (v8.4) 딩! the winner's hand goes up — ClassIn's yellow raised-hand figure rises out of the tile's bottom edge,
+      // the arm gives a little wave; it goes back down as the boards open
+      if (i === winner && t >= T.ding && t < T.boardsA + 0.15) {
+        const up = E.outBack(prog(t, T.ding, T.ding + 0.3)) * (1 - E.inCubic(prog(t, T.boardsA - 0.2, T.boardsA + 0.1)));
+        const dt = t - T.ding, wave = 0.22 * Math.sin(dt * 15) * Math.exp(-dt * 3.2);
+        raisedHand(s.x + s.w - 40, s.y + s.h + (1 - up) * 170, 1.6, wave);
+      }
       k.restore();
       k.font = '600 17px Pretendard';
       const tw2 = k.measureText(names[i]).width;
@@ -156,6 +163,22 @@ export function createClassUI(ctx) {
       rr(-78, -26, 156, 52, 26); k.fillStyle = '#7ED957'; k.shadowColor = 'rgba(126,217,87,0.8)'; k.shadowBlur = 24; k.fill(); k.shadowBlur = 0;
       k.fillStyle = '#0E1A0A'; k.font = '800 26px Pretendard'; k.textAlign = 'center'; k.fillText('딩! 1등', 0, 9); k.restore();
     }
+  }
+
+  // ClassIn's raised-hand figure (as on a student's video tile): torso from the bottom edge, head, the left arm up
+  function raisedHand(cx, by, sc, wave = 0) {
+    const Y = '#FFDD25', gap = 'rgba(40,40,40,0.9)';
+    k.save(); k.translate(cx, by); k.scale(sc, sc);
+    k.fillStyle = Y;
+    rr(-24.5, -29, 49, 40, [12, 12, 0, 0]); k.fill();                     // torso
+    k.save(); k.translate(-17, -20); k.rotate(wave);                      // the arm, about the shoulder
+    k.strokeStyle = Y; k.lineWidth = 13; k.lineCap = 'round';
+    k.beginPath(); k.moveTo(0, 8); k.lineTo(-14, -52); k.stroke();
+    k.restore();
+    k.beginPath(); k.arc(1, -45, 16.5, 0, Math.PI * 2); k.fillStyle = gap; k.fill();   // the head, cut out of the arm
+    k.beginPath(); k.arc(1, -45, 14, 0, Math.PI * 2); k.fillStyle = Y; k.fill();
+    k.fillStyle = gap; k.fillRect(10, -14, 1.6, 30);                     // the line of the other arm, down the side
+    k.restore();
   }
 
   function cup(x, y, r, label) {
