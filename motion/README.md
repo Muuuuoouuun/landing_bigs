@@ -82,6 +82,8 @@ npm run render:preview  # 공유용 경량 MP4 (CRF 27) → out/classin-showreel
 
 모든 사운드는 `audio/` 아래 파이썬 코드가 numpy/scipy로 합성합니다 (샘플·외부 음원 없음). 진입점은 `audio/generate.py`이고, 음악은 `score.py`, 효과음은 `sfx.py`, 합성 악기는 `instruments.py`, 필터·리버브·컴프레서 같은 공용 처리는 `dsp.py`, 박자 그리드와 코드 진행(어느 프레임에 어떤 코드가 울리는지)은 `grid.py`에 있습니다.
 
+음악을 Gemini(Lyria)로 새로 만들 때는 [`audio/gemini-sound-brief.md`](audio/gemini-sound-brief.md)를 보세요. 이 영상이 음악에 요구하는 템포·조성·히트 지점, 방향이 다른 시안 5개, 바로 붙여 넣는 프롬프트, 참고 이미지(`audio/gemini-refs/`)와 받은 음악을 영상에 맞추는 순서가 있습니다.
+
 ```bash
 pip install -r audio/requirements.txt   # numpy, scipy
 npm run audio                           # public/audio/ 아래 WAV 재생성
@@ -146,6 +148,8 @@ audio/                    사운드 합성 (Python, `npm run audio`)
   sfx.py                  효과음 54종 (음높이가 있는 것은 코드별로 생성)
   instruments.py          합성 악기 (킥·스네어·팀파니·피아노·마림바·스트링·합창·호른…)
   dsp.py                  필터·리버브·딜레이·컴프레서·덕킹·리미터·스테레오
+  gemini-sound-brief.md   Gemini(Lyria)로 음악을 만들 때의 브리프·시안 5개·프롬프트
+  gemini-refs/            Gemini에 함께 넣는 참고 이미지 6장
 ```
 
 카피·숫자·타이밍은 각 씬 파일 상단 상수(`*_DURATION`, `IMPACT`, `SLAM`, `BEATS`, `STEP`, `SHOTS`, `COPY`, `PILLARS` 등)에서 바로 수정할 수 있습니다. 씬 길이를 바꾸면 컷이 음악 박(14프레임)에서 벗어나니, `src/audio/soundtrack.json`의 프레임도 함께 맞추고 `npm run audio`를 다시 실행하세요.
