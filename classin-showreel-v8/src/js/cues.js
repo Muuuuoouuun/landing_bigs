@@ -19,6 +19,14 @@ function strokes(dur, n, fs, seed) {
   return { fs, c, sp };
 }
 
+// (v8.5) a smooth density envelope of arrival times (Gaussian, σ s) sampled at fs over [t0, t1], peak 1
+function density(times, t0, t1, sg = 0.05, fs = 100) {
+  const n = Math.max(2, Math.round((t1 - t0) * fs)), env = new Array(n).fill(0);
+  for (const tm of times) for (let i = 0; i < n; i++) { const d = (t0 + i / fs - tm) / sg; if (Math.abs(d) < 4) env[i] += Math.exp(-0.5 * d * d); }
+  const mx = Math.max(...env) || 1;
+  return env.map(v => +(v / mx).toFixed(3));
+}
+
 export function buildCues(T, copy, X = {}) {
   const c = [];
   const add = (t, type, o = {}) => c.push({ t: +t.toFixed(4), type, ...o });
@@ -79,46 +87,45 @@ export function buildCues(T, copy, X = {}) {
   add(T.lift, 'whoosh', { dur: 0.7, gain: 0.45, f0: 2400, f1: 500, big: 1 });
   add(T.flyA, 'air', { dur: T.window - T.flyA, gain: 0.28 });
   if (X.frags) {
-    // (v8.3) the class's pieces come off the glass one after another — light plastic ticks, panned where each one sits —
-    // and lie down into the grid: soft wooden knocks, bunched in 30 ms steps, the last ones a little lower
-    X.frags.forEach((f, i) => add(f.up, 'tok', { gain: 0.11, bright: 1.25 + 0.04 * (i % 5), body: 0.15, seed: 50 + i, pan: f.pan }));
-    const bins = new Map();
-    for (const f of X.frags) { const k = Math.round(f.lay / 0.03), b = bins.get(k) || { n: 0, pan: 0 }; b.n++; b.pan += (f.col - 1.5) * 0.3; bins.set(k, b); }
-    const ks = [...bins.keys()].sort((a, b) => a - b);
-    ks.forEach((k, j) => { const b = bins.get(k); add(k * 0.03, 'clack', { gain: Math.min(0.26, 0.12 + 0.06 * Math.log2(b.n)), pitch: 1.3 - 0.25 * j / Math.max(1, ks.length - 1), seed: 70 + j, pan: +(b.pan / b.n).toFixed(2) }); });
+    // (v8.5) the class's pieces come off the glass one after another and rise: one airy lift (rising in pitch) with a
+    // single soft glass note as the first one leaves — no run of ticks
+    const u0 = Math.min(...X.frags.map(f => f.up)), u1 = Math.max(...X.frags.map(f => f.up));
+    add(u0 - 0.05, 'settle', { dur: u1 - u0 + 0.4, gain: 0.2, f0: 600, f1: 2800, pan: [-0.2, 0.25] });
+    add(u0, 'bell', { gain: 0.08, note: 81, pan: -0.15 });
+    // (v8.5) … and lie down into the grid in one soft gesture, locking into the town with a deep, glassy landing
+    const l0 = Math.min(...X.frags.map(f => f.lay)) - 0.36, l1 = Math.max(...X.frags.map(f => f.lay));
+    add(l0, 'settle', { dur: l1 - l0 + 0.06, gain: 0.26, f0: 2400, f1: 480, pan: [-0.15, 0.15] });
+    add(l1 - 0.01, 'thoom', { gain: 0.32 });
   }
-  add(T.window - 0.1, 'shimmer', { dur: 0.8, gain: 0.18 });
+  add(T.window - 0.2, 'glasspad', { dur: 1.3, gain: 0.13, notes: [74, 78, 81, 86], peak: 0.4 });
   // bar 7 · every home: the light sweeps the clay town into houses, a whip, the windows light
   add(T.dawnA - 0.02, 'land', { gain: 0.5 });
   add(T.dawnA, 'swipe', { dur: T.sweepB - 0.15 - T.dawnA, gain: 0.16, pan: [-0.6, 0.5] });
-  if (X.motes) {
-    // the homes' threads of light arriving: soft glints, bunched in 40 ms steps, climbing in pitch as the light runs
-    const bins = new Map();
-    for (const m of X.motes) { const k = Math.round(m.t / 0.04), b = bins.get(k) || { n: 0, pan: 0 }; b.n++; b.pan += m.pan; bins.set(k, b); }
-    const ks = [...bins.keys()].sort((a, b) => a - b), k0 = ks[0] || 0, k1 = ks[ks.length - 1] || 1;
-    for (const k of ks) { const b = bins.get(k); add(k * 0.04, 'glint', { gain: Math.min(0.16, 0.05 + 0.03 * Math.log2(1 + b.n)), semi: Math.round(12 * (k - k0) / Math.max(1, k1 - k0)), seed: k, pan: +(b.pan / b.n).toFixed(2) }); }
+  if (X.motes && X.motes.length) {
+    // (v8.5) the homes' threads of light arriving: one shimmering glass texture swelling with how many arrive (no
+    // run of little bells), and a single soft bell on each of the two biggest gatherings
+    const ts = X.motes.map(m => m.t), t0 = Math.min(...ts) - 0.15, t1 = Math.max(...ts) + 0.15, env = density(ts, t0, t1, 0.06);
+    add(t0, 'gather', { fs: 100, env, gain: 0.15, notes: [86, 90, 93, 98] });
+    const peaks = env.map((v, i) => [v, i]).filter(([v, i]) => i > 0 && i < env.length - 1 && v >= env[i - 1] && v > env[i + 1] && v > 0.55).sort((a, b) => b[0] - a[0]).slice(0, 2).sort((a, b) => a[1] - b[1]);
+    peaks.forEach(([, i], j) => add(t0 + i / 100, 'bell', { gain: 0.14, note: [86, 93][j], pan: j ? 0.25 : -0.25 }));
   }
   if (X.town) {
-    // the blocks fold into houses where the light has passed: a cascade of small wooden clacks (in view only)
-    const bins = new Map();
-    for (const hs of X.town) {
-      if (hs.t < T.dawnA || hs.t > T.whipA) continue;
-      const k = Math.round(hs.t / 0.03);
-      const b = bins.get(k) || { n: 0, pan: 0, lo: 0 };
-      b.n++; b.pan += hs.pan; b.lo += hs.f3 ? 1 : 0; bins.set(k, b);
-    }
-    for (const [k, b] of [...bins].sort((a, b) => a[0] - b[0])) {
-      add(k * 0.03, 'clack', { gain: Math.min(0.34, 0.09 + 0.06 * Math.log2(1 + b.n)), pitch: b.lo / b.n > 0.5 ? 0.8 : 1.05, seed: k, pan: +(b.pan / b.n).toFixed(2) });
-    }
+    // the blocks become houses where the light has passed: a soft brushed swell that follows them (in view only)
+    const ts = X.town.filter(hs => hs.t >= T.dawnA && hs.t <= T.whipA).map(hs => hs.t);
+    if (ts.length) { const t0 = Math.min(...ts) - 0.2, t1 = Math.max(...ts) + 0.2; add(t0, 'bloom', { fs: 100, env: density(ts, t0, t1, 0.09), gain: 0.1 }); }
   }
   add(T.whipA, 'whoosh', { dur: T.whipB - T.whipA + 0.1, gain: 0.5, f0: 3000, f1: 600, big: 1 });
-  const scale = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
-  for (let i = 0; i < 8; i++) add(T.whipB + 0.04 + i * 0.075, 'pluck', { gain: 0.13 + 0.06 * (i % 3 === 0), semi: scale[i % scale.length], pan: Math.sin(i * 1.3) * 0.7 });
-  [0, 1, 2, 3].forEach(i => add(T.cardA + 0.1 + [0, 0.25, 0.5, 0.8][i], 'tick', { gain: 0.22, seed: 30 + i, bright: 1.5 }));
+  // (v8.5) the windows light near → far: one warm felt-piano chord (Dadd9), rolled gently, with a glass swell
+  add(T.whipB + 0.02, 'chord', { gain: 0.3, notes: [50, 57, 66, 69, 76], roll: 0.02, dur: 2.6 });
+  add(T.whipB + 0.05, 'glasspad', { dur: 1.1, gain: 0.08, notes: [78, 81, 86, 90], peak: 0.3 });
+  [0, 1, 2, 3].forEach(i => add(T.cardA + 0.1 + [0, 0.25, 0.5, 0.8][i], 'tick', { gain: 0.12, seed: 30 + i, bright: 0.85 }));
   // bar 8 · nationwide
   add(T.rise, 'whoosh', { dur: T.mapIn - T.rise + 0.3, gain: 0.42, f0: 400, f1: 3000 });
-  add(T.mapIn, 'shimmer', { dur: 1.0, gain: 0.24 });
-  for (let i = 0; i < 12; i++) add(T.spreadA + (i / 12) * (T.spreadB - T.spreadA), 'pluck', { gain: 0.12 + 0.08 * (i % 4 === 0), semi: scale[i % scale.length] + (i > 8 ? 12 : 0), pan: Math.sin(i * 1.9) * 0.6 });
+  add(T.mapIn - 0.05, 'glasspad', { dur: 1.4, gain: 0.12, notes: [81, 86, 90, 93], peak: 0.35 });
+  // (v8.5) the country lighting up: a glass texture growing with the spread, two soft bells — no run of plucks
+  { const n = Math.round((T.spreadB - T.spreadA + 0.3) * 100); add(T.spreadA, 'gather', { fs: 100, env: Array.from({ length: n }, (_, i) => +Math.min(1, Math.sin(Math.PI * i / n) * 1.3).toFixed(3)), gain: 0.12, notes: [81, 86, 90, 93] }); }
+  add(T.spreadA + 0.05, 'bell', { gain: 0.12, note: 86, pan: -0.2 });
+  add(T.spreadA + 0.55, 'bell', { gain: 0.1, note: 93, pan: 0.2 });
   add(T.liftOff - 0.15, 'air', { dur: 0.5, gain: 0.28 });
   // bar 9 · the morning report — the same sound as the first notification
   add(T.morning, 'shimmer', { dur: 0.8, gain: 0.2 });

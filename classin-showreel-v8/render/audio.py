@@ -197,15 +197,20 @@ def build_music():
     keys[0] = fft_filter(keys[0], hi=3200)
     keys[1] = fft_filter(keys[1], hi=3200)
 
-    # plucks: 16ths in pentatonic from the drop to the breath
+    # plucks: 8ths in pentatonic from the drop to the breath (v8.5: no 16th-note run after the lift — a rounder,
+    # softer note with a longer tail instead, so the second half breathes)
     penta = [74, 76, 78, 81, 83, 86]
     for i in range(int((BREATH - DROP) / (BEAT / 4))):
         t = DROP + i * BEAT / 4
-        if i % 4 == 3 or (t < LIFT and i % 2):
+        if i % 2:
             continue
         m = penta[(i * 5 + (i // 8)) % len(penta)]
-        s = soft_tone(midi(m), 0.4, harm=(1, 0.5, 0.2)) * env_exp(int(0.4 * SR), 0.09)
-        place(pl, s * (0.022 if t < LIFT else 0.03), t, pan=0.45 * math.sin(i * 0.9))
+        if t < LIFT:
+            s = soft_tone(midi(m), 0.4, harm=(1, 0.5, 0.2)) * env_exp(int(0.4 * SR), 0.09)
+            place(pl, s * 0.022, t, pan=0.45 * math.sin(i * 0.9))
+        else:
+            s = soft_tone(midi(m), 0.9, harm=(1, 0.22, 0.05)) * env_exp(int(0.9 * SR), 0.22) * np.minimum(1, tvec(0.9) / 0.006)
+            place(pl, s * 0.016, t, pan=0.35 * math.sin(i * 0.9))
 
     # sub: root per bar, ducked by the kick after the drop
     for b, ch in enumerate(PROG):
@@ -405,6 +410,68 @@ def sfx_voice(c):
         s = (np.sin(2 * np.pi * f0 * tt) + 0.35 * np.sin(2 * np.pi * f0 * 2.76 * tt) * np.exp(-tt / 0.03)) * np.exp(-tt / 0.07)
         s *= np.minimum(1, tt / 0.003)
         return s * g * 0.5, c.get('pan', 0.0), 0.35
+    # ---- v8.5: from 11 s no rolls of small strikes — sustained, consonant (D major) sounds with few transients
+    if ty == 'settle':  # the class's pieces lie down: one soft air gesture falling in pitch
+        n = int(dur * SR)
+        s = band_sweep(dur, c.get('f0', 2400), c.get('f1', 480), 0.55, seed=int(c['t'] * 100)) * bell_env(n, 0.82, 1.8)
+        s += fft_filter(np.random.default_rng(5).standard_normal(n), lo=120, hi=700) * bell_env(n, 0.9, 3) * 0.25
+        pan = c.get('pan', 0.0)
+        return s * g * 0.5, (pan if np.isscalar(pan) else list(pan)), 0.3
+    if ty == 'thoom':  # the grid locks into the town: a deep soft landing with a glassy afterglow
+        L = 2.4
+        n, tt = int(L * SR), tvec(L)
+        r = np.random.default_rng(int(c['t'] * 1000))
+        body = sine_sweep(L, 96, 50) * env_exp(n, 0.34)
+        k = int(0.06 * SR)
+        knock = np.zeros(n)
+        knock[:k] = fft_filter(r.standard_normal(k), lo=140, hi=900) * env_exp(k, 0.012)
+        glow = sum(a * np.sin(2 * np.pi * midi(m) * tt) for m, a in ((74, 0.5), (81, 0.35), (86, 0.18))) * env_exp(n, 0.9) * np.minimum(1, tt / 0.03)
+        return (body * 0.9 + knock * 0.6 + glow * 0.12) * g, 0.0, 0.35
+    if ty == 'glasspad':  # a glass chord swelling in and out: two slightly detuned voices per note, a breath of air
+        n, tt = int(dur * SR), tvec(dur)
+        notes = c.get('notes', [74, 78, 81, 86])
+        s = np.zeros(n)
+        for j, m in enumerate(notes):
+            for d in (-0.0025, 0.0025):
+                s += np.sin(2 * np.pi * midi(m) * (1 + d) * tt + j) * (1 + 0.15 * np.sin(2 * np.pi * (0.7 + 0.3 * j) * tt))
+        s *= bell_env(n, c.get('peak', 0.45), 1.6) / (2 * len(notes))
+        air = fft_filter(np.random.default_rng(int(c['t'] * 10)).standard_normal(n), lo=6500, hi=12000) * bell_env(n, c.get('peak', 0.45), 2) * 0.12
+        return (s + air) * g, c.get('pan', 0.0), 0.55
+    if ty in ('gather', 'bloom'):  # a texture whose loudness follows how many arrive (control envelope at fs)
+        fs, env = c['fs'], np.asarray(c['env'], float)
+        n = int(len(env) / fs * SR) + int(0.3 * SR)
+        e = ctrl(env, fs, n, 0.02, 0.12)
+        tt = tvec(n / SR)
+        r = np.random.default_rng(int(c['t'] * 1000))
+        if ty == 'gather':  # light gathering: high glass partials shimmering, and fine dust
+            s = np.zeros(n)
+            for j, m in enumerate(c.get('notes', [86, 90, 93, 98])):
+                s += np.sin(2 * np.pi * midi(m) * tt + j) * (0.6 + 0.4 * np.sin(2 * np.pi * (3.1 + 1.3 * j) * tt + r.random() * 6.28)) / (1 + 0.3 * j)
+            s = s / 3 * e ** 0.8 + fft_filter(r.standard_normal(n), lo=7000, hi=13000) * e * 0.18
+        else:  # colour spreading through the town: soft brushed air, no strikes
+            s = fft_filter(r.standard_normal(n), lo=700, hi=3800) * e + fft_filter(r.standard_normal(n), lo=60, hi=240) * e ** 1.5 * 0.5
+        return s * g, c.get('pan', 0.0), 0.5
+    if ty == 'chord':  # felt piano: one warm chord, rolled very gently, a long tail
+        L = c.get('dur', 2.4)
+        n, tt = int(L * SR), tvec(L)
+        s = np.zeros(n)
+        for j, m in enumerate(c.get('notes', [50, 57, 66, 69, 76])):
+            f, off = midi(m), int(j * c.get('roll', 0.018) * SR)
+            if off >= n:
+                break
+            t2, v = tt[: n - off], np.zeros(n - off)
+            for k in range(1, 7):  # partials, the higher ones dying sooner; a touch of inharmonicity
+                fk = f * k * (1 + 0.0004 * k * k)
+                if fk > 9000:
+                    break
+                v += np.sin(2 * np.pi * fk * t2 + j * k) / k ** 1.6 * np.exp(-t2 / (1.6 / k ** 0.8))
+            s[off:] += v * np.minimum(1, t2 / 0.008)  # felt: a soft hammer
+        return fft_filter(s, hi=4200) * g / 3, c.get('pan', 0.0), 0.45
+    if ty == 'bell':  # one soft glass bell (a rare accent)
+        L = 1.6
+        n, tt, f = int(L * SR), tvec(L), midi(c.get('note', 86))
+        s = (np.sin(2 * np.pi * f * tt) + 0.25 * np.sin(4 * np.pi * f * tt) * np.exp(-tt / 0.25) + 0.12 * np.sin(2 * np.pi * f * 3.01 * tt) * np.exp(-tt / 0.12)) * np.exp(-tt / 0.7) * np.minimum(1, tt / 0.006)
+        return s * g * 0.4, c.get('pan', 0.0), 0.55
     if ty == 'land':  # the light drops onto the street: a soft low thump and a breath of air
         n = int(1.2 * SR)
         s = sine_sweep(1.2, 150, 52) * env_exp(n, 0.13) * 0.9 + band_sweep(1.2, 2600, 7000, 0.6, seed=4) * env_exp(n, 0.32) * 0.28
