@@ -21,7 +21,7 @@ FC="[0:v]${BLUR}${GRADE},noise=c0s=4:c0f=t+u,format=yuv420p[v]"
 # audio: two-pass loudnorm
 MEAS=$(ffmpeg -hide_banner -nostats -i out/audio.wav -af loudnorm=I=-14:TP=-1.25:LRA=11:print_format=json -f null - 2>&1 | sed -n '/^{/,/^}/p')
 get() { echo "$MEAS" | python3 -c "import json,sys;print(json.load(sys.stdin)['$1'])"; }
-AF="loudnorm=I=-14:TP=-2.2:LRA=11:measured_I=$(get input_i):measured_TP=$(get input_tp):measured_LRA=$(get input_lra):measured_thresh=$(get input_thresh):offset=$(get target_offset):linear=true,alimiter=limit=0.76:attack=1:release=60:level=disabled"
+AF="loudnorm=I=-14:TP=-2.2:LRA=11:measured_I=$(get input_i):measured_TP=$(get input_tp):measured_LRA=$(get input_lra):measured_thresh=$(get input_thresh):offset=$(get target_offset):linear=true,alimiter=limit=0.68:attack=1:release=60:level=disabled"
 
 # constant 60 fps, high-profile H.264; a VBV cap keeps the grain from ballooning the file
 ffmpeg -hide_banner -nostats -loglevel warning -y -framerate $((FPS * SUB)) -i "$DIR/f%06d.jpg" -i out/audio.wav \
