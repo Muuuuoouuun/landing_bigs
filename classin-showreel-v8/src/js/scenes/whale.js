@@ -1,17 +1,18 @@
 // S7–S8 (v8) · 9.45–11.85 · the finished drawing comes alive: the generated light-whale fills in over the teacher's
 // whale on the board (head to tail), rises off the glass as the camera pulls back out of the tablet, turns in the air
-// and flies across the room to the window — wearing the friends' wings and balloons in light.
+// and rises through the class's floating pieces — wearing the friends' drawings in light (v8.5: the wing beating,
+// the balloons bobbing, the jet engine's flame flickering, the sunglasses).
 import { E, tw, prog, clamp, lerp, rng, M4 } from '../core.js';
 import { project } from '../line.js';
 import { whalePic } from '../whalepic.js';
 import { swimDy } from '../whalegeo.js';
-import { WC, WS, PARTS } from '../classui.js';
+import { WC, WS } from '../classui.js';
+import { PARTS, partLines } from '../parts.js';
 import { TABLET, classToWorld } from './room.js';
 import WH from '../../assets/gen/whale.js';
 
 const SX = (TABLET.w - 2 * TABLET.bez) / 1920;
 const P1 = [900, -80, 560], P2 = [800, -170, 1600]; // up through the floating pieces and out over the camera
-const PENS = ['#9FD0FF', '#F59A23'];
 
 export default function whaleScene(ctx) {
   const { T } = ctx;
@@ -57,15 +58,11 @@ export default function whaleScene(ctx) {
     const { M, pos, edge } = pose(t), CM = ctx.CM;
     const al = tw(t, T.liftA + 0.2, T.liftA + 0.5) * (1 - tw(t, T.window - 0.65, T.window - 0.35)) * edge;
     const wave = swimDy(t, 1.2), k = Math.sin(t * 10) * tw(t, T.lift, T.flyA);
-    // the friends' wings (beating) and balloons, in light
-    PARTS[0].forEach(w => {
-      const pts = w.map(([x, y]) => { const x2 = x + (x - 10) * 0.08 * k, y2 = -62 + (y + 62) * (1 + 0.32 * k) + wave(x); return ap(M, [x2, y2]); });
-      fx.line(project(CM, pts), { w: 3.4, alpha: al, taper: 0, head: 0, cool: 0.15, ink: PENS[0], inkW: 0.8 });
-    });
-    PARTS[1].forEach((w, m) => {
-      const pts = w.map(([x, y]) => ap(M, [x, y + wave(x) + Math.sin(t * 3 + m) * 4]));
-      fx.line(project(CM, pts), { w: m % 2 ? 1.6 : 3, alpha: al * (m % 2 ? 0.6 : 1), taper: 0, head: 0, cool: 0.25, ink: m % 2 ? '#CFC6B4' : PENS[1], inkW: 0.8 });
-    });
+    // the friends' drawings, in light
+    for (const part of PARTS) for (const l of partLines(part, t, k, { bob: true })) {
+      const pts = l.pts.map(([x, y]) => ap(M, [x, y + wave(x)]));
+      fx.line(project(CM, pts), { w: 3.4 * Math.max(0.5, Math.min(1, l.w)), alpha: al * (l.w < 0.5 ? 0.7 : 1), taper: 0, head: 0, cool: 0.2, ink: l.color, inkW: 0.8 });
+    }
     // sparkles drifting off it
     for (const p of sparks) {
       const age = (t * p.sp + p.ph) % 1, b = body[p.i];

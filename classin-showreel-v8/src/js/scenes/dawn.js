@@ -9,8 +9,12 @@ import { E, tw, prog, clamp, lerp, catmull, h } from '../core.js';
 import { createTown, cross, street } from '../town.js';
 import { whalePic } from '../whalepic.js';
 import { swimDy } from '../whalegeo.js';
+import { PARTS, partLines } from '../parts.js';
 
 const WHALE_M = 20 / 480; // whale-local units → metres (a 20 m whale over 9 m houses)
+// (v8.5) the friends' drawings sit on the board's whale; this whale (the 3D picture) has its eye further forward,
+// a lower back and a lower fluke where the engine hangs — move each part onto the same place on it (local units)
+const ON_SOLID = { wing: [-6, 20], balloons: [-8, 12], jet: [-62, 12], shades: [-20, -1] };
 
 export default function dawnScene(ctx) {
   const { W, H, T, copy, gl } = ctx;
@@ -53,8 +57,6 @@ export default function dawnScene(ctx) {
     const k = tw(t, T.whipB - 0.12, T.mapIn + 0.2, E.inOutSine), [x, y] = atB(k);
     return { p: [x, y, street(0) + lerp(6, -4, k)], a: tw(t, T.whipB - 0.08, T.whipB + 0.06) * (1 - tw(t, T.mapIn - 0.15, T.mapIn + 0.15)), A: false };
   }
-  const wings = [catmull([[-30, -58], [-80, -142], [10, -182], [50, -68]], 8), catmull([[-34, -92], [-10, -132]], 4), catmull([[-12, -78], [18, -122]], 4)];
-  const flap = t => { const k = Math.sin(t * 10); return ([x, y]) => [x + (x - 10) * 0.08 * k, -62 + (y + 62) * (1 + 0.32 * k)]; };
   // screen pose of the whale: centre, px per local unit, heading, mirror (it faces left; mirrored when moving right)
   const camRight = new THREE.Vector3();
   function screenPose(t) {
@@ -111,10 +113,14 @@ export default function dawnScene(ctx) {
     // the whale's wings of light and the light streaming off its flukes (2D, on its screen pose)
     const sp = cur;
     if (sp.a > 0.01 && sp.q[2] < 1) {
-      const wave = swimDy(t, 1.3), fl = flap(t), c = Math.cos(sp.ang), s = Math.sin(sp.ang);
+      const wave = swimDy(t, 1.3), c = Math.cos(sp.ang), s = Math.sin(sp.ang);
       const toS = ([x, y]) => { const lx = x * sp.s * sp.mir, ly = (y + wave(x)) * sp.s; return [sp.q[0] + lx * c - ly * s, sp.q[1] + lx * s + ly * c]; };
       const lw = clamp(sp.s * 9, 1.6, 4.2);
-      for (const wg of wings) fx.line(wg.map(fl).map(toS), { w: lw, alpha: sp.a, taper: 0, head: 0 });
+      // the friends' drawings in light (v8.5): the wing beating, the balloons bobbing, the flame flickering
+      for (const part of PARTS) {
+        const [ox, oy] = ON_SOLID[part.key];
+        for (const l of partLines(part, t, Math.sin(t * 10), { bob: true })) fx.line(l.pts.map(([x, y]) => toS([x + ox, y + oy])), { w: lw * Math.max(0.5, Math.min(1, l.w)), alpha: sp.a * (l.w < 0.5 ? 0.7 : 1), taper: 0, head: 0 });
+      }
       const trail = [];
       for (let i = 22; i >= 0; i--) {
         const w = whaleAt(t - i * 0.014);

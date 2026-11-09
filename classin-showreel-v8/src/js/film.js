@@ -123,7 +123,7 @@ function render(u) {
 await document.fonts.load('800 40px Pretendard');
 await Promise.all(['300', '400', '500', '600', '700', '900'].map(w => document.fonts.load(`${w} 20px Pretendard`)));
 await document.fonts.load('600 40px Caveat');
-await document.fonts.load("400 40px NanumPen", '오늘의 퀴즈: 고래가 하늘을 날려면?');
+await document.fonts.load("400 40px KyoboHand", '오늘의 퀴즈: 고래가 하늘을 날려면?');
 await document.fonts.ready;
 await Promise.all([...document.images].map(img => img.decode().catch(() => {})));
 await ctx.classUI.ready;

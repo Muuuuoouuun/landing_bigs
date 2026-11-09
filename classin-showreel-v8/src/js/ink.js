@@ -145,6 +145,32 @@ export function inkStroke(k, pts, o = {}) {
   k.restore();
 }
 
+// (v8.5) a closed shape coloured in — the friends' drawings are filled under their outlines. style is a canvas
+// fill style (colour or gradient, built in canvas space); pigment grain on top, optional soft contact shadow.
+export function inkFill(k, pts, style, o = {}) {
+  if (!pts || pts.length < 3) return;
+  const alpha = o.alpha ?? 1;
+  if (alpha <= 0.003) return;
+  k.save();
+  k.globalAlpha = alpha;
+  k.beginPath();
+  k.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) k.lineTo(pts[i][0], pts[i][1]);
+  k.closePath();
+  if (o.shadow) { k.shadowColor = `rgba(0,0,0,${(0.45 * o.shadow).toFixed(3)})`; k.shadowBlur = o.blur ?? 12; k.shadowOffsetY = (o.blur ?? 12) * 0.3; }
+  k.fillStyle = style;
+  k.fill();
+  k.shadowColor = 'rgba(0,0,0,0)';
+  if ((o.grain ?? 0.4) > 0) {
+    k.clip();
+    k.globalAlpha = alpha * (o.grain ?? 0.4) * 0.45;
+    k.fillStyle = grain(k);
+    const xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+    k.fillRect(Math.min(...xs) - 2, Math.min(...ys) - 2, Math.max(...xs) - Math.min(...xs) + 4, Math.max(...ys) - Math.min(...ys) + 4);
+  }
+  k.restore();
+}
+
 // the matte slate the strokes sit on: charcoal with fine grain, a faint dot grid and a soft sheen
 export function slate(k, x, y, w, h, o = {}) {
   k.save();

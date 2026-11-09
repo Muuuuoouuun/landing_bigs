@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>html, body { margin: 0; background: #121417; } canvas { display: block; }</style>
+</head><body>
+<canvas id="c" width="1920" height="1500"></canvas>
+<script type="module">
+// Look test (v8.5): the four friends' drawings — assembled on the teacher's whale (top) and on their own cards
+// (bottom). ?u=0.5 draws them half way.
+import { slate, inkStroke } from '../js/ink.js';
+import { whaleStrokes } from '../js/whalegeo.js';
+import { onBoard, BOARD, WS } from '../js/classui.js';
+import { PARTS, drawPart } from '../js/parts.js';
+const q = new URLSearchParams(location.search), U = +(q.get('u') ?? 1), t = +(q.get('t') ?? 8.6);
+const k = document.getElementById('c').getContext('2d');
+k.fillStyle = '#121417'; k.fillRect(0, 0, 1920, 1500);
+slate(k, BOARD.x, BOARD.y, BOARD.w, BOARD.h, { r: 14 });
+whaleStrokes().forEach((s, i) => inkStroke(k, s.pts.map(onBoard), { w: 4.6, color: '#F2F2EE', sheen: 0.45, shadow: 0.6, grain: 0.7, seed: 1 + i }));
+PARTS.forEach(p => drawPart(k, p, onBoard, WS, U, { w: 5, t }));
+// the cards
+PARTS.forEach((p, j) => {
+  const cw = 440, ch = 300, x = 20 + j * 475, y = 1080 + 40;
+  slate(k, x, y, cw, ch, { r: 14 });
+  k.strokeStyle = p.pen; k.lineWidth = 3; k.beginPath(); k.roundRect(x, y, cw, ch, 14); k.stroke();
+  const [bx0, by0, bx1, by1] = p.bbox, fit = Math.min((cw - 70) / (bx1 - bx0), (ch - 70) / (by1 - by0));
+  const map = ([px, py]) => [x + cw / 2 + (px - (bx0 + bx1) / 2) * fit, y + ch / 2 + 10 + (py - (by0 + by1) / 2) * fit];
+  drawPart(k, p, map, fit, U, { w: 4.2 * 440 / 300, t });
+});
+window.__ready = true;
+</script>
+</body></html>

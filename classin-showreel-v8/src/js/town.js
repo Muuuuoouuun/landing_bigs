@@ -419,6 +419,7 @@ totalEmissiveRadiance += vec3(1.0, 0.86, 0.6) * 2.2 * vH.z * kT * on;`));
     camera.up.set(0, 1, 0);
     camera.fov = P.fov; camera.updateProjectionMatrix();
     camera.lookAt(tg);
+    camera.updateMatrixWorld(true); // (v8.5) toScreen() is used before the render: project with this frame's camera
     // fog follows the camera distance so the top-down shot stays clear and the low shot gets depth
     scene.fog.near = P.dist + 60; scene.fog.far = P.dist + 700;
     sky.position.copy(camera.position);

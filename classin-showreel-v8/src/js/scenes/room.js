@@ -5,7 +5,8 @@
 // finished drawing (the friends' parts on the teacher's whale) is drawn here too.
 import { E, tw, prog, clamp, lerp, M4, xf, place, planeModel, h } from '../core.js';
 import { project } from '../line.js';
-import { CW, CH, onBoard, PARTS, WC, TILES } from '../classui.js';
+import { CW, CH, onBoard, WC, TILES } from '../classui.js';
+import { PARTS, partLines } from '../parts.js';
 import { whaleStrokes } from '../whalegeo.js';
 import SPRITES from '../../assets/gen/sprites.js';
 
@@ -76,7 +77,7 @@ export default function roomScene(ctx) {
   });
 
   // the finished drawing (class px), for the light to run over
-  const drawing = [...whaleStrokes().map(s => s.pts), ...PARTS.flat()].map(p => p.map(onBoard));
+  const drawing = [...whaleStrokes().map(s => s.pts), ...PARTS.flatMap(p => partLines(p).map(l => l.pts))].map(p => p.map(onBoard));
   const dLen = drawing.map(p => { let s = 0; for (let i = 1; i < p.length; i++) s += Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]); return s; });
   const dTot = dLen.reduce((a, b) => a + b, 0);
 

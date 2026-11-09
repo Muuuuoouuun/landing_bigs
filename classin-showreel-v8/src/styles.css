@@ -6,6 +6,8 @@
 @font-face { font-family: 'Pretendard'; font-weight: 800; src: url(assets/fonts/Pretendard-ExtraBold.woff2) format('woff2'); }
 @font-face { font-family: 'Pretendard'; font-weight: 900; src: url(assets/fonts/Pretendard-Black.woff2) format('woff2'); }
 @font-face { font-family: 'NanumPen'; font-weight: 400; src: url(assets/fonts/NanumPen-sub.woff2) format('woff2'); }
+/* v8.5 · the quiz handwriting on the tablet: 교보 손글씨 2025 이유빈 (Kyobo Book Centre), subset to the glyphs used */
+@font-face { font-family: 'KyoboHand'; font-weight: 400; src: url(assets/fonts/KyoboHandwriting2025-sub.woff2) format('woff2'); }
 @font-face { font-family: 'Caveat'; font-weight: 600; src: url(assets/fonts/Caveat-SemiBold.woff2) format('woff2'); }
 
 :root {

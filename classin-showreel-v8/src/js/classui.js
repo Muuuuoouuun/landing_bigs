@@ -5,29 +5,19 @@
 import { E, tw, prog, clamp, lerp, catmull } from './core.js';
 import { inkStroke, slate } from './ink.js';
 import { whaleStrokes } from './whalegeo.js';
+import { PARTS, drawPart } from './parts.js';
 
 export const CW = 1920, CH = 1080;
 export const BOARD = { x: 40, y: 254, w: 1390, h: 786 };
 export const WC = [BOARD.x + 760, BOARD.y + 470], WS = 1.9; // the teacher's whale on the board (whale-local → class px)
 export const TILES = [[40, 260], [312, 214], [538, 214], [764, 214], [990, 214], [1216, 214]].map(([x, w]) => ({ x, y: 80, w, h: 160 }));
-const PENS = ['#9FD0FF', '#F59A23', '#F29BB8', '#F6C343']; // 도윤 날개 · 하린 풍선 · 민준 구름 · 지아 별
+const PENS = PARTS.map(p => p.pen); // (v8.5) 도윤 날개 · 하린 풍선 · 민준 제트 엔진 · 지아 선글라스 (src/js/parts.js)
 const DRAWER = [2, 3, 4, 5]; // seats of the four friends who draw
 export const onBoard = ([x, y]) => [WC[0] + x * WS, WC[1] + y * WS];
 
-const ring = (cx, cy, r, n = 40) => Array.from({ length: n + 1 }, (_, i) => { const a = -Math.PI / 2 + (i / n) * Math.PI * 2; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; });
-const cloud = (cx, cy, s) => { const p = []; for (let i = 0; i <= 80; i++) { const a = Math.PI + (i / 80) * Math.PI * 2; const r = s * (1 + 0.22 * Math.abs(Math.sin(a * 2.5))); p.push([cx + Math.cos(a) * r * 1.5, cy + Math.sin(a) * r * 0.75]); } return p; };
-const star = (cx, cy, r) => { const p = []; for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.42 : r; p.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); } return p; };
-// the friends' parts in whale-local units: wings on the back, balloons tied above, clouds and stars around
-export const PARTS = [
-  [catmull([[-30, -66], [-80, -150], [10, -190], [50, -76]], 10), catmull([[-34, -100], [-10, -140]], 5), catmull([[-12, -86], [18, -130]], 5)],
-  [ring(150, -190, 30), [[150, -160], [95, -62]], ring(222, -168, 33), [[222, -135], [110, -52]]],
-  [cloud(-330, 60, 34), cloud(258, 92, 28)],
-  [star(240, -232, 19), star(-330, -40, 14), star(300, -150, 12)],
-];
-const bbox = strokes => { const xs = strokes.flat().map(p => p[0]), ys = strokes.flat().map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
-const PB = PARTS.map(bbox);
-
 function loadImg(src) { const i = new Image(); i.src = src; return i; }
+// (v8.5) the handwriting: 교보 손글씨 2025 이유빈 (styles.css)
+const QFONT = '58px KyoboHand';
 // v8.1 · the question, handwritten by the pen: each syllable is one quick run with the tip on the glass (down and
 // up again while it crosses the syllable); between syllables the tip lifts a hair and travels, higher over the
 // spaces. One path shared by the board (ink shows only where the tip has been), the 3D pen (devices.js) and the
@@ -38,7 +28,7 @@ export function makeQuizPen(T, copy) {
   let S = null;
   function layout() {
     const c = document.createElement('canvas').getContext('2d');
-    c.font = '62px NanumPen';
+    c.font = QFONT;
     const ch = [...copy.quiz[1]], G = [];
     let x = 0;
     ch.forEach((g, i) => { const x1 = c.measureText(ch.slice(0, i + 1).join('')).width; G.push({ g, x0: x, w: x1 - x, sp: g === ' ' }); x = x1; });
@@ -249,7 +239,7 @@ export function createClassUI(ctx) {
     const qp = quizPen(t);
     if (qp.reveal > 0) {
       k.save();
-      k.font = '62px NanumPen';
+      k.font = QFONT;
       k.shadowColor = 'rgba(0,0,0,0.45)'; k.shadowBlur = 5; k.shadowOffsetY = 2;
       k.beginPath(); k.rect(BOARD.x + 100, BOARD.y + 110, qp.reveal + 10, 100); k.clip(); k.fillStyle = '#A6E86A'; k.fillText(copy.quiz[1], BOARD.x + 110, BOARD.y + 176);
       k.restore();
@@ -258,12 +248,12 @@ export function createClassUI(ctx) {
     // the teacher's whale
     const wu = prog(t, T.whaleDrawA, T.whaleDrawB);
     if (wu > 0) strokes(whale, wLen, wTot, E.inOutSine(wu), { w: 4.6, color: '#F2F2EE', sheen: 0.45, shadow: 0.6, grain: 0.7, seed: 1 });
-    // the friends' parts, once assembled onto the whale
+    // the friends' drawings, once assembled onto the whale (the engine's flame keeps flickering)
     const asm = prog(t, T.assembleA, T.assembleB);
     PARTS.forEach((part, j) => {
       const d = clamp((asm - j * 0.12) / 0.64);
       if (d < 1) return;
-      part.forEach((pts, m) => inkStroke(k, pts.map(onBoard), { w: j === 1 && m % 2 ? 2.4 : 5, color: j === 1 && m % 2 ? '#CFC6B4' : PENS[j], seed: 20 + j * 5 + m, sheen: j === 1 && m % 2 ? 0 : 0.4 }));
+      drawPart(k, part, onBoard, WS, 1, { w: 5, t });
     });
   }
 
@@ -284,7 +274,7 @@ export function createClassUI(ctx) {
       const cw = 300, chh = 200, cx0 = BOARD.x + 120 + j * 330 + cw / 2, cy0 = BOARD.y + 560;
       const sx0 = s.x + s.w / 2, sy0 = s.y + s.h / 2;
       let cx = lerp(sx0, cx0, pop), cy = lerp(sy0, cy0, pop), sc = lerp(0.3, 1, Math.min(1, pop));
-      const [bx0, by0, bx1, by1] = PB[j];
+      const [bx0, by0, bx1, by1] = part.bbox;
       const fit = Math.min((cw - 56) / (bx1 - bx0), (chh - 56) / (by1 - by0));
       const pcx = (bx0 + bx1) / 2, pcy = (by0 + by1) / 2;
       const tgt = onBoard([pcx, pcy]);
@@ -303,12 +293,12 @@ export function createClassUI(ctx) {
         k.globalAlpha = 1;
       }
       k.restore();
-      // the part itself (drawn progressively in its window), mapped from mini-board space to board space
-      const u = prog(t, drawT[j], drawT[j] + 0.42);
+      // the drawing itself (outline by outline, coloured in as each closes), mapped from the card to the board
+      const u = prog(t, drawT[j], drawT[j] + 0.45);
       if (u <= 0) return;
-      const map = ([x, y]) => [cx + (x - pcx) * ps * (d > 0 ? 1 : sc), cy + (y - pcy) * ps * (d > 0 ? 1 : sc)];
-      const lens = part.map(p => len(p));
-      strokes(part.map(p => p.map(map)), lens, lens.reduce((a, b) => a + b, 0), u, { w: lerp(4.2, 5, d), color: PENS[j], seed: 20 + j * 5, glow: ['160,210,255', '255,180,90', '255,170,200', '255,220,110'][j] });
+      const pk = ps * (d > 0 ? 1 : sc), map = ([x, y]) => [cx + (x - pcx) * pk, cy + (y - pcy) * pk];
+      const tip = drawPart(k, part, map, pk, u, { w: lerp(4.2, 5, d), t });
+      if (tip && u < 1) head(tip[0], tip[1], part.glow);
     });
   }
 
